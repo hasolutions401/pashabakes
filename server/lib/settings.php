@@ -22,6 +22,8 @@ function default_settings(): array
         'pickup_area'       => 'Tyngsboro, MA',
         'pickup_address'    => '',
         'notify_email'      => 'pashabakess@gmail.com',
+        'gmail_address'     => 'pashabakess@gmail.com',
+        'gmail_app_password' => '',
         'venmo_handle'      => 'Palosha-Rashid',
         'cashapp_handle'    => 'Pashabakess',
         'accepting_orders'  => '1',

@@ -12,8 +12,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (($_POST['action'] ?? '') === 'test_email') {
         $to = setting('notify_email');
         [$ok, $err] = send_test_email($to);
-        $ok ? flash("Test email sent to {$to}. Check your inbox (and spam folder).")
-            : flash('The test email could not be sent: ' . $err . ' — check the "mail" section of server/config.php.', 'error');
+        if ($ok && $err === '') {
+            flash("Test email sent to {$to}" . (setting('gmail_app_password') !== '' ? ' through Gmail' : '') . '. Check your inbox.');
+        } elseif ($ok) {
+            flash("Test email sent to {$to}, but NOT through Gmail (it may go to spam). Gmail said: {$err} — check the Gmail address and app password below.", 'warning');
+        } else {
+            flash('The test email could not be sent: ' . $err, 'error');
+        }
         redirect('settings.php');
     }
 
@@ -56,6 +61,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!filter_var($notify, FILTER_VALIDATE_EMAIL)) {
         $errors['notify_email'] = 'Enter a valid email address.';
     }
+    $gmail = mb_strtolower(clean_text($in['gmail_address'] ?? '', 200));
+    if ($gmail !== '' && !preg_match('/@(gmail|googlemail)\.com$/', $gmail)) {
+        $errors['gmail_address'] = 'Enter a Gmail address (…@gmail.com).';
+    }
+    $appPass = str_replace(' ', '', (string) ($in['gmail_app_password'] ?? ''));
+    if ($appPass !== '' && !preg_match('/^[a-zA-Z]{16}$/', $appPass)) {
+        $errors['gmail_app_password'] = 'An app password is 16 letters, like “abcd efgh ijkl mnop”.';
+    }
     $venmo = ltrim(clean_text($in['venmo_handle'] ?? '', 60), '@');
     $cashapp = ltrim(clean_text($in['cashapp_handle'] ?? '', 60), '$');
     if (!preg_match('/^[A-Za-z0-9_-]{2,60}$/', $venmo)) {
@@ -79,7 +92,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'notify_email' => $notify,
         'venmo_handle' => $venmo,
         'cashapp_handle' => $cashapp,
+        'gmail_address' => $gmail,
     ];
+    if ($appPass !== '') {
+        $new['gmail_app_password'] = $appPass;          // only replaced when a new one is typed
+    } elseif (!empty($in['gmail_remove'])) {
+        $new['gmail_app_password'] = '';
+    }
 
     if (!$errors) {
         settings_save($new);
@@ -171,6 +190,29 @@ admin_header('Settings', 'settings', $user);
         <span class="money-input"><span>$</span><input name="cashapp_handle" value="<?= e($form['cashapp_handle'] ?? '') ?>" autocapitalize="none"></span><?= $err('cashapp_handle') ?>
       </label>
     </div>
+  </section>
+
+  <section class="card">
+    <h2>Email sending</h2>
+    <p class="muted">For emails to reach customers’ inboxes (not spam), they’re sent through Pasha’s own Gmail. This needs a Gmail <strong>app password</strong> — see the steps below.</p>
+    <?php $hasApp = setting('gmail_app_password') !== ''; ?>
+    <p class="flash <?= $hasApp ? 'flash-success' : 'flash-warning' ?>"><?= $hasApp ? '✓ Gmail app password saved — emails are sent through Gmail.' : 'Not connected yet — emails are sent by the server and may go to spam.' ?></p>
+    <label>Gmail address
+      <input type="email" name="gmail_address" value="<?= e($form['gmail_address'] ?? setting('gmail_address')) ?>" autocapitalize="none"><?= $err('gmail_address') ?>
+    </label>
+    <label>Gmail app password <small>(leave empty to keep the saved one)</small>
+      <input type="password" name="gmail_app_password" value="" autocomplete="new-password" placeholder="<?= $hasApp ? '•••• •••• •••• ••••  (saved)' : 'abcd efgh ijkl mnop' ?>"><?= $err('gmail_app_password') ?>
+    </label>
+    <?php if ($hasApp): ?><label class="choice"><input type="checkbox" name="gmail_remove" value="1"> Remove the saved app password</label><?php endif; ?>
+    <details>
+      <summary>How to get a Gmail app password (2 minutes)</summary>
+      <ol>
+        <li>Sign in to the Pashabakess Gmail and open <a href="https://myaccount.google.com/security" target="_blank" rel="noopener">myaccount.google.com/security</a>.</li>
+        <li>Turn on <strong>2-Step Verification</strong> if it isn’t on already.</li>
+        <li>Open <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noopener">myaccount.google.com/apppasswords</a>, type the name <em>Pashabakess website</em> and click <strong>Create</strong>.</li>
+        <li>Copy the 16-letter password Google shows, paste it above, click <strong>Save settings</strong>, then use <strong>Send test email</strong>.</li>
+      </ol>
+    </details>
   </section>
 
   <section class="card">
