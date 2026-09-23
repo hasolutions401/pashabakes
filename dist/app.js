@@ -21,6 +21,38 @@ const icon = (id, cls = '') => `<svg class="icon ${cls}" aria-hidden="true"><use
 const total = () => quantities.reduce((a, b) => a + b, 0);
 const money = n => `$${n}`;
 
+/* Seamless announcement strips, with keyboard/touch pause controls. */
+$$('.announcement, .ribbon').forEach(strip => {
+  const label = strip.classList.contains('announcement') ? 'announcements' : 'cookie ribbon';
+  strip.removeAttribute('aria-hidden');
+  const track = document.createElement('div');
+  track.className = 'marquee-track';
+  const group = document.createElement('div');
+  group.className = 'marquee-group';
+  while (strip.firstChild) group.append(strip.firstChild);
+  const separator = document.createElement('span');
+  separator.textContent = '✦';
+  separator.setAttribute('aria-hidden', 'true');
+  group.append(separator);
+  const duplicate = group.cloneNode(true);
+  duplicate.setAttribute('aria-hidden', 'true');
+  track.append(group, duplicate);
+  const pause = document.createElement('button');
+  pause.type = 'button';
+  pause.className = 'marquee-pause';
+  pause.textContent = 'Ⅱ';
+  pause.setAttribute('aria-label', `Pause ${label}`);
+  pause.setAttribute('aria-pressed', 'false');
+  pause.addEventListener('click', () => {
+    const paused = strip.classList.toggle('is-paused');
+    pause.textContent = paused ? '▶' : 'Ⅱ';
+    pause.setAttribute('aria-pressed', String(paused));
+    pause.setAttribute('aria-label', `${paused ? 'Resume' : 'Pause'} ${label}`);
+  });
+  strip.classList.add('marquee');
+  strip.append(track, pause);
+});
+
 /* ——— Render menu, flavor steppers and credits ——— */
 $('#cookie-grid').innerHTML = cookies.map((c, i) => `
   <article class="cookie-card" data-type="${c.type}">
