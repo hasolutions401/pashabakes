@@ -1,18 +1,448 @@
 <!doctype html>
-<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#f9eee3"><title>Pashabakess — A little cookie. A lot of happy.</title><meta name="description" content="Handmade gourmet cookies, baked to order in Tyngsboro, MA. Discover our October flavors and create your own mix-and-match cookie box."><link rel="icon" type="image/jpeg" href="pashabakess-logo.jpg"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600&display=swap" rel="stylesheet"><link rel="stylesheet" href="style.css"><script src="app.js" defer></script></head><body>
-<div class="announcement">HANDMADE IN TYNGSBORO, MA <span>✦</span> FRESHLY BAKED, JUST FOR YOU <span>✦</span> ONE WEEK’S NOTICE, PLEASE</div>
-<header><a class="brand-lockup" href="#home" aria-label="Pashabakess home"><img class="brand-logo" src="pashabakess-logo.jpg" alt="" width="88" height="88" decoding="async"><span class="wordmark">Pashabakess<span>HANDMADE • HOME BAKED • HEARTFELT</span></span></a><button id="nav-toggle" class="mobile-toggle" aria-expanded="false" aria-controls="navigation">Menu ☰</button><nav id="navigation"><a href="#menu">The menu</a><a href="#about">Meet Pasha</a><a href="#events">Celebrations</a><a href="#faq">FAQs</a><a class="button small" href="#order">Build your box <span>↗</span></a></nav></header>
-<main><section class="hero" id="home"><div class="hero-copy"><p class="eyebrow"><span class="line"></span> SMALL BATCHES. BIG FEELINGS.</p><h1>A little cookie.<br>A lot of <em>happy.</em></h1><p>Golden edges. Soft centers. The kind of cookie that turns an ordinary day into a sweet little moment.</p><div class="hero-actions"><a class="button" href="#menu">Find your favorite <span>↗</span></a><a class="text-link" href="#about">Baked with love, by Pasha</a></div><div class="hero-note"><span>Made to order</span><span>Local pickup in Tyngsboro</span></div></div><div class="hero-visual"><img id="hero-photo" alt="Fresh chocolate chip cookies with golden edges" fetchpriority="high"><div class="photo-label">a little comfort,<br><i>fresh from the oven.</i></div><div class="round-label">SMALL BATCH<br><strong>100%</strong><br>BAKED WITH LOVE</div></div></section>
-<div class="ribbon"><span>GOOD COOKIES, HAPPIER DAYS</span>✦<span>BROWN BUTTER MAGIC</span>✦<span>BAKED FRESH TO ORDER</span>✦<span>A BOX FULL OF HAPPY</span></div>
-<section id="menu" class="section menu-section"><div class="section-heading"><div><p class="eyebrow">THE OCTOBER COLLECTION</p><h2>Meet your next<br><em>cookie crush.</em></h2></div><div class="heading-aside"><p>Four signature favorites. Two seasonal flavors that rotate every month.<br>Mix, match, and make it your own.</p><a class="text-link" href="#order">Build a little happiness ↗</a></div></div><div class="filter-bar"><div role="group" aria-label="Filter cookie menu"><button class="filter active" data-filter="all" aria-pressed="true">All cookies <span>06</span></button><button class="filter" data-filter="signature" aria-pressed="false">The signatures</button><button class="filter" data-filter="seasonal" aria-pressed="false">October specials</button></div><span>MADE WITH LOVE. ALWAYS.</span></div><div id="cookie-grid" class="cookie-grid"></div><p class="photo-disclosure">Photography is illustrative; Pasha’s own cookie photos are coming soon. <button class="inline-button" id="credits-open">Photo credits</button></p><div class="pricing-strip"><div><p class="eyebrow">YOUR BOX. YOUR FAVORITES.</p><h3>A sweet little mix & match.</h3><p>Minimum order: 4 cookies · One week’s notice</p></div><div class="price"><strong>4 cookies</strong><span>$14</span></div><div class="price"><strong>Half dozen</strong><span>$20</span></div><div class="price"><strong>Dozen</strong><span>$38</span></div></div></section>
-<div class="menu-qr"><a href="https://www.instagram.com/pashabakess/" target="_blank" rel="noreferrer"><img src="instagram-qr.svg" alt="QR code for Pashabakess Instagram"></a><div><strong>A little more from the kitchen.</strong><p>Scan to visit @pashabakess on Instagram.</p><p>Venmo: @Palosha-Rashid · Cash App: $Pashabakess</p></div></div><section class="about-section" id="about"><div class="about-photo"><img id="about-photo" loading="lazy" decoding="async" alt="A stack of homemade cookies ready to share"><span class="handwritten">From my kitchen,<br>with love.</span></div><div class="about-copy"><p class="eyebrow">THE HEART BEHIND THE OVEN</p><h2>Hi, I’m Pasha.<br><em>Your neighborhood baker.</em></h2><p>Baking has always been my favorite way to be creative. But after becoming a stay-at-home mom, it became something even more meaningful.</p><p>Pashabakess grew from that love: handmade gourmet cookies that feel warm, nostalgic, and a little special. Every batch is made with ingredients I love, attention to detail, and plenty of extra care.</p><p>Whether you’re treating yourself after a long day, sharing a box with friends, or celebrating a big moment, I hope my cookies bring a little comfort and happiness to your table.</p><div class="signature">With love, Pasha</div><a class="text-link" href="https://www.instagram.com/pashabakess/" target="_blank" rel="noreferrer">Follow the baking adventures ↗</a></div></section>
-<section class="section order-section" id="order"><div class="section-heading"><div><p class="eyebrow">A BOX WITH YOUR NAME ON IT</p><h2>Let’s bake you<br><em>something happy.</em></h2></div><p class="heading-aside">Order requests are welcome anytime.<br>Choose your flavors and pickup time; allow one week’s notice.</p></div><div class="order-layout"><form id="order-form"><fieldset><legend><span>01</span> Make it your mix</legend><label for="box-size">Choose your box</label><select id="box-size" name="box"><option value="4">4 cookies — $14</option><option value="6">Half dozen (6 cookies) — $20</option><option value="12">Dozen (12 cookies) — $38</option></select><p class="field-help">Need more than 12? Large orders are arranged by email in whole dozens. <button type="button" id="large-order-open" class="inline-button">Request a larger order ↗</button></p><div class="selection-status"><span>Choose any combination of flavors</span><strong id="selection-count" aria-live="polite">0 / 4 selected</strong></div><div class="selection-progress" role="progressbar" aria-label="Cookies selected" aria-valuemin="0" aria-valuemax="4" aria-valuenow="0"><span id="selection-progress-fill"></span></div><div id="flavor-choices"></div><button type="button" id="clear-box" class="inline-button">Clear flavor selections</button><p id="flavor-error" class="error" role="alert"></p></fieldset><fieldset><legend><span>02</span> A few details about you</legend><div class="form-grid"><label>Full name<input required name="name" autocomplete="name" placeholder="Your first and last name" maxlength="100"></label><label>Email address<input required type="email" name="email" autocomplete="email" placeholder="you@example.com"></label><label>Phone number<input required type="tel" name="phone" autocomplete="tel" placeholder="For pickup coordination" maxlength="30"></label><label>What’s the occasion?<select name="occasion"><option>Just because</option><option>Birthday</option><option>Family gathering</option><option>Thank-you gift</option><option>Office treat</option><option>Other</option></select></label></div></fieldset><fieldset><legend><span>03</span> Plan your pickup</legend><p class="field-help">Pickup only in Tyngsboro, MA, normally 10am–7pm (Eastern time). Request your preferred time below; Pasha will confirm it. Please allow one week. The address will be sent on the day of pickup.</p><div class="form-grid"><label>Preferred pickup date<input id="pickup-date" required type="date" name="date"></label><label>Preferred pickup time (Eastern)<select id="pickup-time" name="time" required><option value="">Choose a time, 10am–7pm</option></select></label><label>Payment preference<select name="payment"><option>Venmo — @Palosha-Rashid</option><option>Cash App — $Pashabakess</option></select></label></div><label>Anything else we should know?<textarea name="notes" rows="3" placeholder="Gift notes, pickup preferences, or a question for Pasha…" maxlength="1500"></textarea></label><div class="allergy-note"><strong>Please read before ordering</strong><p>Pashabakess is not allergen-free, nut-free, gluten-free, or dairy-free. Everything is prepared in the same kitchen using shared equipment, trays, utensils, and packaging areas. Because cross-contact can happen, I do not recommend ordering or sharing the cookies with anyone with food allergies.</p></div><div class="policy-note"><strong>Returns & cancellations</strong><p>Due to the nature of these treats, they cannot be returned or exchanged. If you need to cancel an order, give 2 days notice by emailing me.</p><a href="mailto:pashabakess@gmail.com">pashabakess@gmail.com</a></div><label class="check-label"><input required type="checkbox" name="allergy">I have read the allergy and cancellation information and understand that my pickup time needs confirmation.</label><button class="button submit" type="submit">Review my order request <span>↗</span></button><p class="field-help">You’ll review your selection before opening an email to Pasha. No payment is collected here, and your order is not confirmed yet.</p></fieldset></form><aside class="order-summary"><p class="eyebrow">GOOD THINGS COME IN BOXES</p><h3>Your happy box</h3><div id="summary-items"><p>Your favorites go here.<br>Pick a flavor to get started.</p></div><div class="summary-total"><span>Box price</span><strong id="summary-total">$14</strong></div><p id="summary-size">4 cookies · Mix & match</p><hr><p>✦ Baked fresh for your order</p><p>✦ Pickup only · 10am–7pm ET</p><p>✦ Please allow one week</p><div class="summary-bottom">A little treat.<br><em>A whole lot of love.</em></div></aside></div></section>
-<section class="events" id="events"><p class="eyebrow">FOR THE MOMENTS WORTH SHARING</p><h2>Big occasion?<br><em>Bring the good cookies.</em></h2><p>Birthdays, family gatherings, thoughtful gifts, and office celebrations.<br>Orders above 12 cookies are available in whole dozens.<br>Email Pasha to arrange quantities, flavors, and pricing.</p><button class="button" id="event-open">Plan a celebration <span>↗</span></button><span class="events-caption">SMALL BATCHES. MEMORABLE MOMENTS.</span></section>
-<section class="section faq-section" id="faq"><div><p class="eyebrow">A FEW SWEET DETAILS</p><h2>Good to know<br><em>before you order.</em></h2><p>Still have a question?<br><a class="text-link" href="mailto:pashabakess@gmail.com">Let’s chat ↗</a></p></div><div class="faq-list"><details open><summary>How far ahead should I order?</summary><p>Please give Pasha one week’s notice. Every cookie is made to order, so a little planning helps make your box extra special.</p></details><details><summary>Where do I pick up my cookies?</summary><p>Pickup only in Tyngsboro, MA, normally between 10am and 7pm (Eastern time), based on your requested time and Pasha’s confirmation. The exact address will be sent on the day of pickup. Delivery and shipping are not offered.</p></details><details><summary>Can I mix and match the flavors?</summary><p>Yes! Choose any mix from the current menu. Boxes are available as 4 cookies for $14, 6 for $20, or 12 for $38. The minimum order is 4 cookies. For orders above 12, email Pasha to arrange whole dozens and confirm pricing.</p></details><details><summary>How should I store my cookies?</summary><p>They are best enjoyed within the first few days. However, if you don’t eat them immediately, please transfer them to a Ziploc bag or an airtight container as soon as possible to maintain their freshness.</p></details><details><summary>Are the cookies suitable for food allergies?</summary><p>Pashabakess is not allergen-free, nut-free, gluten-free, or dairy-free. Everything is prepared in the same kitchen using shared equipment, trays, utensils, and packaging areas. Because cross-contact can happen, I do not recommend ordering or sharing the cookies with anyone with food allergies.</p></details><details><summary>How do ordering and payments work?</summary><p>Order requests are welcome anytime with one week’s notice. Send your order request and Pasha will confirm availability and payment instructions. Venmo (@Palosha-Rashid) and Cash App ($Pashabakess) are the listed payment options. Please wait for confirmation before sending payment.</p></details><details><summary>What is the cancellation and return policy?</summary><p>Due to the nature of these treats, they cannot be returned or exchanged. If you need to cancel an order, give 2 days notice by emailing me. <a href="mailto:pashabakess@gmail.com">pashabakess@gmail.com</a></p></details></div></section>
-<section class="contact-strip" id="contact"><div><p class="eyebrow">SAY HELLO</p><h2>There’s always room<br>for something sweet.</h2></div><div><a href="mailto:pashabakess@gmail.com">pashabakess@gmail.com ↗</a><a href="https://www.instagram.com/pashabakess/" target="_blank" rel="noreferrer">@pashabakess ↗</a><button class="text-link" id="contact-open">Send an enquiry ↗</button><p>Tyngsboro, Massachusetts · Pickup only · 10am–7pm ET</p></div></section></main>
-<footer><a class="brand-lockup" href="#home" aria-label="Pashabakess home"><img class="brand-logo" src="pashabakess-logo.jpg" alt="" width="68" height="68" loading="lazy" decoding="async"><span class="wordmark">Pashabakess</span></a><span>GOOD COOKIES. HAPPIER DAYS.</span><p>© 2026 Pashabakess. Baked with love.</p></footer>
-<div id="box-feedback" role="status" aria-live="polite" hidden><span></span><a href="#order">View my box ↗</a><button type="button" aria-label="Dismiss box update">×</button></div><dialog id="review-dialog"><button class="dialog-close" aria-label="Close dialog">×</button><p class="eyebrow">ONE LAST LOOK</p><h2 id="review-title">Your cookie request</h2><div id="review-content"></div><p class="field-help">The button below opens your email app with your request ready to send. Nothing is sent automatically. Send the email to deliver your request; cookie orders require Pasha’s confirmation.</p><a id="send-email" class="button">Open email to send ↗</a><button class="text-link" id="copy-request">Copy request instead</button><p id="copy-status" role="status"></p></dialog>
-<dialog id="enquiry-dialog"><button class="dialog-close" aria-label="Close dialog">×</button><p class="eyebrow">LET’S MAKE IT SWEET</p><h2 id="enquiry-title">Plan a celebration</h2><form id="enquiry-form"><div class="form-grid"><label>Your name<input name="name" required autocomplete="name"></label><label>Email<input name="email" type="email" required autocomplete="email"></label><label>Enquiry type<select name="type" id="enquiry-type"><option>Birthday / celebration</option><option>Corporate / office</option><option>Wedding / favors</option><option>Large order</option><option>General question</option></select></label><label>Event date (if known)<input name="date" type="date"></label><label>Quantity (whole dozens)<select name="quantity"><option>Not sure yet</option><option>24 cookies (2 dozen)</option><option>36 cookies (3 dozen)</option><option>48 cookies (4 dozen)</option><option>60 cookies (5 dozen)</option><option>72 cookies (6 dozen)</option><option>84 cookies (7 dozen)</option><option>96 cookies (8 dozen)</option><option>108 cookies (9 dozen)</option><option>120 cookies (10 dozen)</option><option>More than 120 — specify whole dozens below</option></select></label></div><label>Tell us what you have in mind<textarea required name="message" rows="4" maxlength="1800"></textarea></label><button class="button" type="submit">Prepare enquiry email ↗</button><p class="field-help">Review and send your enquiry to pashabakess@gmail.com. Large orders are arranged in whole dozens; Pasha will confirm pricing and availability.</p></form><p id="enquiry-status" role="status"></p></dialog>
-<dialog id="credits-dialog"><button class="dialog-close" aria-label="Close dialog">×</button><h2>Photography credits</h2><p>These real photographs are flavor references for this private design preview, not photographs of Pashabakess products. Replace recipe photography with Pasha’s own photos or secure permission before public launch.</p><div id="photo-credits"></div></dialog>
-</body></html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#fcf7ee">
+  <title>Pashabakess — A little cookie. A lot of happy.</title>
+  <meta name="description" content="Handmade gourmet cookies, baked to order in Tyngsboro, MA. Discover our October flavors and create your own mix-and-match cookie box.">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Pashabakess — Handmade gourmet cookies in Tyngsboro, MA">
+  <meta property="og:description" content="Baked to order. Build a mix-and-match box of 4, 6 or 12 cookies for pickup in Tyngsboro, MA.">
+  <link rel="icon" type="image/png" sizes="64x64" href="favicon-64.png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://images.unsplash.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css?v=5">
+  <script src="app.js?v=4" defer></script>
+</head>
+<body>
+<!-- Icon sprite: one consistent stroke-icon set used across the site -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-external" viewBox="0 0 24 24"><path d="M7 17 17 7M9 7h8v8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+  <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-sparkle" viewBox="0 0 24 24"><path d="M12 3c.6 4.6 2.4 6.4 7 7-4.6.6-6.4 2.4-7 7-.6-4.6-2.4-6.4-7-7 4.6-.6 6.4-2.4 7-7Z" fill="currentColor"/></symbol>
+</svg>
 
+<a class="skip-link" href="#main">Skip to content</a>
+
+<div class="announcement">
+  <span>HANDMADE IN TYNGSBORO, MA</span>
+  <svg class="icon sparkle" aria-hidden="true"><use href="#i-sparkle"/></svg>
+  <span class="announce-extra">FRESHLY BAKED, JUST FOR YOU</span>
+  <svg class="icon sparkle announce-extra" aria-hidden="true"><use href="#i-sparkle"/></svg>
+  <span class="announce-extra">ONE WEEK’S NOTICE, PLEASE</span>
+</div>
+
+<header class="site-header" id="site-header">
+  <div class="header-inner">
+    <a class="brand-lockup" href="#home" aria-label="Pashabakess home">
+      <picture>
+        <source srcset="logo-192.webp" type="image/webp">
+        <img class="brand-logo" src="logo-192.jpg" alt="" width="72" height="72" decoding="async">
+      </picture>
+      <span class="wordmark">Pashabakess<span>HANDMADE • HOME BAKED • HEARTFELT</span></span>
+    </a>
+    <nav id="navigation" class="site-nav" aria-label="Main">
+      <a href="#menu">The menu</a>
+      <a href="#about">Meet Pasha</a>
+      <a href="#events">Celebrations</a>
+      <a href="#faq">FAQs</a>
+      <a href="#contact">Contact</a>
+    </nav>
+    <a class="button small header-cta" href="#order"><span class="cta-full">Build your box</span><span class="cta-short">Order</span> <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+    <button id="nav-toggle" class="nav-toggle" type="button" aria-expanded="false" aria-controls="navigation">
+      <svg class="icon icon-open" aria-hidden="true"><use href="#i-menu"/></svg>
+      <svg class="icon icon-close" aria-hidden="true"><use href="#i-close"/></svg>
+      <span class="sr-only" id="nav-toggle-label">Open menu</span>
+    </button>
+  </div>
+</header>
+
+<main id="main" tabindex="-1">
+  <section class="hero" id="home">
+    <div class="hero-copy">
+      <p class="eyebrow"><span class="line" aria-hidden="true"></span>SMALL BATCHES. BIG FEELINGS.</p>
+      <h1>A little cookie.<br>A lot of <em>happy.</em></h1>
+      <p class="hero-lede">Golden edges. Soft centers. The kind of cookie that turns an ordinary day into a sweet little moment.</p>
+      <div class="hero-actions">
+        <a class="button" href="#order">Build your box <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+        <a class="button ghost" href="#menu">See the October menu</a>
+      </div>
+      <ul class="hero-note">
+        <li><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>Made to order</li>
+        <li><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>Local pickup in Tyngsboro</li>
+        <li><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>From 4 cookies · $14</li>
+      </ul>
+    </div>
+    <div class="hero-visual">
+      <img id="hero-photo"
+        src="https://images.unsplash.com/photo-1673551490160-3f2e712b9373?auto=format&fit=crop&w=1200&q=80"
+        srcset="https://images.unsplash.com/photo-1673551490160-3f2e712b9373?auto=format&fit=crop&w=640&q=80 640w,
+                https://images.unsplash.com/photo-1673551490160-3f2e712b9373?auto=format&fit=crop&w=960&q=80 960w,
+                https://images.unsplash.com/photo-1673551490160-3f2e712b9373?auto=format&fit=crop&w=1400&q=80 1400w"
+        sizes="(max-width: 760px) 92vw, 46vw"
+        width="1200" height="1400"
+        alt="Fresh chocolate chip cookies with golden edges" fetchpriority="high" decoding="async">
+      <div class="photo-label" aria-hidden="true">a little comfort,<br><i>fresh from the oven.</i></div>
+      <div class="round-label" aria-hidden="true">SMALL BATCH<br><strong>100%</strong><br>BAKED WITH LOVE</div>
+    </div>
+  </section>
+
+  <div class="ribbon" aria-hidden="true">
+    <span>GOOD COOKIES, HAPPIER DAYS</span><svg class="icon sparkle"><use href="#i-sparkle"/></svg>
+    <span>BROWN BUTTER MAGIC</span><svg class="icon sparkle"><use href="#i-sparkle"/></svg>
+    <span>BAKED FRESH TO ORDER</span><svg class="icon sparkle"><use href="#i-sparkle"/></svg>
+    <span>A BOX FULL OF HAPPY</span>
+  </div>
+
+  <section id="menu" class="section menu-section" aria-labelledby="menu-title">
+    <div class="section-heading">
+      <div>
+        <p class="eyebrow">THE OCTOBER COLLECTION</p>
+        <h2 id="menu-title">Meet your next<br><em>cookie crush.</em></h2>
+      </div>
+      <div class="heading-aside">
+        <p>Four signature favorites. Two seasonal flavors that rotate every month.<br>Mix, match, and make it your own.</p>
+        <a class="text-link" href="#order">Build a little happiness <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+      </div>
+    </div>
+    <div class="filter-bar">
+      <div role="group" aria-label="Filter cookie menu" class="filters">
+        <button type="button" class="filter active" data-filter="all" aria-pressed="true">All cookies <span class="filter-count">6</span></button>
+        <button type="button" class="filter" data-filter="signature" aria-pressed="false">The signatures <span class="filter-count">4</span></button>
+        <button type="button" class="filter" data-filter="seasonal" aria-pressed="false">October specials <span class="filter-count">2</span></button>
+      </div>
+      <span class="filter-caption">MADE WITH LOVE. ALWAYS.</span>
+    </div>
+    <p class="sr-only" id="filter-status" role="status"></p>
+    <div id="cookie-grid" class="cookie-grid"></div>
+    <p class="photo-disclosure">Photography is illustrative; Pasha’s own cookie photos are coming soon. <button type="button" class="inline-button" id="credits-open">Photo credits</button></p>
+
+    <div class="pricing-strip">
+      <div class="pricing-intro">
+        <p class="eyebrow">YOUR BOX. YOUR FAVORITES.</p>
+        <h3>A sweet little mix &amp; match.</h3>
+        <p>Minimum order: 4 cookies · One week’s notice</p>
+      </div>
+      <div class="price"><strong>4 cookies</strong><span>$14</span></div>
+      <div class="price"><strong>Half dozen</strong><span>$20</span></div>
+      <div class="price"><strong>Dozen</strong><span>$38</span></div>
+    </div>
+  </section>
+
+  <aside class="menu-qr" aria-label="Instagram and payment handles">
+    <a class="qr-link" href="https://www.instagram.com/pashabakess/" target="_blank" rel="noreferrer">
+      <img src="instagram-qr.svg" alt="QR code for Pashabakess Instagram" width="96" height="96">
+      <span class="sr-only">(opens in a new tab)</span>
+    </a>
+    <div>
+      <strong>A little more from the kitchen.</strong>
+      <p class="qr-desktop">Scan to visit @pashabakess on Instagram.</p>
+      <p class="qr-mobile"><a class="text-link" href="https://www.instagram.com/pashabakess/" target="_blank" rel="noreferrer">Visit @pashabakess on Instagram <svg class="icon" aria-hidden="true"><use href="#i-external"/></svg><span class="sr-only">(opens in a new tab)</span></a></p>
+      <p>Venmo: @Palosha-Rashid · Cash App: $Pashabakess</p>
+    </div>
+  </aside>
+
+  <section class="about-section" id="about" aria-labelledby="about-title">
+    <div class="about-photo">
+      <img id="about-photo" src="https://scientificallysweet.com/wp-content/uploads/2022/09/IMG_3198-salted-toffee-chocolate-chip-cookies-feature2.jpg" width="1200" height="1500" loading="lazy" decoding="async" alt="A stack of homemade cookies ready to share">
+      <span class="handwritten" aria-hidden="true">From my kitchen,<br>with love.</span>
+    </div>
+    <div class="about-copy">
+      <p class="eyebrow">THE HEART BEHIND THE OVEN</p>
+      <h2 id="about-title">Hi, I’m Pasha.<br><em>Your neighborhood baker.</em></h2>
+      <p>Baking has always been my favorite way to be creative. But after becoming a stay-at-home mom, it became something even more meaningful.</p>
+      <p>Pashabakess grew from that love: handmade gourmet cookies that feel warm, nostalgic, and a little special. Every batch is made with ingredients I love, attention to detail, and plenty of extra care.</p>
+      <p>Whether you’re treating yourself after a long day, sharing a box with friends, or celebrating a big moment, I hope my cookies bring a little comfort and happiness to your table.</p>
+      <div class="sign-off">With love, Pasha</div>
+      <a class="text-link" href="https://www.instagram.com/pashabakess/" target="_blank" rel="noreferrer">Follow the baking adventures <svg class="icon" aria-hidden="true"><use href="#i-external"/></svg><span class="sr-only">(opens in a new tab)</span></a>
+    </div>
+  </section>
+
+  <section class="section order-section" id="order" aria-labelledby="order-title">
+    <div class="section-heading">
+      <div>
+        <p class="eyebrow">A BOX WITH YOUR NAME ON IT</p>
+        <h2 id="order-title">Let’s bake you<br><em>something happy.</em></h2>
+      </div>
+      <p class="heading-aside">Order requests are welcome anytime.<br>Choose your flavors and pickup time; allow one week’s notice.</p>
+    </div>
+
+    <ol class="order-steps" aria-label="How ordering works">
+      <li><span>1</span>Build your box</li>
+      <li><span>2</span>Review &amp; send the email</li>
+      <li><span>3</span>Pasha confirms &amp; you pay</li>
+    </ol>
+
+    <div class="order-layout">
+      <form id="order-form" novalidate>
+        <div class="error-summary" id="order-errors" tabindex="-1" role="alert" hidden>
+          <p class="error-summary-title">Please check a few details</p>
+          <ul></ul>
+        </div>
+
+        <!-- Compact, sticky box status for small screens -->
+        <div class="box-bar" aria-hidden="true">
+          <div class="box-bar-text"><strong id="bar-count">0 / 4</strong> cookies <span id="bar-price">$14</span></div>
+          <div class="box-bar-track"><span id="bar-fill"></span></div>
+        </div>
+
+        <fieldset>
+          <legend><span class="step-num" aria-hidden="true">01</span> Make it your mix</legend>
+
+          <fieldset class="box-sizes">
+            <legend class="field-label">Choose your box</legend>
+            <div class="size-options">
+              <label class="size-option"><input type="radio" name="box" value="4" checked><span class="size-name">4 cookies</span><span class="size-price">$14</span></label>
+              <label class="size-option"><input type="radio" name="box" value="6"><span class="size-name">Half dozen</span><span class="size-price">$20</span></label>
+              <label class="size-option"><input type="radio" name="box" value="12"><span class="size-name">Dozen</span><span class="size-price">$38</span></label>
+            </div>
+          </fieldset>
+          <p class="field-help">Need more than 12? Large orders are arranged by email in whole dozens. <button type="button" id="large-order-open" class="inline-button">Request a larger order</button></p>
+
+          <div class="selection-status">
+            <span>Choose any combination of flavors</span>
+            <strong id="selection-count" aria-live="polite" aria-atomic="true">0 of 4 cookies chosen</strong>
+          </div>
+          <div class="selection-progress" role="progressbar" aria-label="Cookies selected" aria-valuemin="0" aria-valuemax="4" aria-valuenow="0"><span id="selection-progress-fill"></span></div>
+          <div id="flavor-choices" class="flavor-list"></div>
+          <div class="flavor-actions">
+            <button type="button" id="clear-box" class="inline-button">Clear flavor selections</button>
+          </div>
+          <p id="flavor-error" class="error" role="alert"></p>
+        </fieldset>
+
+        <fieldset>
+          <legend><span class="step-num" aria-hidden="true">02</span> A few details about you</legend>
+          <p class="field-help form-note">All fields are required unless marked optional.</p>
+          <div class="form-grid">
+            <div class="field">
+              <label for="o-name">Full name</label>
+              <input id="o-name" required name="name" autocomplete="name" placeholder="Your first and last name" maxlength="100" aria-describedby="o-name-error" data-error="Please enter your name.">
+              <p class="field-error" id="o-name-error" hidden></p>
+            </div>
+            <div class="field">
+              <label for="o-email">Email address</label>
+              <input id="o-email" required type="email" name="email" autocomplete="email" inputmode="email" placeholder="you@example.com" aria-describedby="o-email-error" data-error="Please enter your email address.">
+              <p class="field-error" id="o-email-error" hidden></p>
+            </div>
+            <div class="field">
+              <label for="o-phone">Phone number</label>
+              <input id="o-phone" required type="tel" name="phone" autocomplete="tel" inputmode="tel" placeholder="For pickup coordination" maxlength="30" aria-describedby="o-phone-error" data-error="Please enter a phone number for pickup coordination.">
+              <p class="field-error" id="o-phone-error" hidden></p>
+            </div>
+            <div class="field">
+              <label for="o-occasion">What’s the occasion? <span class="optional">(optional)</span></label>
+              <select id="o-occasion" name="occasion"><option>Just because</option><option>Birthday</option><option>Family gathering</option><option>Thank-you gift</option><option>Office treat</option><option>Other</option></select>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend><span class="step-num" aria-hidden="true">03</span> Plan your pickup</legend>
+          <p class="field-help">Pickup only in Tyngsboro, MA, normally 10am–7pm (Eastern time). Request your preferred time below; Pasha will confirm it. Please allow one week. The address will be sent on the day of pickup.</p>
+          <div class="form-grid">
+            <div class="field">
+              <label for="pickup-date">Preferred pickup date</label>
+              <input id="pickup-date" required type="date" name="date" aria-describedby="pickup-date-hint pickup-date-error" data-error="Please choose a pickup date.">
+              <p class="field-hint" id="pickup-date-hint">Earliest date: one week from today.</p>
+              <p class="field-error" id="pickup-date-error" hidden></p>
+            </div>
+            <div class="field">
+              <label for="pickup-time">Preferred pickup time (Eastern)</label>
+              <select id="pickup-time" name="time" required aria-describedby="pickup-time-error" data-error="Please choose a pickup time between 10am and 7pm."><option value="">Choose a time, 10am–7pm</option></select>
+              <p class="field-error" id="pickup-time-error" hidden></p>
+            </div>
+            <div class="field">
+              <label for="o-payment">Payment preference</label>
+              <select id="o-payment" name="payment"><option>Venmo — @Palosha-Rashid</option><option>Cash App — $Pashabakess</option></select>
+            </div>
+          </div>
+          <div class="field">
+            <label for="o-notes">Anything else we should know? <span class="optional">(optional)</span></label>
+            <textarea id="o-notes" name="notes" rows="3" placeholder="Gift notes, pickup preferences, or a question for Pasha…" maxlength="1500"></textarea>
+          </div>
+
+          <div class="allergy-note" id="allergy-info">
+            <strong>Please read before ordering</strong>
+            <p>Pashabakess is not allergen-free, nut-free, gluten-free, or dairy-free. Everything is prepared in the same kitchen using shared equipment, trays, utensils, and packaging areas. Because cross-contact can happen, I do not recommend ordering or sharing the cookies with anyone with food allergies.</p>
+          </div>
+          <div class="policy-note">
+            <strong>Returns &amp; cancellations</strong>
+            <p>Due to the nature of these treats, they cannot be returned or exchanged. If you need to cancel an order, give 2 days notice by emailing me.</p>
+            <a href="mailto:pashabakess@gmail.com">pashabakess@gmail.com</a>
+          </div>
+
+          <div class="field">
+            <label class="check-label" for="o-allergy">
+              <input id="o-allergy" required type="checkbox" name="allergy" aria-describedby="o-allergy-error" data-error="Please confirm you have read the allergy and cancellation information.">
+              <span>I have read the allergy and cancellation information and understand that my pickup time needs confirmation.</span>
+            </label>
+            <p class="field-error" id="o-allergy-error" hidden></p>
+          </div>
+
+          <button class="button submit" type="submit">Review my order request <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></button>
+          <p class="field-help">You’ll review your selection before opening an email to Pasha. No payment is collected here, and your order is not confirmed yet.</p>
+        </fieldset>
+      </form>
+
+      <aside class="order-summary" aria-labelledby="summary-title">
+        <p class="eyebrow">GOOD THINGS COME IN BOXES</p>
+        <h3 id="summary-title">Your happy box</h3>
+        <div id="summary-items"><p>Your favorites go here.<br>Pick a flavor to get started.</p></div>
+        <div class="summary-total"><span>Box price</span><strong id="summary-total">$14</strong></div>
+        <p id="summary-size">4 cookies · Mix &amp; match</p>
+        <hr>
+        <ul class="summary-points">
+          <li><svg class="icon sparkle" aria-hidden="true"><use href="#i-sparkle"/></svg>Baked fresh for your order</li>
+          <li><svg class="icon sparkle" aria-hidden="true"><use href="#i-sparkle"/></svg>Pickup only · 10am–7pm ET</li>
+          <li><svg class="icon sparkle" aria-hidden="true"><use href="#i-sparkle"/></svg>Please allow one week</li>
+        </ul>
+        <div class="summary-bottom">A little treat.<br><em>A whole lot of love.</em></div>
+      </aside>
+    </div>
+  </section>
+
+  <section class="events" id="events" aria-labelledby="events-title">
+    <p class="eyebrow">FOR THE MOMENTS WORTH SHARING</p>
+    <h2 id="events-title">Big occasion?<br><em>Bring the good cookies.</em></h2>
+    <p>Birthdays, family gatherings, thoughtful gifts, and office celebrations.<br>Orders above 12 cookies are available in whole dozens.<br>Email Pasha to arrange quantities, flavors, and pricing.</p>
+    <button type="button" class="button" id="event-open">Plan a celebration <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></button>
+    <span class="events-caption" aria-hidden="true">SMALL BATCHES. MEMORABLE MOMENTS.</span>
+  </section>
+
+  <section class="section faq-section" id="faq" aria-labelledby="faq-title">
+    <div class="faq-intro">
+      <p class="eyebrow">A FEW SWEET DETAILS</p>
+      <h2 id="faq-title">Good to know<br><em>before you order.</em></h2>
+      <p>Still have a question?<br><a class="text-link" href="mailto:pashabakess@gmail.com">Let’s chat <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a></p>
+    </div>
+    <div class="faq-list">
+      <details open><summary>How far ahead should I order?<svg class="icon faq-icon" aria-hidden="true"><use href="#i-plus"/></svg></summary><p>Please give Pasha one week’s notice. Every cookie is made to order, so a little planning helps make your box extra special.</p></details>
+      <details><summary>Where do I pick up my cookies?<svg class="icon faq-icon" aria-hidden="true"><use href="#i-plus"/></svg></summary><p>Pickup only in Tyngsboro, MA, normally between 10am and 7pm (Eastern time), based on your requested time and Pasha’s confirmation. The exact address will be sent on the day of pickup. Delivery and shipping are not offered.</p></details>
+      <details><summary>Can I mix and match the flavors?<svg class="icon faq-icon" aria-hidden="true"><use href="#i-plus"/></svg></summary><p>Yes! Choose any mix from the current menu. Boxes are available as 4 cookies for $14, 6 for $20, or 12 for $38. The minimum order is 4 cookies. For orders above 12, email Pasha to arrange whole dozens and confirm pricing.</p></details>
+      <details><summary>How should I store my cookies?<svg class="icon faq-icon" aria-hidden="true"><use href="#i-plus"/></svg></summary><p>They are best enjoyed within the first few days. However, if you don’t eat them immediately, please transfer them to a Ziploc bag or an airtight container as soon as possible to maintain their freshness.</p></details>
+      <details id="faq-allergies"><summary>Are the cookies suitable for food allergies?<svg class="icon faq-icon" aria-hidden="true"><use href="#i-plus"/></svg></summary><p>Pashabakess is not allergen-free, nut-free, gluten-free, or dairy-free. Everything is prepared in the same kitchen using shared equipment, trays, utensils, and packaging areas. Because cross-contact can happen, I do not recommend ordering or sharing the cookies with anyone with food allergies.</p></details>
+      <details><summary>How do ordering and payments work?<svg class="icon faq-icon" aria-hidden="true"><use href="#i-plus"/></svg></summary><p>Order requests are welcome anytime with one week’s notice. Send your order request and Pasha will confirm availability and payment instructions. Venmo (@Palosha-Rashid) and Cash App ($Pashabakess) are the listed payment options. Please wait for confirmation before sending payment.</p></details>
+      <details><summary>What is the cancellation and return policy?<svg class="icon faq-icon" aria-hidden="true"><use href="#i-plus"/></svg></summary><p>Due to the nature of these treats, they cannot be returned or exchanged. If you need to cancel an order, give 2 days notice by emailing me. <a href="mailto:pashabakess@gmail.com">pashabakess@gmail.com</a></p></details>
+    </div>
+  </section>
+
+  <section class="contact-strip" id="contact" aria-labelledby="contact-title">
+    <div>
+      <p class="eyebrow">SAY HELLO</p>
+      <h2 id="contact-title">There’s always room<br>for something sweet.</h2>
+    </div>
+    <div class="contact-links">
+      <a href="mailto:pashabakess@gmail.com">pashabakess@gmail.com <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+      <a href="https://www.instagram.com/pashabakess/" target="_blank" rel="noreferrer">@pashabakess <svg class="icon" aria-hidden="true"><use href="#i-external"/></svg><span class="sr-only">on Instagram (opens in a new tab)</span></a>
+      <button type="button" id="contact-open">Send an enquiry <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></button>
+      <p>Tyngsboro, Massachusetts · Pickup only · 10am–7pm ET</p>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <a class="brand-lockup" href="#home" aria-label="Pashabakess home">
+      <picture>
+        <source srcset="logo-192.webp" type="image/webp">
+        <img class="brand-logo" src="logo-192.jpg" alt="" width="60" height="60" loading="lazy" decoding="async">
+      </picture>
+      <span class="wordmark">Pashabakess</span>
+    </a>
+    <nav class="footer-nav" aria-label="Footer">
+      <a href="#menu">Menu</a>
+      <a href="#order">Order</a>
+      <a href="#about">About</a>
+      <a href="#events">Celebrations</a>
+      <a href="#faq">FAQs</a>
+      <a href="#faq-allergies" data-open-details>Allergy info</a>
+    </nav>
+  </div>
+  <div class="footer-bottom">
+    <p>© 2026 Pashabakess. Baked with love.</p>
+    <span aria-hidden="true">GOOD COOKIES. HAPPIER DAYS.</span>
+  </div>
+</footer>
+
+<div id="box-feedback" class="toast" role="status" aria-live="polite" hidden>
+  <svg class="icon toast-icon" aria-hidden="true"><use href="#i-check"/></svg>
+  <span class="toast-text"></span>
+  <a href="#order">View my box</a>
+  <button type="button" class="toast-close" aria-label="Dismiss box update"><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button>
+</div>
+
+<dialog id="review-dialog" aria-labelledby="review-title">
+  <button type="button" class="dialog-close" aria-label="Close dialog"><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button>
+  <p class="eyebrow">ONE LAST LOOK</p>
+  <h2 id="review-title">Your cookie request</h2>
+  <div id="review-content"></div>
+  <p class="field-help">The button below opens your email app with your request ready to send. Nothing is sent automatically. Send the email to deliver your request; cookie orders require Pasha’s confirmation.</p>
+  <div class="dialog-actions">
+    <a id="send-email" class="button">Open email to send <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+    <button type="button" class="button ghost" id="copy-request">Copy request instead</button>
+  </div>
+  <p id="copy-status" role="status"></p>
+</dialog>
+
+<dialog id="enquiry-dialog" aria-labelledby="enquiry-title">
+  <button type="button" class="dialog-close" aria-label="Close dialog"><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button>
+  <p class="eyebrow">LET’S MAKE IT SWEET</p>
+  <h2 id="enquiry-title">Plan a celebration</h2>
+  <form id="enquiry-form" novalidate>
+    <div class="error-summary" id="enquiry-errors" tabindex="-1" role="alert" hidden>
+      <p class="error-summary-title">Please check a few details</p>
+      <ul></ul>
+    </div>
+    <div class="form-grid">
+      <div class="field">
+        <label for="e-name">Your name</label>
+        <input id="e-name" name="name" required autocomplete="name" aria-describedby="e-name-error" data-error="Please enter your name.">
+        <p class="field-error" id="e-name-error" hidden></p>
+      </div>
+      <div class="field">
+        <label for="e-email">Email</label>
+        <input id="e-email" name="email" type="email" required autocomplete="email" inputmode="email" aria-describedby="e-email-error" data-error="Please enter your email address.">
+        <p class="field-error" id="e-email-error" hidden></p>
+      </div>
+      <div class="field">
+        <label for="enquiry-type">Enquiry type</label>
+        <select name="type" id="enquiry-type"><option>Birthday / celebration</option><option>Corporate / office</option><option>Wedding / favors</option><option>Large order</option><option>General question</option></select>
+      </div>
+      <div class="field">
+        <label for="e-date">Event date <span class="optional">(if known)</span></label>
+        <input id="e-date" name="date" type="date">
+      </div>
+      <div class="field field-wide">
+        <label for="e-quantity">Quantity (whole dozens)</label>
+        <select id="e-quantity" name="quantity"><option>Not sure yet</option><option>24 cookies (2 dozen)</option><option>36 cookies (3 dozen)</option><option>48 cookies (4 dozen)</option><option>60 cookies (5 dozen)</option><option>72 cookies (6 dozen)</option><option>84 cookies (7 dozen)</option><option>96 cookies (8 dozen)</option><option>108 cookies (9 dozen)</option><option>120 cookies (10 dozen)</option><option>More than 120 — specify whole dozens below</option></select>
+      </div>
+    </div>
+    <div class="field">
+      <label for="e-message">Tell us what you have in mind</label>
+      <textarea id="e-message" required name="message" rows="4" maxlength="1800" aria-describedby="e-message-error" data-error="Please tell Pasha a little about what you have in mind."></textarea>
+      <p class="field-error" id="e-message-error" hidden></p>
+    </div>
+    <button class="button" type="submit">Prepare enquiry email <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></button>
+    <p class="field-help">Review and send your enquiry to pashabakess@gmail.com. Large orders are arranged in whole dozens; Pasha will confirm pricing and availability.</p>
+  </form>
+  <p id="enquiry-status" role="status"></p>
+</dialog>
+
+<dialog id="credits-dialog" aria-labelledby="credits-title">
+  <button type="button" class="dialog-close" aria-label="Close dialog"><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button>
+  <h2 id="credits-title">Photography credits</h2>
+  <p>These real photographs are flavor references for this private design preview, not photographs of Pashabakess products. Replace recipe photography with Pasha’s own photos or secure permission before public launch.</p>
+  <div id="photo-credits"></div>
+</dialog>
+</body>
+</html>

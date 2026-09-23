@@ -4,7 +4,9 @@ Responsive static bakery website. Serve `dist` with any static web server.
 
 ## Content and ordering
 
-Edit the six cookie entries in `dist/app.js`; update pricing in that file and visible pricing in `dist/index.html` together. Styles are in `dist/style.css`.
+Edit the six cookie entries in `dist/app.js`. Prices live in `prices` in `dist/app.js` and are also shown in `dist/index.html` (hero note, pricing strip, box-size cards, FAQ) — update them together. Styles are in `dist/style.css` (brand tokens at the top).
+
+After editing `style.css` or `app.js`, bump the `?v=` number on their links in `index.html` so returning visitors get the new files.
 
 Orders and enquiries prepare reviewable email drafts addressed to pashabakess@gmail.com, with copy-to-clipboard fallback. They are not sent automatically. No orders are stored, no payment is processed, and pickup times are preferences, not reservations. The client currently chooses Venmo and Cash App; customers are told to wait for confirmation before paying. Automatic email delivery requires a configured server-side email service; do not put email credentials in frontend files.
 
