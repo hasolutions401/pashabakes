@@ -8,7 +8,7 @@
   <meta name="description" content="Handmade gourmet cookies, baked to order in Tyngsboro, MA. Discover our October flavors and create your own mix-and-match cookie box.">
   <meta property="og:type" content="website">
   <meta property="og:title" content="Pashabakess — Handmade gourmet cookies in Tyngsboro, MA">
-  <meta property="og:description" content="Baked to order. Build a mix-and-match box of 4, 6 or 12 cookies for pickup in Tyngsboro, MA.">
+  <meta property="og:description" content="Baked to order. Build a mix-and-match box of 4, 6, 12, 24 or 36 cookies for pickup in Tyngsboro, MA.">
   <link rel="icon" type="image/png" sizes="64x64" href="favicon-64.png">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -135,6 +135,8 @@
       <div class="price"><strong>4 cookies</strong><span>$14</span></div>
       <div class="price"><strong>Half dozen</strong><span>$20</span></div>
       <div class="price"><strong>Dozen</strong><span>$38</span></div>
+      <div class="price"><strong>2 dozen</strong><span>$76</span></div>
+      <div class="price"><strong>3 dozen</strong><span>$114</span></div>
     </div>
   </section>
 
@@ -204,9 +206,11 @@
               <label class="size-option"><input type="radio" name="box" value="4" checked><span class="size-name">4 cookies</span><span class="size-price">$14</span></label>
               <label class="size-option"><input type="radio" name="box" value="6"><span class="size-name">Half dozen</span><span class="size-price">$20</span></label>
               <label class="size-option"><input type="radio" name="box" value="12"><span class="size-name">Dozen</span><span class="size-price">$38</span></label>
+              <label class="size-option"><input type="radio" name="box" value="24"><span class="size-name">2 dozen</span><span class="size-price">$76</span></label>
+              <label class="size-option"><input type="radio" name="box" value="36"><span class="size-name">3 dozen</span><span class="size-price">$114</span></label>
             </div>
           </fieldset>
-          <p class="field-help">Need more than 12? Large orders are arranged by email in whole dozens. <button type="button" id="large-order-open" class="inline-button">Request a larger order</button></p>
+          <p class="field-help">Need more than 3 dozen (36 cookies)? Please email Pasha to arrange your order in whole dozens. <button type="button" id="large-order-open" class="inline-button">Request a larger order</button></p>
 
           <div class="selection-status">
             <span>Choose any combination of flavors</span>
@@ -314,7 +318,7 @@
   <section class="events" id="events" aria-labelledby="events-title">
     <p class="eyebrow">FOR THE MOMENTS WORTH SHARING</p>
     <h2 id="events-title">Big occasion?<br><em>Bring the good cookies.</em></h2>
-    <p>Birthdays, family gatherings, thoughtful gifts, and office celebrations.<br>Orders above 12 cookies are available in whole dozens.<br>Email Pasha to arrange quantities, flavors, and pricing.</p>
+    <p>Birthdays, family gatherings, thoughtful gifts, and office celebrations.<br>Order up to 3 dozen (36 cookies) using the order form.<br>For more than 3 dozen, email Pasha to arrange quantities, flavors, and pricing.</p>
     <button type="button" class="button" id="event-open">Plan a celebration <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></button>
     <span class="events-caption" aria-hidden="true">SMALL BATCHES. MEMORABLE MOMENTS.</span>
   </section>
@@ -328,7 +332,7 @@
     <div class="faq-list">
       <details open><summary>How far ahead should I order?<svg class="icon faq-icon" aria-hidden="true"><use href="#i-plus"/></svg></summary><p>Please give Pasha one week’s notice. Every cookie is made to order, so a little planning helps make your box extra special.</p></details>
       <details><summary>Where do I pick up my cookies?<svg class="icon faq-icon" aria-hidden="true"><use href="#i-plus"/></svg></summary><p>Pickup only in Tyngsboro, MA, normally between 10am and 7pm (Eastern time), based on your requested time and Pasha’s confirmation. The exact address will be sent on the day of pickup. Delivery and shipping are not offered.</p></details>
-      <details><summary>Can I mix and match the flavors?<svg class="icon faq-icon" aria-hidden="true"><use href="#i-plus"/></svg></summary><p>Yes! Choose any mix from the current menu. Boxes are available as 4 cookies for $14, 6 for $20, or 12 for $38. The minimum order is 4 cookies. For orders above 12, email Pasha to arrange whole dozens and confirm pricing.</p></details>
+      <details><summary>Can I mix and match the flavors?<svg class="icon faq-icon" aria-hidden="true"><use href="#i-plus"/></svg></summary><p>Yes! Choose any mix from the current menu. Boxes are available as 4 cookies for $14, 6 for $20, 12 for $38, 24 for $76, or 36 for $114. The minimum order is 4 cookies. For orders above 3 dozen (36 cookies), email Pasha to arrange whole dozens and confirm pricing.</p></details>
       <details><summary>How should I store my cookies?<svg class="icon faq-icon" aria-hidden="true"><use href="#i-plus"/></svg></summary><p>They are best enjoyed within the first few days. However, if you don’t eat them immediately, please transfer them to a Ziploc bag or an airtight container as soon as possible to maintain their freshness.</p></details>
       <details id="faq-allergies"><summary>Are the cookies suitable for food allergies?<svg class="icon faq-icon" aria-hidden="true"><use href="#i-plus"/></svg></summary><p>Pashabakess is not allergen-free, nut-free, gluten-free, or dairy-free. Everything is prepared in the same kitchen using shared equipment, trays, utensils, and packaging areas. Because cross-contact can happen, I do not recommend ordering or sharing the cookies with anyone with food allergies.</p></details>
       <details><summary>How do ordering and payments work?<svg class="icon faq-icon" aria-hidden="true"><use href="#i-plus"/></svg></summary><p>Order requests are welcome anytime with one week’s notice. Send your order request and Pasha will confirm availability and payment instructions. Venmo (@Palosha-Rashid) and Cash App ($Pashabakess) are the listed payment options. Please wait for confirmation before sending payment.</p></details>
@@ -424,7 +428,7 @@
       </div>
       <div class="field field-wide">
         <label for="e-quantity">Quantity (whole dozens)</label>
-        <select id="e-quantity" name="quantity"><option>Not sure yet</option><option>24 cookies (2 dozen)</option><option>36 cookies (3 dozen)</option><option>48 cookies (4 dozen)</option><option>60 cookies (5 dozen)</option><option>72 cookies (6 dozen)</option><option>84 cookies (7 dozen)</option><option>96 cookies (8 dozen)</option><option>108 cookies (9 dozen)</option><option>120 cookies (10 dozen)</option><option>More than 120 — specify whole dozens below</option></select>
+        <select id="e-quantity" name="quantity"><option>Not sure yet</option><option>48 cookies (4 dozen)</option><option>60 cookies (5 dozen)</option><option>72 cookies (6 dozen)</option><option>84 cookies (7 dozen)</option><option>96 cookies (8 dozen)</option><option>108 cookies (9 dozen)</option><option>120 cookies (10 dozen)</option><option>More than 120 — specify whole dozens below</option></select>
       </div>
     </div>
     <div class="field">
@@ -433,7 +437,7 @@
       <p class="field-error" id="e-message-error" hidden></p>
     </div>
     <button class="button" type="submit">Prepare enquiry email <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></button>
-    <p class="field-help">Review and send your enquiry to pashabakess@gmail.com. Large orders are arranged in whole dozens; Pasha will confirm pricing and availability.</p>
+    <p class="field-help">Review and send your enquiry to pashabakess@gmail.com. Orders above 3 dozen (36 cookies) are arranged by email in whole dozens; Pasha will confirm pricing and availability.</p>
   </form>
   <p id="enquiry-status" role="status"></p>
 </dialog>

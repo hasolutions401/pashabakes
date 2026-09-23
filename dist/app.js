@@ -10,7 +10,7 @@ const cookies = [
   {name:'Maple Pecan',type:'seasonal',desc:'Brown butter base with cinnamon, maple syrup, pecans.',img:'https://confessionsofabakingqueen.com/wp-content/uploads/2020/11/plate-of-maple-pecan-cookies-1-of-1-1024x1536-1.jpg',credit:'Confessions of a Baking Queen',source:'https://confessionsofabakingqueen.com/maple-pecan-cookies/'}
 ];
 
-const prices = {4:14, 6:20, 12:38};
+const prices = {4:14, 6:20, 12:38, 24:76, 36:114};
 const $ = s => document.querySelector(s);
 const $$ = s => Array.from(document.querySelectorAll(s));
 const quantities = cookies.map(() => 0);
@@ -351,11 +351,11 @@ if (document.modelContext?.registerTool) {
       name: 'configure_cookie_box',
       title: 'Configure a cookie box',
       description: 'Set the visible box size and flavor quantities. Does not send an order or collect payment.',
-      inputSchema: {type:'object', properties:{size:{type:'integer', enum:[4,6,12]}, quantities:{type:'array', items:{type:'integer', minimum:0, maximum:12}, minItems:6, maxItems:6}}, required:['size','quantities'], additionalProperties:false},
+      inputSchema: {type:'object', properties:{size:{type:'integer', enum:[4,6,12,24,36]}, quantities:{type:'array', items:{type:'integer', minimum:0, maximum:36}, minItems:6, maxItems:6}}, required:['size','quantities'], additionalProperties:false},
       annotations: {readOnlyHint:false},
       execute(input) {
-        if (!input || ![4,6,12].includes(input.size) || !Array.isArray(input.quantities) || input.quantities.length !== 6 || input.quantities.some(v => !Number.isInteger(v) || v < 0 || v > 12) || input.quantities.reduce((a, b) => a + b, 0) > input.size)
-          throw new Error('Use a box of 4, 6, or 12 and six nonnegative flavor counts within capacity.');
+        if (!input || ![4,6,12,24,36].includes(input.size) || !Array.isArray(input.quantities) || input.quantities.length !== 6 || input.quantities.some(v => !Number.isInteger(v) || v < 0 || v > 36) || input.quantities.reduce((a, b) => a + b, 0) > input.size)
+          throw new Error('Use a box of 4, 6, 12, 24, or 36 and six nonnegative flavor counts within capacity.');
         box = input.size;
         input.quantities.forEach((v, i) => quantities[i] = v);
         const radio = document.querySelector(`input[name="box"][value="${box}"]`);

@@ -10,7 +10,7 @@ After editing `style.css` or `app.js`, bump the `?v=` number on their links in `
 
 Orders and enquiries prepare reviewable email drafts addressed to pashabakess@gmail.com, with copy-to-clipboard fallback. They are not sent automatically. No orders are stored, no payment is processed, and pickup times are preferences, not reservations. The client currently chooses Venmo and Cash App; customers are told to wait for confirmation before paying. Automatic email delivery requires a configured server-side email service; do not put email credentials in frontend files.
 
-Confirmed rules: pickup only in Tyngsboro, normally 10am–7pm Eastern time; address sent on pickup day; seven days’ advance notice; minimum four cookies; orders above twelve arranged by email in whole dozens. Larger quantities are not assigned unconfirmed prices. Two seasonal flavors rotate monthly. Storage, cancellation, and allergy wording follows the client’s supplied text; cancellation requires two days’ notice by email, with no invented refund guarantee.
+Confirmed rules: pickup only in Tyngsboro, normally 10am–7pm Eastern time; address sent on pickup day; seven days’ advance notice; minimum four cookies; orders of 24 and 36 cookies available through the form at the existing $38-per-dozen rate; orders above 36 arranged by email in whole dozens. Larger quantities are not assigned unconfirmed prices. Two seasonal flavors rotate monthly. Storage, cancellation, and allergy wording follows the client’s supplied text; cancellation requires two days’ notice by email, with no invented refund guarantee.
 
 The Instagram QR code points to https://www.instagram.com/pashabakess/ rather than a private preview URL. Regenerate it with the final public ordering URL if desired.
 
