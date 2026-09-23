@@ -30,3 +30,10 @@ The Instagram QR code points to https://www.instagram.com/pashabakess/ rather th
 Checked JavaScript syntax, six menu photographs loading, responsive desktop/mobile layout, flavor filters, a six-flavor box at $20, over-capacity tool rejection, and the email order review with sample data without sending it. WebMCP configure_cookie_box shares the visible state and never submits orders.
 
 September 23 update verified: 4-cookie order at $14; Cash App preference; 7pm Eastern pickup; early-date rejection; 36-cookie enquiry review; mobile layout without horizontal overflow. No test emails or payments were sent.
+
+## Hosting on GitHub Pages
+
+`.github/workflows/pages.yml` publishes `dist/` to GitHub Pages on every push to `main`
+(site: https://hasolutions401.github.io/pashabakes/). One-time setup: repository
+Settings → Pages → Build and deployment → Source: **GitHub Actions**. After that,
+pushing to `main` updates the site automatically; the Actions tab shows each deploy.
