@@ -1,0 +1,5 @@
+# Private server config and data (never commit)
+server/config.php
+server/data/
+dist/uploads/*
+!dist/uploads/.htaccess

@@ -1,0 +1,4 @@
+# Internal include — not a page.
+<Files "_init.php">
+  Require all denied
+</Files>

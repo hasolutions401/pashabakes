@@ -4,19 +4,19 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#fcf7ee">
-  <title>Build Your Cookie Box | Pashabakess</title>
-  <meta name="description" content="Build a mix-and-match box of 4, 6, 12, 24 or 36 cookies. Request pickup in Tyngsboro with one week’s notice.">
+  <title>Order Cookies Online | Pashabakess</title>
+  <meta name="description" content="Build a mix-and-match box of 4, 6, 12, 24 or 36 cookies. Order and pay online for pickup in Tyngsboro, MA, with one week’s notice.">
   <meta property="og:type" content="website">
   <meta property="og:title" content="Build Your Cookie Box | Pashabakess">
-  <meta property="og:description" content="Build a mix-and-match box of 4, 6, 12, 24 or 36 cookies. Request pickup in Tyngsboro with one week’s notice.">
+  <meta property="og:description" content="Build a mix-and-match box of 4, 6, 12, 24 or 36 cookies. Order and pay online for pickup in Tyngsboro, MA, with one week’s notice.">
   <link rel="icon" type="image/png" sizes="64x64" href="favicon-64.png">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preconnect" href="https://images.unsplash.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=11">
-  <script src="app.js?v=7" defer></script>
+  <link rel="stylesheet" href="style.css?v=12">
+  <script src="app.js?v=8" defer></script>
 </head>
 <body>
 <!-- Icon sprite: one consistent stroke-icon set used across the site -->
@@ -80,20 +80,26 @@
 <section class="section order-section" id="order" aria-labelledby="order-title">
     <div class="section-heading">
       <div>
-        <p class="eyebrow">A BOX WITH YOUR NAME ON IT</p>
+        <p class="eyebrow">ORDER ONLINE</p>
         <h1 id="order-title">Let’s bake you<br><em>something happy.</em></h1>
       </div>
-      <p class="heading-aside">Order requests are welcome anytime.<br>Choose your flavors and pickup time; allow one week’s notice.</p>
+      <p class="heading-aside">Choose your cookies, pick a pickup time and pay — all on one page.<br>Please allow one week’s notice.</p>
     </div>
 
-    <ol class="order-steps order-steps-6" aria-label="How ordering works">
-      <li><span>1</span>Browse the menu</li>
-      <li><span>2</span>Build your box</li>
-      <li><span>3</span>Pick your pickup</li>
-      <li><span>4</span>Send your request</li>
-      <li><span>5</span>Wait for confirmation</li>
-      <li><span>6</span>Pay &amp; pick up</li>
+    <ol class="order-steps order-steps-5" aria-label="How ordering works">
+      <li><span>1</span>Build your box</li>
+      <li><span>2</span>Pick your pickup</li>
+      <li><span>3</span>Pay with Venmo or Cash App</li>
+      <li><span>4</span>Place your order</li>
+      <li><span>5</span>Get your confirmation email</li>
     </ol>
+
+    <aside class="order-callout" aria-label="Urgent or large orders">
+      <svg class="icon" aria-hidden="true"><use href="#i-mail"/></svg>
+      <p><strong>Need cookies in less than a week, or more than 3 dozen?</strong> Please email <a href="mailto:pashabakess@gmail.com?subject=Urgent%20or%20large%20order">pashabakess@gmail.com</a> and Pasha will let you know what’s possible.</p>
+    </aside>
+
+    <div class="order-status-note" id="order-unavailable" role="alert" hidden></div>
 
     <div class="order-layout">
       <form id="order-form" novalidate>
@@ -108,20 +114,26 @@
           <div class="box-bar-track"><span id="bar-fill"></span></div>
         </div>
 
+        <!-- Spam trap: hidden from people -->
+        <div class="hp-field" aria-hidden="true">
+          <label for="o-website">Leave this empty</label>
+          <input id="o-website" name="website" tabindex="-1" autocomplete="off">
+        </div>
+
         <fieldset>
           <legend><span class="step-num" aria-hidden="true">01</span> Make it your mix</legend>
 
-          <fieldset class="box-sizes">
+          <fieldset class="box-sizes" id="box-sizes" tabindex="-1">
             <legend class="field-label">Choose your box</legend>
             <div class="size-options">
-              <label class="size-option"><input type="radio" name="box" value="4" checked><span class="size-name">4 cookies</span><span class="size-price">$14</span></label>
-              <label class="size-option"><input type="radio" name="box" value="6"><span class="size-name">Half dozen</span><span class="size-price">$20</span></label>
-              <label class="size-option"><input type="radio" name="box" value="12"><span class="size-name">Dozen</span><span class="size-price">$38</span></label>
-              <label class="size-option"><input type="radio" name="box" value="24"><span class="size-name">2 dozen</span><span class="size-price">$76</span></label>
-              <label class="size-option"><input type="radio" name="box" value="36"><span class="size-name">3 dozen</span><span class="size-price">$114</span></label>
+              <label class="size-option"><input type="radio" name="box" value="4" checked><span class="size-name">4 cookies</span><span class="size-price" data-price-for="4">$14</span></label>
+              <label class="size-option"><input type="radio" name="box" value="6"><span class="size-name">Half dozen</span><span class="size-price" data-price-for="6">$20</span></label>
+              <label class="size-option"><input type="radio" name="box" value="12"><span class="size-name">Dozen</span><span class="size-price" data-price-for="12">$38</span></label>
+              <label class="size-option"><input type="radio" name="box" value="24"><span class="size-name">2 dozen</span><span class="size-price" data-price-for="24">$76</span></label>
+              <label class="size-option"><input type="radio" name="box" value="36"><span class="size-name">3 dozen</span><span class="size-price" data-price-for="36">$114</span></label>
             </div>
           </fieldset>
-          <p class="field-help">Need more than 3 dozen (36 cookies)? Please email Pasha to arrange your order in whole dozens. <button type="button" id="large-order-open" class="inline-button">Request a larger order</button></p>
+          <p class="field-error" id="box-sizes-error" hidden></p>
 
           <div class="selection-status">
             <span>Choose any combination of flavors</span>
@@ -136,7 +148,7 @@
         </fieldset>
 
         <fieldset>
-          <legend><span class="step-num" aria-hidden="true">02</span> A few details about you</legend>
+          <legend><span class="step-num" aria-hidden="true">02</span> Your details</legend>
           <p class="field-help form-note">All fields are required unless marked optional.</p>
           <div class="form-grid">
             <div class="field">
@@ -146,7 +158,8 @@
             </div>
             <div class="field">
               <label for="o-email">Email address</label>
-              <input id="o-email" required type="email" name="email" autocomplete="email" inputmode="email" placeholder="you@example.com" aria-describedby="o-email-error" data-error="Please enter your email address.">
+              <input id="o-email" required type="email" name="email" autocomplete="email" inputmode="email" placeholder="you@example.com" aria-describedby="o-email-hint o-email-error" data-error="Please enter your email address.">
+              <p class="field-hint" id="o-email-hint">Your receipt and confirmation are sent here.</p>
               <p class="field-error" id="o-email-error" hidden></p>
             </div>
             <div class="field">
@@ -162,28 +175,61 @@
         </fieldset>
 
         <fieldset>
-          <legend><span class="step-num" aria-hidden="true">03</span> Plan your pickup</legend>
-          <p class="field-help">Pickup only in Tyngsboro, MA, normally 10am–7pm (Eastern time). Request your preferred time below; Pasha will confirm it. Please allow one week. The address will be sent on the day of pickup.</p>
+          <legend><span class="step-num" aria-hidden="true">03</span> Pickup</legend>
+          <div class="pickup-card">
+            <svg class="icon" aria-hidden="true"><use href="#i-bag"/></svg>
+            <p><strong>Pickup only in <span data-pickup-area>Tyngsboro, MA</span></strong><br>The exact address is included in your confirmation email.</p>
+          </div>
           <div class="form-grid">
             <div class="field">
-              <label for="pickup-date">Preferred pickup date</label>
+              <label for="pickup-date">Pickup date</label>
               <input id="pickup-date" required type="date" name="date" aria-describedby="pickup-date-hint pickup-date-error" data-error="Please choose a pickup date.">
               <p class="field-hint" id="pickup-date-hint">Earliest date: one week from today.</p>
               <p class="field-error" id="pickup-date-error" hidden></p>
             </div>
             <div class="field">
-              <label for="pickup-time">Preferred pickup time (Eastern)</label>
-              <select id="pickup-time" name="time" required aria-describedby="pickup-time-error" data-error="Please choose a pickup time between 10am and 7pm."><option value="">Choose a time, 10am–7pm</option></select>
+              <label for="pickup-time">Pickup time (Eastern)</label>
+              <select id="pickup-time" name="time" required aria-describedby="pickup-time-error" data-error="Please choose a pickup time."><option value="">Choose a time</option></select>
               <p class="field-error" id="pickup-time-error" hidden></p>
             </div>
-            <div class="field">
-              <label for="o-payment">Payment preference</label>
-              <select id="o-payment" name="payment"><option>Venmo — @Palosha-Rashid</option><option>Cash App — $Pashabakess</option></select>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend><span class="step-num" aria-hidden="true">04</span> Payment</legend>
+          <div class="pay-total">
+            <span>Total to pay</span>
+            <strong id="pay-total">$14</strong>
+            <small id="pay-total-size">4 cookies</small>
+          </div>
+
+          <fieldset class="pay-methods" id="pay-methods" tabindex="-1">
+            <legend class="field-label">Pay with</legend>
+            <div class="pay-options">
+              <label class="pay-option"><input type="radio" name="payment" value="venmo" checked><span class="pay-name">Venmo</span><span class="pay-handle">@<span data-handle="venmo">Palosha-Rashid</span></span></label>
+              <label class="pay-option"><input type="radio" name="payment" value="cashapp"><span class="pay-name">Cash App</span><span class="pay-handle">$<span data-handle="cashapp">Pashabakess</span></span></label>
+            </div>
+          </fieldset>
+
+          <div class="pay-box">
+            <img id="pay-qr" src="api/qr.php?m=venmo" alt="QR code for Venmo @Palosha-Rashid" width="140" height="140" loading="lazy">
+            <div>
+              <p class="pay-step"><strong>1.</strong> Send <strong data-pay-amount>$14</strong> to <strong id="pay-to">@Palosha-Rashid</strong> on <span id="pay-app">Venmo</span>.</p>
+              <p class="pay-step"><strong>2.</strong> Add your name in the payment note.</p>
+              <a class="button small ghost" id="pay-open" href="https://venmo.com/u/Palosha-Rashid" target="_blank" rel="noopener">Open <span id="pay-open-app">Venmo</span> <svg class="icon" aria-hidden="true"><use href="#i-external"/></svg></a>
             </div>
           </div>
+
+          <div class="field">
+            <label for="o-payer"><span id="payer-label">Your Venmo username</span> <span class="optional">(or transaction ID)</span></label>
+            <input id="o-payer" required name="payer_ref" maxlength="100" autocapitalize="none" autocomplete="off" placeholder="@your-username" aria-describedby="o-payer-hint o-payer-error" data-error="Please enter the username (or transaction ID) you paid from.">
+            <p class="field-hint" id="o-payer-hint">So Pasha can match your payment to your order.</p>
+            <p class="field-error" id="o-payer-error" hidden></p>
+          </div>
+
           <div class="field">
             <label for="o-notes">Anything else we should know? <span class="optional">(optional)</span></label>
-            <textarea id="o-notes" name="notes" rows="3" placeholder="Gift notes, pickup preferences, or a question for Pasha…" maxlength="1500"></textarea>
+            <textarea id="o-notes" name="notes" rows="3" placeholder="Gift notes, packaging requests, or a question for Pasha…" maxlength="1000"></textarea>
           </div>
 
           <div class="allergy-note" id="allergy-info">
@@ -198,16 +244,32 @@
 
           <div class="field">
             <label class="check-label" for="o-allergy">
-              <input id="o-allergy" required type="checkbox" name="allergy" aria-describedby="o-allergy-error" data-error="Please confirm you have read the allergy and cancellation information.">
-              <span>I have read the allergy and cancellation information and understand that my pickup time needs confirmation.</span>
+              <input id="o-allergy" required type="checkbox" name="agree" aria-describedby="o-allergy-error" data-error="Please confirm you have read the allergy and cancellation information.">
+              <span>I have read the allergy and cancellation information, and I’ve sent my payment.</span>
             </label>
             <p class="field-error" id="o-allergy-error" hidden></p>
           </div>
 
-          <button class="button submit" type="submit">Review my order request <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></button>
-          <p class="field-help">You’ll review your selection before opening an email to Pasha. No payment is collected here, and your order is not confirmed yet.</p>
+          <button class="button submit" type="submit" id="place-order"><span id="place-order-label">Place order · <span data-pay-amount>$14</span></span> <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></button>
+          <p class="field-help">You’ll get a receipt by email right away. Once Pasha sees your payment, she confirms your order and emails you the pickup address.</p>
         </fieldset>
       </form>
+
+      <section class="order-success" id="order-success" tabindex="-1" hidden aria-labelledby="success-title">
+        <span class="success-icon" aria-hidden="true"><svg class="icon"><use href="#i-check-circle"/></svg></span>
+        <p class="eyebrow">ORDER PLACED</p>
+        <h2 id="success-title">Thank you! Your order <span id="success-code"></span> is in.</h2>
+        <div class="success-summary" id="success-summary"></div>
+        <ol class="success-next">
+          <li>We’ve emailed a receipt to <strong id="success-email"></strong>.</li>
+          <li>Pasha checks your <span id="success-payment"></span> payment.</li>
+          <li>You’ll get a confirmation email with the pickup address. (Check your spam folder if you don’t see it.)</li>
+        </ol>
+        <div class="dialog-actions">
+          <a class="button" href="index.html">Back to home</a>
+          <a class="button ghost" href="order.html">Place another order</a>
+        </div>
+      </section>
 
       <aside class="order-summary" aria-labelledby="summary-title">
         <p class="eyebrow">GOOD THINGS COME IN BOXES</p>

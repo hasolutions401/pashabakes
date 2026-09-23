@@ -1,0 +1,109 @@
+# Deploying Pashabakess on alwaysdata
+
+The website (`dist/`) and the ordering system (`server/`) run together on one
+alwaysdata PHP site. Nothing needs to be built or installed on the server — you
+upload the files, create one config file, and set up the admin login.
+
+**Time needed:** about 20 minutes.
+
+---
+
+## 1. Create the site on alwaysdata
+
+1. Log in to https://admin.alwaysdata.com
+2. **Web → Sites → Add a site**
+   - **Type:** PHP
+   - **Addresses:** your address, e.g. `pashabakess.alwaysdata.net` (or your own domain later)
+   - **Root directory:** `/www/pashabakess/dist`  ← important: point it at the **dist** folder
+   - **PHP version:** 8.2 or newer
+3. In the site’s **SSL** tab, turn on **Force HTTPS**.
+4. Save.
+
+## 2. Upload the files
+
+Upload the whole project folder so that on the server you have:
+
+```
+/home/ACCOUNT/www/pashabakess/
+    dist/        ← the website (public)
+    server/      ← ordering system (private, not public)
+```
+
+Choose one way:
+
+- **SFTP/FTP (easiest):** use FileZilla with the details from alwaysdata → *Remote access → SSH / FTP*.
+  Upload the `dist` and `server` folders into `www/pashabakess/`.
+- **Git over SSH:**
+  ```bash
+  cd ~/www && git clone -b checkout-backend https://github.com/hasolutions401/pashabakes.git pashabakess
+  ```
+  To update later: `cd ~/www/pashabakess && git pull`
+
+## 3. Create an email address for sending orders
+
+alwaysdata → **Emails → Addresses → Add an address**, e.g. `orders@pashabakess.alwaysdata.net`,
+and choose a password. This mailbox sends the order emails (replies still go to pashabakess@gmail.com).
+
+Your SMTP server name is shown under **Emails → Addresses**; it looks like `smtp-ACCOUNT.alwaysdata.net`.
+
+## 4. Create `server/config.php`
+
+1. In the `server/` folder, copy `config.sample.php` to `config.php`.
+2. Edit `config.php`:
+   - `site_url` → `https://pashabakess.alwaysdata.net` (your real address, no slash at the end)
+   - `setup_key` → any long random phrase (you only need it once, in step 5)
+   - `db` → leave `'driver' => 'sqlite'` (no database setup needed).
+     *Optional:* for MariaDB, create a database under **Databases → MySQL**, set `'driver' => 'mysql'`
+     and fill in host, name, user and password.
+   - `mail` → `transport` `smtp`, and fill in:
+     - `from_email` and `smtp_user`: the address from step 3
+     - `smtp_pass`: its password
+     - `smtp_host`: from step 3, `smtp_port` `587`, `smtp_secure` `tls`
+
+`config.php` holds passwords — it is never uploaded to GitHub and is not reachable from the web.
+
+## 5. Create the admin login
+
+1. Open `https://YOUR-ADDRESS/admin/`
+2. The setup page shows six checks — all should be green ✓.
+3. Enter the **setup key** from `config.php`, choose a username and password, and click
+   **Create admin account**. The setup page then disables itself.
+
+## 6. Finish in the admin portal
+
+1. **Settings → Exact pickup address** — add Pasha’s pickup address (only sent in confirmation emails).
+2. **Settings → Send test email** — check it arrives at pashabakess@gmail.com (look in spam too;
+   mark it “Not spam” once).
+3. Place one test order on the website, then **Mark as Paid** in admin and check the emails.
+   Cancel the test order afterwards.
+
+---
+
+## Everyday use (for Pasha)
+
+- **New order:** you get an email “New order PB1005…”. Check Venmo/Cash App for the amount from
+  the username shown, then tap **Open order in admin → Mark as Paid**. The customer is emailed their
+  confirmation with the pickup address automatically.
+- **Baking list:** the dashboard shows how many of each flavor to bake per pickup day.
+- **After pickup:** tap **Mark as Picked up**.
+- **Menu:** add flavors, upload photos, hide sold-out flavors.
+- **Settings:** prices, pickup times, days you’re not available, pausing online orders.
+
+## Backups
+
+All orders live in `server/data/pashabakess.sqlite` (or your MariaDB database). Download that file
+now and then (e.g. monthly) via SFTP. alwaysdata also keeps automatic daily backups.
+
+## Troubleshooting
+
+| Problem | Fix |
+| --- | --- |
+| “Setup needed” message | `server/config.php` is missing or has a typo. |
+| Test email fails | Check the `mail` section of `config.php` (address, password, SMTP host). |
+| Emails land in spam | Mark as “Not spam” in Gmail once; consider a custom domain with SPF/DKIM (alwaysdata → Emails). |
+| Website loads but ordering says “temporarily unavailable” | The site’s root directory must be `.../dist`, and `server/` must sit next to it. |
+| Errors | See `server/data/logs/php-errors.log`. |
+
+## Self-test
+
+Via SSH: `php server/tests/run.php` — runs 27 checks on a throwaway database.
