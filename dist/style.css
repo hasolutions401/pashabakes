@@ -842,3 +842,13 @@ dialog p { font-size: 15px; }
   .site-nav .nav-cta { display: inline-flex; }
   .site-nav .nav-cta:hover { background: var(--brown-hover); }
 }
+
+
+/* ——— Halal ingredients note (menu page) ——— */
+.halal-note {
+  display: flex; align-items: flex-start; gap: 12px; max-width: 720px; margin: 36px 0 0;
+  padding: 16px 20px; border-radius: var(--radius); background: #eef5ec; border: 1px solid #cfe0c9;
+  font-size: 15px; line-height: 1.6; color: var(--brown);
+}
+.halal-note .icon { width: 22px; height: 22px; color: #2f6b3f; margin-top: 1px; }
+.halal-note + .photo-disclosure { margin-top: 18px; }

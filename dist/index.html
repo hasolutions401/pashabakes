@@ -15,7 +15,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preconnect" href="https://images.unsplash.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=10">
+  <link rel="stylesheet" href="style.css?v=11">
   <script src="app.js?v=6" defer></script>
 </head>
 <body>
@@ -41,6 +41,8 @@
 
 <div class="announcement">
   <span>HANDMADE IN TYNGSBORO, MA</span>
+  <svg class="icon sparkle announce-extra" aria-hidden="true"><use href="#i-sparkle"/></svg>
+  <span class="announce-extra">100% HALAL INGREDIENTS</span>
   <svg class="icon sparkle" aria-hidden="true"><use href="#i-sparkle"/></svg>
   <span class="announce-extra">FRESHLY BAKED, JUST FOR YOU</span>
   <svg class="icon sparkle announce-extra" aria-hidden="true"><use href="#i-sparkle"/></svg>
@@ -86,6 +88,7 @@
       </div>
       <ul class="hero-note">
         <li><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>Made to order</li>
+        <li><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>Halal ingredients</li>
         <li><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>Local pickup in Tyngsboro</li>
         <li><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>From 4 cookies · $14</li>
       </ul>
@@ -211,7 +214,7 @@
   <section class="events home-events" aria-labelledby="home-events-title">
     <p class="eyebrow">FOR THE MOMENTS WORTH SHARING</p>
     <h2 id="home-events-title">Big occasion?<br><em>Bring the good cookies.</em></h2>
-    <p>Birthdays, family gatherings, thoughtful gifts, and office celebrations. <br>Order up to 3 dozen (36 cookies) using the order form. <br>For more than 3 dozen, email Pasha to arrange quantities, flavors, and pricing.</p>
+    <p>Birthdays, baby and bridal showers, Aqiqah, Eid, family gatherings, thoughtful gifts, and office celebrations. <br>Order up to 3 dozen (36 cookies) using the order form. <br>For more than 3 dozen, email Pasha to arrange quantities, flavors, and pricing.</p>
     <a class="button" href="celebrations.html">Plan a celebration <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a>
     <span class="events-caption" aria-hidden="true">SMALL BATCHES. MEMORABLE MOMENTS.</span>
   </section>
@@ -228,6 +231,7 @@
       <details><summary>Where do I pick up my cookies?<svg class="icon faq-icon" aria-hidden="true"><use href="#i-plus"/></svg></summary><p>Pickup only in Tyngsboro, MA, normally between 10am and 7pm (Eastern time), based on your requested time and Pasha’s confirmation. The exact address will be sent on the day of pickup. Delivery and shipping are not offered.</p></details>
       <details><summary>Can I mix and match the flavors?<svg class="icon faq-icon" aria-hidden="true"><use href="#i-plus"/></svg></summary><p>Yes! Choose any mix from the current menu. Boxes are available as 4 cookies for $14, 6 for $20, 12 for $38, 24 for $76, or 36 for $114. The minimum order is 4 cookies. For orders above 3 dozen (36 cookies), email Pasha to arrange whole dozens and confirm pricing.</p></details>
       <details><summary>Are the cookies suitable for food allergies?<svg class="icon faq-icon" aria-hidden="true"><use href="#i-plus"/></svg></summary><p>Pashabakess is not allergen-free, nut-free, gluten-free, or dairy-free. Everything is prepared in the same kitchen using shared equipment, trays, utensils, and packaging areas. Because cross-contact can happen, I do not recommend ordering or sharing the cookies with anyone with food allergies.</p></details>
+      <details id="faq-halal"><summary>Are your ingredients halal?<svg class="icon faq-icon" aria-hidden="true"><use href="#i-plus"/></svg></summary><p>Yes. All ingredients used in Pashabakess cookies are halal, including items such as marshmallows. If you have a question about a specific ingredient, please email Pasha before ordering.</p></details>
     </div>
   </section>
 
@@ -311,7 +315,7 @@
       </div>
       <div class="field">
         <label for="enquiry-type">Enquiry type</label>
-        <select name="type" id="enquiry-type"><option>Birthday / celebration</option><option>Corporate / office</option><option>Wedding / favors</option><option>Large order</option><option>General question</option></select>
+        <select name="type" id="enquiry-type"><option>Birthday / celebration</option><option>Baby shower</option><option>Bridal shower</option><option>Aqiqah</option><option>Eid</option><option>Corporate / office</option><option>Wedding / favors</option><option>Large order</option><option>General question</option></select>
       </div>
       <div class="field">
         <label for="e-date">Event date <span class="optional">(if known)</span></label>
