@@ -696,3 +696,149 @@ dialog p { font-size: 15px; }
   html { scroll-behavior: auto; }
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+
+/* ——— Home page previews ——— */
+/* The home page shows a sampler: Chocolate Chunk, Biscoff and Maple Pecan (cards 1, 2 and 6). */
+.home-picks .cookie-card:nth-child(3),
+.home-picks .cookie-card:nth-child(4),
+.home-picks .cookie-card:nth-child(5) { display: none; }
+.home-more { display: flex; justify-content: center; margin-top: 36px; }
+
+.home-steps { background: var(--cream-deep); padding: 88px var(--gutter); }
+.home-steps-inner { max-width: 1188px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1.6fr; gap: 28px 64px; align-items: start; }
+.home-steps-intro h2 { margin-bottom: 14px; }
+.home-steps-intro p:last-child { color: var(--muted); max-width: 36ch; margin: 0; }
+.home-step-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.home-step-list li { background: var(--field); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 22px; }
+.home-step-list strong { display: block; font-family: var(--serif); font-size: 21px; font-weight: 500; line-height: 1.2; margin: 14px 0 8px; }
+.home-step-list p { font-size: 15px; color: var(--muted); margin: 0; }
+.home-step-num { display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: #efd6d8; font-weight: 700; font-size: 14px; }
+.home-steps-inner > .button { grid-column: 2; justify-self: start; }
+
+.home-about { background: var(--cream); }
+.home-about .about-copy .button,
+.home-faq .faq-intro .button { margin-top: 8px; }
+
+@media (max-width: 1000px) {
+  .home-steps-inner { grid-template-columns: 1fr; }
+  .home-steps-inner > .button { grid-column: 1; }
+}
+@media (max-width: 760px) {
+  .home-steps { padding: 64px var(--gutter); }
+  .home-step-list { grid-template-columns: 1fr; gap: 12px; }
+  .home-step-list li { display: grid; grid-template-columns: 34px 1fr; column-gap: 14px; padding: 18px; }
+  .home-step-list strong { margin: 4px 0; font-size: 19px; }
+  .home-step-list p { grid-column: 2; }
+  .home-steps-inner > .button, .home-more .button { width: 100%; }
+}
+
+
+/* ——— Header: large logo at the top, compact once scrolling ——— */
+:root { --header-h: 118px; }
+.header-inner { transition: height var(--base) var(--ease-out); }
+.brand-logo { width: 96px; height: 96px; transition: width var(--base) var(--ease-out), height var(--base) var(--ease-out); }
+.wordmark { font-size: 32px; }
+.site-header.is-scrolled .header-inner { height: 80px; }
+.site-header.is-scrolled .brand-logo { width: 60px; height: 60px; }
+.site-header.is-scrolled .wordmark { font-size: 27px; }
+.site-header.is-scrolled .wordmark span { display: none; }
+
+/* Menu links: larger, with a clear "you are here" state */
+.site-nav { font-size: 16px; gap: 2px; }
+.site-nav a { padding: 0 14px; font-weight: 500; }
+.site-nav a[aria-current="page"] { color: var(--rose); background: rgb(243 174 192 / .28); font-weight: 600; }
+.nav-cta { display: none; }
+
+@media (max-width: 1100px) {
+  .site-nav a { padding: 0 10px; }
+  .wordmark { font-size: 28px; }
+}
+@media (max-width: 1000px) {
+  .site-nav { font-size: 18px; padding-bottom: 24px; }
+  .site-nav a { min-height: 56px; padding: 0 14px; border-radius: var(--radius-sm); border-bottom: 0; margin: 2px 0; }
+  .site-nav a:not(.nav-cta)::after { content: '›'; margin-left: auto; font-size: 22px; color: var(--muted); }
+  .site-nav a[aria-current="page"] { background: rgb(243 174 192 / .3); box-shadow: inset 3px 0 0 var(--rose); }
+  .nav-cta { display: inline-flex; justify-content: space-between; margin-top: 14px !important; color: #fff7ed !important; font-size: 16px; }
+  .site-nav.open { max-height: calc(100dvh - var(--header-h)); overflow-y: auto; }
+}
+@media (max-width: 760px) {
+  :root { --header-h: 92px; }
+  .brand-logo { width: 72px; height: 72px; }
+  .wordmark { font-size: 22px; }
+  .site-header.is-scrolled .header-inner { height: 68px; }
+  .site-header.is-scrolled .brand-logo { width: 50px; height: 50px; }
+  .site-header.is-scrolled .wordmark { font-size: 20px; }
+}
+@media (max-width: 380px) {
+  .brand-logo { width: 62px; height: 62px; }
+  .wordmark { font-size: 19px; }
+  .site-header.is-scrolled .brand-logo { width: 46px; height: 46px; }
+  .site-header.is-scrolled .wordmark { font-size: 18px; }
+}
+
+/* ——— How to order: six step cards ——— */
+.order-guide { background: var(--blush); padding: 96px var(--gutter); }
+.order-guide-inner { max-width: 1188px; margin: 0 auto; }
+.order-guide-heading { text-align: center; max-width: 620px; margin: 0 auto 48px; }
+.order-guide-heading h2 { margin-bottom: 12px; }
+.order-guide-heading p:last-child { color: var(--muted); margin: 0; }
+.step-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
+.step-card {
+  display: flex; flex-direction: column; align-items: flex-start;
+  padding: 28px; background: var(--field); border-radius: 22px;
+  box-shadow: 0 1px 2px rgb(68 44 37 / .05), 0 14px 34px -22px rgb(68 44 37 / .35);
+  transition: transform var(--base) var(--ease-out), box-shadow var(--base);
+}
+.step-card:hover { transform: translateY(-3px); box-shadow: 0 2px 4px rgb(68 44 37 / .05), 0 22px 40px -22px rgb(68 44 37 / .42); }
+.step-card-label { font-size: 12px; font-weight: 700; letter-spacing: .16em; color: var(--rose); margin: 0 0 16px; }
+.step-card-icon { display: grid; place-items: center; width: 60px; height: 60px; border-radius: 50%; background: #fbe1e7; color: var(--brown); margin-bottom: 20px; }
+.step-card-icon .icon { width: 28px; height: 28px; }
+.step-card h3 { font-size: 26px; margin: 0 0 10px; }
+.step-card-text { font-size: 15px; line-height: 1.7; color: var(--muted); margin: 0; }
+.step-card-cta {
+  display: inline-flex; align-items: center; gap: 8px; min-height: var(--tap); margin-top: 18px; padding: 0 18px;
+  border-radius: 999px; background: var(--pink); color: var(--brown); font-size: 14px; font-weight: 700;
+  transition: background-color var(--fast), color var(--fast);
+}
+.step-card-cta:hover { background: var(--brown); color: #fff7ed; }
+.step-card-cta .icon { width: 16px; height: 16px; }
+
+/* Compact six-step strip on the Order page */
+.order-steps-6 { grid-template-columns: repeat(6, 1fr); }
+.order-steps-6 li { flex-direction: column; align-items: flex-start; gap: 8px; padding: 14px 16px; font-size: 14px; line-height: 1.35; }
+
+@media (max-width: 1000px) {
+  .step-grid { grid-template-columns: repeat(2, 1fr); }
+  .order-steps-6 { grid-template-columns: repeat(3, 1fr); }
+  .order-steps-6 li:nth-child(4) { border-left: 0; }
+  .order-steps-6 li:nth-child(n+4) { border-top: 1px solid var(--line); }
+}
+@media (max-width: 760px) {
+  .order-guide { padding: 64px var(--gutter); }
+  .order-guide-heading { text-align: left; margin-bottom: 28px; }
+  .step-grid { grid-template-columns: 1fr; gap: 14px; }
+  .step-card { display: grid; grid-template-columns: 52px 1fr; column-gap: 16px; padding: 20px; border-radius: 18px; }
+  .step-card-label { grid-column: 2; margin-bottom: 4px; }
+  .step-card-icon { grid-row: 1 / span 3; width: 52px; height: 52px; margin: 0; }
+  .step-card-icon .icon { width: 24px; height: 24px; }
+  .step-card h3 { grid-column: 2; font-size: 22px; margin-bottom: 6px; }
+  .step-card-text, .step-card-cta { grid-column: 2; }
+  .step-card-cta { justify-self: start; margin-top: 14px; }
+  .order-steps-6 { grid-template-columns: 1fr 1fr; }
+  .order-steps-6 li { flex-direction: row; align-items: center; }
+  .order-steps-6 li + li { border-left: 0; border-top: 0; }
+  .order-steps-6 li:nth-child(even) { border-left: 1px solid var(--line); }
+  .order-steps-6 li:nth-child(n+3) { border-top: 1px solid var(--line); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .step-card:hover { transform: none; }
+}
+
+/* Menu-panel order button is for small screens only */
+.site-nav .nav-cta { display: none; }
+.site-nav a { white-space: nowrap; }
+@media (max-width: 1000px) {
+  .site-nav .nav-cta { display: inline-flex; }
+  .site-nav .nav-cta:hover { background: var(--brown-hover); }
+}

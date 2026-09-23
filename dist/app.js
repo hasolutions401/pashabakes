@@ -54,7 +54,7 @@ $$('.announcement, .ribbon').forEach(strip => {
 });
 
 /* ——— Render menu, flavor steppers and credits ——— */
-$('#cookie-grid').innerHTML = cookies.map((c, i) => `
+if ($('#cookie-grid')) $('#cookie-grid').innerHTML = cookies.map((c, i) => `
   <article class="cookie-card" data-type="${c.type}">
     <div class="cookie-image">
       <img src="${c.img}" alt="Illustrative photograph of ${c.name} cookies" width="900" height="760" loading="lazy" decoding="async">
@@ -70,7 +70,7 @@ $('#cookie-grid').innerHTML = cookies.map((c, i) => `
     </div>
   </article>`).join('');
 
-$('#flavor-choices').innerHTML = cookies.map((c, i) => `
+if ($('#flavor-choices')) $('#flavor-choices').innerHTML = cookies.map((c, i) => `
   <div class="flavor-choice" data-flavor="${i}">
     <img src="${c.img}" alt="" width="56" height="56" loading="lazy" decoding="async">
     <span class="flavor-name" id="flavor-name-${i}">${c.name}<small>${c.type === 'seasonal' ? 'October special' : 'Signature'}</small></span>
@@ -86,6 +86,8 @@ $('#photo-credits').innerHTML = cookies.map(c =>
 
 /* ——— Box state ——— */
 function update() {
+  if (!$('#order-form')) return;
+  try { sessionStorage.setItem('pashabakess-box', JSON.stringify({size:box, quantities})); } catch {}
   const count = total();
   const full = count >= box;
 
@@ -157,7 +159,7 @@ $$('input[name="box"]').forEach(r => r.addEventListener('change', () => {
   update();
 }));
 
-$('#clear-box').addEventListener('click', () => {
+$('#clear-box')?.addEventListener('click', () => {
   quantities.fill(0);
   update();
   $('.size-option input:checked')?.focus();
@@ -183,6 +185,7 @@ toast.querySelector('a').addEventListener('click', hideToast);
 
 $$('[data-add]').forEach(b => b.addEventListener('click', () => {
   const i = Number(b.dataset.add);
+  if (!$('#order-form')) { location.href = `order.html?flavor=${i}`; return; }
   if (total() < box) {
     quantities[i]++;
     update();
@@ -232,7 +235,8 @@ onScroll();
 
 // Links that point at a closed FAQ item open it
 $$('[data-open-details]').forEach(a => a.addEventListener('click', () => {
-  const target = document.querySelector(a.getAttribute('href'));
+  const url = new URL(a.href);
+  const target = url.pathname === location.pathname && url.hash ? document.getElementById(url.hash.slice(1)) : null;
   if (target?.tagName === 'DETAILS') target.open = true;
 }));
 
@@ -247,18 +251,19 @@ function minimumDate() {
 function prettyDate(iso) {
   return new Date(`${iso}T12:00:00Z`).toLocaleDateString('en-US', {weekday:'long', month:'long', day:'numeric', timeZone:'UTC'});
 }
-$('#pickup-time').insertAdjacentHTML('beforeend', Array.from({length: 19}, (_, i) => {
+$('#pickup-time')?.insertAdjacentHTML('beforeend', Array.from({length: 19}, (_, i) => {
   const h = 10 + Math.floor(i / 2), m = i % 2 ? '30' : '00';
   const label = `${h > 12 ? h - 12 : h}:${m} ${h >= 12 ? 'PM' : 'AM'}`;
   return `<option value="${String(h).padStart(2, '0')}:${m}">${label}</option>`;
 }).join(''));
 function refreshMinDate() {
+  if (!$('#pickup-date')) return;
   const min = minimumDate();
   $('#pickup-date').min = min;
   $('#pickup-date-hint').textContent = `Earliest date: ${prettyDate(min)}.`;
 }
 refreshMinDate();
-$('#pickup-date').addEventListener('focus', refreshMinDate);
+$('#pickup-date')?.addEventListener('focus', refreshMinDate);
 $('#e-date').min = new Date().toISOString().slice(0, 10);
 
 /* ——— Form validation: inline errors on blur, summary on submit ——— */
@@ -315,7 +320,7 @@ $$('dialog').forEach(d => d.addEventListener('click', e => {
   const r = d.getBoundingClientRect();
   if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) d.close();
 }));
-$('#credits-open').addEventListener('click', () => $('#credits-dialog').showModal());
+$('#credits-open')?.addEventListener('click', () => $('#credits-dialog').showModal());
 
 function openReview(title, subject) {
   $('#review-title').textContent = title;
@@ -326,7 +331,7 @@ function openReview(title, subject) {
 }
 
 /* ——— Order request ——— */
-$('#order-form').addEventListener('submit', e => {
+$('#order-form')?.addEventListener('submit', e => {
   e.preventDefault();
   const count = total();
   const extra = [];
@@ -361,9 +366,9 @@ function enquiry(general) {
   $('#enquiry-errors').hidden = true;
   $('#enquiry-dialog').showModal();
 }
-$('#event-open').addEventListener('click', () => enquiry(false));
-$('#contact-open').addEventListener('click', () => enquiry(true));
-$('#large-order-open').addEventListener('click', () => { enquiry(false); $('#enquiry-type').value = 'Large order'; });
+$('#event-open')?.addEventListener('click', () => enquiry(false));
+$('#contact-open')?.addEventListener('click', () => enquiry(true));
+$('#large-order-open')?.addEventListener('click', () => { enquiry(false); $('#enquiry-type').value = 'Large order'; });
 
 $('#enquiry-form').addEventListener('submit', e => {
   e.preventDefault();
@@ -374,10 +379,32 @@ $('#enquiry-form').addEventListener('submit', e => {
   openReview('Your enquiry', d.get('type') + ' enquiry');
 });
 
+/* Only cookie selections persist in this tab; no customer details are stored. */
+if ($('#order-form')) {
+  try {
+    const saved = JSON.parse(sessionStorage.getItem('pashabakess-box'));
+    if (saved && Object.hasOwn(prices, saved.size) && Array.isArray(saved.quantities) && saved.quantities.length === cookies.length && saved.quantities.every(q => Number.isInteger(q) && q >= 0 && q <= 36) && saved.quantities.reduce((a,b) => a+b,0) <= saved.size) {
+      box = Number(saved.size); saved.quantities.forEach((q,i) => quantities[i] = q);
+    }
+  } catch {}
+  const params = new URLSearchParams(location.search);
+  const chosen = params.get('flavor');
+  if (chosen !== null && /^[0-5]$/.test(chosen)) {
+    if (total() < box) quantities[Number(chosen)]++;
+    else boxFeedback('Your box is full. Choose a bigger box or change flavors.', false);
+    params.delete('flavor');
+    history.replaceState(null, '', location.pathname + (params.size ? '?' + params.toString() : '') + location.hash);
+  }
+  document.querySelector(`input[name="box"][value="${box}"]`).checked = true;
+}
+const legacyRoutes = {menu:'menu.html',about:'about.html',order:'order.html',events:'celebrations.html',faq:'faq.html',contact:'contact.html','faq-allergies':'faq.html#faq-allergies'};
+if ($('#main').dataset.page === 'home' && legacyRoutes[location.hash.slice(1)]) location.replace(legacyRoutes[location.hash.slice(1)]);
+if (location.hash === '#faq-allergies' && $('#faq-allergies')) $('#faq-allergies').open = true;
+
 update();
 
 /* ——— WebMCP: lets an assistant configure (never submit) the visible box ——— */
-if (document.modelContext?.registerTool) {
+if ($('#order-form') && document.modelContext?.registerTool) {
   try {
     Promise.resolve(document.modelContext.registerTool({
       name: 'configure_cookie_box',
