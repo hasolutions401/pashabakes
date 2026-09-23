@@ -362,7 +362,7 @@ $('#copy-request').addEventListener('click', async () => {
 /* ——— Enquiries ——— */
 function enquiry(general) {
   $('#enquiry-title').textContent = general ? 'Say hello to Pasha' : 'Plan a celebration';
-  $('#enquiry-type').value = general ? 'General question' : 'Birthday / celebration';
+  $('#enquiry-type').value = general ? 'General question' : 'Birthday';
   $('#enquiry-errors').hidden = true;
   $('#enquiry-dialog').showModal();
 }
