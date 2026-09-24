@@ -62,9 +62,26 @@ function clean_text(?string $value, int $max): string
     return mb_substr($value, 0, $max);
 }
 
+/**
+ * The visitor's IP address, used only (hashed) for spam limits. When the request
+ * reaches PHP through the host's own proxy (a private address), the real visitor is
+ * the last public address that proxy added to X-Forwarded-For — otherwise every
+ * customer would share one limit.
+ */
 function client_ip(): string
 {
-    return (string) ($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
+    $remote = (string) ($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
+    $public = fn(string $ip) => filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) !== false;
+    if ($public($remote)) {
+        return $remote;
+    }
+    $forwarded = array_reverse(array_map('trim', explode(',', (string) ($_SERVER['HTTP_X_FORWARDED_FOR'] ?? ''))));
+    foreach ($forwarded as $ip) {
+        if ($public($ip)) {
+            return $ip;
+        }
+    }
+    return $remote;
 }
 
 function is_https(): bool

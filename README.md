@@ -74,9 +74,10 @@ payment screen again after a reload, contact/celebration enquiries (with and wit
 fallback when the server is down), admin enquiries, flavor dates and photo resizing. No real emails or payments
 were sent.
 
-## Hosting on GitHub Pages
+## GitHub Pages (old address)
 
-`.github/workflows/pages.yml` publishes `dist/` to GitHub Pages on every push to `main`
-(site: https://hasolutions401.github.io/pashabakes/). One-time setup: repository
-Settings → Pages → Build and deployment → Source: **GitHub Actions**. After that,
-pushing to `main` updates the site automatically; the Actions tab shows each deploy.
+The live site is **https://pashabakess.alwaysdata.net/** only. GitHub Pages cannot run the PHP ordering
+system, so `.github/workflows/pages.yml` publishes nothing but redirects: every page at
+https://hasolutions401.github.io/pashabakes/ forwards to the same page on alwaysdata (it runs on every push
+to `main`). Before this, GitHub Pages served an old copy whose "order" button only opened an email draft,
+so orders placed there never reached the admin portal.

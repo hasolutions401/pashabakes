@@ -159,6 +159,14 @@ if ($driver === 'sqlite') {
         && $old->query("SELECT COUNT(*) FROM enquiries")->fetchColumn() !== false);
 }
 
+$_SERVER['REMOTE_ADDR'] = '203.0.113.9';
+$_SERVER['HTTP_X_FORWARDED_FOR'] = '198.51.100.7';
+check('client IP: direct visitor', client_ip() === '203.0.113.9');
+$_SERVER['REMOTE_ADDR'] = '10.0.0.5';
+$_SERVER['HTTP_X_FORWARDED_FOR'] = '1.2.3.4, 198.51.100.7, 10.0.0.2';
+check('client IP: behind the host proxy', client_ip() === '198.51.100.7');
+unset($_SERVER['REMOTE_ADDR'], $_SERVER['HTTP_X_FORWARDED_FOR']);
+
 rate_hit('t'); rate_hit('t');
 check('rate limit counts', !rate_allowed('t', 2, 60) && rate_allowed('t', 3, 60));
 

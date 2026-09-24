@@ -1,6 +1,8 @@
-# Publishes the static site in /dist to GitHub Pages on every push to main.
-# One-time setup: repo Settings → Pages → Build and deployment → Source: "GitHub Actions".
-name: Deploy site to GitHub Pages
+# The real website (with online ordering) runs on alwaysdata: https://pashabakess.alwaysdata.net/
+# GitHub Pages cannot run the PHP ordering system, so the old GitHub Pages address only
+# redirects there — every page to the same page, keeping ?flavor= and #links.
+# Runs on every push to main.
+name: Redirect GitHub Pages to the live site
 
 on:
   push:
@@ -25,11 +27,30 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: actions/configure-pages@v6
-      # Static pages only: the PHP ordering system (api/, admin/) runs on alwaysdata.
-      - name: Copy static files
+      - name: Build redirect pages
         run: |
+          LIVE=https://pashabakess.alwaysdata.net/
           mkdir _site
-          rsync -a --exclude 'api/' --exclude 'admin/' --exclude 'uploads/' --exclude '.htaccess' dist/ _site/
+          redirect() {  # $1 = file to write, $2 = page on the live site
+            cat > "_site/$1" <<HTML
+          <!doctype html>
+          <html lang="en"><head><meta charset="utf-8">
+          <title>Pashabakess has moved</title>
+          <meta name="robots" content="noindex">
+          <link rel="canonical" href="$LIVE$2">
+          <meta http-equiv="refresh" content="0; url=$LIVE$2">
+          <script>location.replace('$LIVE$2' + location.search + location.hash);</script>
+          </head><body style="font-family:system-ui;padding:40px">
+          <p>Pashabakess has moved. <a href="$LIVE$2">Continue to pashabakess.alwaysdata.net</a></p>
+          </body></html>
+          HTML
+          }
+          for f in dist/*.html; do
+            name=$(basename "$f")
+            page=$name; [ "$name" = index.html ] && page=
+            redirect "$name" "$page"
+          done
+          redirect 404.html ""
       - uses: actions/upload-pages-artifact@v5
         with:
           path: _site
