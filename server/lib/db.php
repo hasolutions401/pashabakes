@@ -6,7 +6,7 @@ declare(strict_types=1);
  * Tables are created and seeded automatically on first use.
  */
 
-const PB_SCHEMA_VERSION = 6;
+const PB_SCHEMA_VERSION = 7;
 
 function db(): PDO
 {
@@ -281,6 +281,13 @@ function migrate(PDO $pdo, string $driver): void
         $draw->execute(['images/pumpkin-chocolate-chip-illustration.jpg', 'Pumpkin Chocolate Chip']);
         $draw->execute(['images/maple-pecan-illustration.jpg', 'Maple Pecan']);
     }
+    // Version 7: back to the earlier sample photos for these two until Pasha sends her own
+    // (shown on the menu as illustrative, with credits).
+    if ($version >= 1 && $version < 7) {
+        $back = $pdo->prepare("UPDATE cookies SET image = ? WHERE name = ? AND image IN ('images/coming-soon.jpg', ?)");
+        $back->execute(['https://sallysbakingaddiction.com/wp-content/uploads/2013/09/chewy-pumpkin-chocolate-chip-cookies-3.jpg', 'Pumpkin Chocolate Chip', 'images/pumpkin-chocolate-chip-illustration.jpg']);
+        $back->execute(['https://confessionsofabakingqueen.com/wp-content/uploads/2020/11/plate-of-maple-pecan-cookies-1-of-1-1024x1536-1.jpg', 'Maple Pecan', 'images/maple-pecan-illustration.jpg']);
+    }
     // Version 5: Pasha's daily limit is 5 dozen (60 cookies), unless a limit was already set in Settings.
     if ($version >= 1 && $version < 5) {
         $pdo->prepare("UPDATE settings SET value = '60' WHERE name = 'max_cookies_per_day' AND value IN ('', '0')")->execute();
@@ -343,9 +350,6 @@ function own_photo_swaps(): array
         'https://assets-eu-01.kc-usercontent.com/21d2ecef-fb9b-01b1-9022-cf60b52c2c77/d79e9c4f-6fbe-4c62-8ca7-fe295e3169b3/Biscoff-Cookies-WEB-RES-1.jpg?auto=format&lossless=1&q=85&w=900' => 'images/biscoff.jpg',
         'https://scientificallysweet.com/wp-content/uploads/2022/09/IMG_3198-salted-toffee-chocolate-chip-cookies-feature2.jpg' => 'images/chocolate-sea-salt-toffee.jpg',
         'https://sallysbakingaddiction.com/wp-content/uploads/2013/12/red-velvet-white-chocolate-chip-cookies-2.jpg' => 'images/red-velvet.jpg',
-        // No photo from Pasha yet: an illustration instead of a borrowed picture.
-        'https://sallysbakingaddiction.com/wp-content/uploads/2013/09/chewy-pumpkin-chocolate-chip-cookies-3.jpg' => 'images/pumpkin-chocolate-chip-illustration.jpg',
-        'https://confessionsofabakingqueen.com/wp-content/uploads/2020/11/plate-of-maple-pecan-cookies-1-of-1-1024x1536-1.jpg' => 'images/maple-pecan-illustration.jpg',
     ];
 }
 
@@ -357,7 +361,7 @@ function default_cookies(): array
         ['Biscoff', 'Brown butter base with Biscoff cookie pieces, white chocolate chips, drizzled with Biscoff spread.', 'signature', 'images/biscoff.jpg'],
         ['Chocolate Sea Salt Toffee', 'Rich brown butter cookie with toffee bits, semi-sweet chocolate chips, topped with sea salt flakes.', 'signature', 'images/chocolate-sea-salt-toffee.jpg'],
         ['Red Velvet', 'Red cookie base with cocoa powder, white chocolate chips and white chocolate drizzle.', 'signature', 'images/red-velvet.jpg'],
-        ['Pumpkin Chocolate Chip', 'Brown butter base with pumpkin purée, cinnamon, and chocolate chips.', 'seasonal', 'images/pumpkin-chocolate-chip-illustration.jpg'],
-        ['Maple Pecan', 'Brown butter base with cinnamon, maple syrup, pecans.', 'seasonal', 'images/maple-pecan-illustration.jpg'],
+        ['Pumpkin Chocolate Chip', 'Brown butter base with pumpkin purée, cinnamon, and chocolate chips.', 'seasonal', 'https://sallysbakingaddiction.com/wp-content/uploads/2013/09/chewy-pumpkin-chocolate-chip-cookies-3.jpg'],
+        ['Maple Pecan', 'Brown butter base with cinnamon, maple syrup, pecans.', 'seasonal', 'https://confessionsofabakingqueen.com/wp-content/uploads/2020/11/plate-of-maple-pecan-cookies-1-of-1-1024x1536-1.jpg'],
     ];
 }

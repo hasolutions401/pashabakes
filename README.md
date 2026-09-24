@@ -52,9 +52,9 @@ address everywhere: `grep -rl pashabakess.alwaysdata.net dist | xargs sed -i 's#
 
 ## Before public launch
 
-- **Photos:** Pasha's own photos are in `dist/images/` (originals in `photos/`). No borrowed photos are left:
-  Pumpkin Chocolate Chip and Maple Pecan show drawn illustrations (`images/*-illustration.jpg`) until Pasha
-  uploads her own photos (Admin → Menu → Edit). M&M is in Admin → Menu as a
+- **Photos:** Pasha's own photos are in `dist/images/` (originals in `photos/`). Pumpkin Chocolate Chip
+  and Maple Pecan still use the earlier sample photos (hotlinked from two recipe blogs), labelled as illustrative
+  with credits on the menu, until Pasha uploads her own (Admin → Menu → Edit); the note then disappears. M&M is in Admin → Menu as a
   **hidden** flavor with its photo, ready for a future rotation: set its pickup dates and click Show.
 - **Payment deadline:** Admin → Settings → Payments → "Ask customers to pay within (hours)". 0 (default) states
   no deadline; customers are told their pickup date is held while Pasha waits for payment.
@@ -72,7 +72,7 @@ address everywhere: `grep -rl pashabakess.alwaysdata.net dist | xargs sed -i 's#
 
 ## Verification
 
-Backend: 68 automated checks pass on SQLite (`php server/tests/run.php`), including pay-after-order, flavor pickup
+Backend: 67 automated checks pass on SQLite (`php server/tests/run.php`), including pay-after-order, flavor pickup
 dates, enquiries and the upgrade of an existing database. Browser checks (Chromium, desktop and 390px mobile)
 covered: menu filters and their screen-reader announcements, Add → order page, checkout draft kept after refresh,
 an October special removed for a November pickup (and rejected by the server), placing an order and seeing the
