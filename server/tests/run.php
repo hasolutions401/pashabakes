@@ -48,6 +48,7 @@ check('M&M added hidden, ready for later', count($all) === 7 && $mm && $mm[0]['i
     && !in_array('M&M', array_column(public_menu_cookies(), 'name'), true));
 check('seeded flavors use Pasha photos', menu_cookies()[0]['image'] === 'images/chocolate-chunk.jpg');
 check('no borrowed photos left in the seed', !array_filter(menu_cookies(true), fn($c) => str_starts_with($c['image'], 'http')));
+check('specials use illustrations', count(array_filter(menu_cookies(), fn($c) => str_ends_with($c['image'], '-illustration.jpg'))) === 2);
 check('seeded prices', box_prices() === [4 => 1400, 6 => 2000, 12 => 3800, 24 => 7600, 36 => 11400]);
 check('9 pickup slots', count(pickup_slots()) === 9);
 

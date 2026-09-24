@@ -9,8 +9,8 @@ const FALLBACK_COOKIES = [
   {id:2,name:'Biscoff',type:'signature',desc:'Brown butter base with Biscoff cookie pieces, white chocolate chips, drizzled with Biscoff spread.',img:'images/biscoff.jpg',imgSm:'images/biscoff-160.jpg'},
   {id:3,name:'Chocolate Sea Salt Toffee',type:'signature',desc:'Rich brown butter cookie with toffee bits, semi-sweet chocolate chips, topped with sea salt flakes.',img:'images/chocolate-sea-salt-toffee.jpg',imgSm:'images/chocolate-sea-salt-toffee-160.jpg'},
   {id:4,name:'Red Velvet',type:'signature',desc:'Red cookie base with cocoa powder, white chocolate chips and white chocolate drizzle.',img:'images/red-velvet.jpg',imgSm:'images/red-velvet-160.jpg'},
-  {id:5,name:'Pumpkin Chocolate Chip',type:'seasonal',desc:'Brown butter base with pumpkin purée, cinnamon, and chocolate chips.',img:'images/coming-soon.jpg',imgSm:'images/coming-soon-160.jpg'},
-  {id:6,name:'Maple Pecan',type:'seasonal',desc:'Brown butter base with cinnamon, maple syrup, pecans.',img:'images/coming-soon.jpg',imgSm:'images/coming-soon-160.jpg'}
+  {id:5,name:'Pumpkin Chocolate Chip',type:'seasonal',desc:'Brown butter base with pumpkin purée, cinnamon, and chocolate chips.',img:'images/pumpkin-chocolate-chip-illustration.jpg',imgSm:'images/pumpkin-chocolate-chip-illustration-160.jpg'},
+  {id:6,name:'Maple Pecan',type:'seasonal',desc:'Brown butter base with cinnamon, maple syrup, pecans.',img:'images/maple-pecan-illustration.jpg',imgSm:'images/maple-pecan-illustration-160.jpg'}
 ];
 
 const $ = s => document.querySelector(s);
@@ -139,7 +139,7 @@ function renderMenu() {
     return `
     <article class="cookie-card" data-type="${seasonal ? 'seasonal' : 'signature'}">
       <div class="cookie-image">
-        <img src="${esc(cardImg(c))}" alt="${c.img.includes('coming-soon') ? `${esc(c.name)}: photo coming soon` : `${own ? '' : 'Illustrative photograph of '}${esc(c.name)} cookies`}" width="900" height="760" loading="lazy" decoding="async">
+        <img src="${esc(cardImg(c))}" alt="${c.img.includes('-illustration') ? `Illustration of ${esc(c.name)} cookies` : c.img.includes('coming-soon') ? `${esc(c.name)}: photo coming soon` : `${own ? '' : 'Illustrative photograph of '}${esc(c.name)} cookies`}" width="900" height="760" loading="lazy" decoding="async">
         <span class="cookie-tag ${seasonal ? 'seasonal' : 'signature'}">${seasonal ? `${esc((windowMonth(c) || month || 'Seasonal').toUpperCase())} SPECIAL` : 'SIGNATURE'}</span>
       </div>
       <h3>${esc(c.name)}</h3>
