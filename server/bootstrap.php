@@ -55,6 +55,24 @@ function config(?string $key = null)
     return $value;
 }
 
+/**
+ * The public website folder (where index.html, uploads/ and images/ live).
+ *  - alwaysdata / git checkout:  <project>/dist      (server/ sits next to dist/)
+ *  - Hostinger:                  <domain>/public_html (server/ sits next to public_html/)
+ * Can be set explicitly with 'public_dir' in server/config.php.
+ */
+function public_dir(): string
+{
+    static $dir = null;
+    if ($dir === null) {
+        $configured = (string) (config('public_dir') ?? '');
+        $base = dirname(PB_ROOT);
+        $dir = $configured !== '' ? rtrim($configured, '/')
+            : (is_dir($base . '/dist') ? $base . '/dist' : $base . '/public_html');
+    }
+    return $dir;
+}
+
 function data_dir(string $sub = ''): string
 {
     $dir = PB_ROOT . '/data' . ($sub !== '' ? '/' . $sub : '');

@@ -1,11 +1,14 @@
-# Puts the website live on alwaysdata whenever main changes.
+# Puts the website live whenever main changes.
 #  1. Runs the backend tests — if any fail, nothing is deployed.
-#  2. Logs in to alwaysdata over SSH and runs `git pull` in ~/pashabakess.
+#  2. Deploys to ONE host:
+#     - Hostinger, once the repository variable HOSTINGER_HOST is set (see HOSTINGER.md), otherwise
+#     - alwaysdata: logs in over SSH and runs `git pull` in ~/pashabakess.
 #  3. Checks that the live menu API answers.
-# One-time setup: repository Settings → Secrets and variables → Actions → New repository secret
-#   ALWAYSDATA_SSH_PASSWORD = the password of the alwaysdata SSH user "pashabakess".
-# Can also be started by hand: Actions → "Deploy to alwaysdata" → Run workflow.
-name: Deploy to alwaysdata
+# Secrets/variables: repository Settings → Secrets and variables → Actions.
+#   alwaysdata: secret ALWAYSDATA_SSH_PASSWORD
+#   Hostinger:  secret HOSTINGER_SSH_PASSWORD, variables HOSTINGER_HOST, HOSTINGER_PORT, HOSTINGER_USER, HOSTINGER_DOMAIN
+# Can also be started by hand: Actions → "Deploy website" → Run workflow.
+name: Deploy website
 
 on:
   push:
@@ -34,6 +37,7 @@ jobs:
 
   deploy:
     needs: test
+    if: vars.HOSTINGER_HOST == ''
     runs-on: ubuntu-latest
     env:
       SSH_PASSWORD: ${{ secrets.ALWAYSDATA_SSH_PASSWORD }}
@@ -61,3 +65,47 @@ jobs:
           sleep 5
           curl -fsS https://pashabakess.alwaysdata.net/api/menu.php | grep -q '"ok":true'
           echo "Live site OK: https://pashabakess.alwaysdata.net/"
+
+  deploy-hostinger:
+    needs: test
+    if: vars.HOSTINGER_HOST != ''
+    runs-on: ubuntu-latest
+    env:
+      SSH_PASSWORD: ${{ secrets.HOSTINGER_SSH_PASSWORD }}
+      DOMAIN: ${{ vars.HOSTINGER_DOMAIN }}
+    steps:
+      - name: Password not set yet
+        if: env.SSH_PASSWORD == ''
+        run: echo "::warning::Not deployed — add the HOSTINGER_SSH_PASSWORD secret (see HOSTINGER.md)."
+      - name: Update the live site on Hostinger
+        if: env.SSH_PASSWORD != ''
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ vars.HOSTINGER_HOST }}
+          port: ${{ vars.HOSTINGER_PORT || 65002 }}
+          username: ${{ vars.HOSTINGER_USER }}
+          password: ${{ secrets.HOSTINGER_SSH_PASSWORD }}
+          envs: DOMAIN
+          script: |
+            set -e
+            BASE="$HOME/domains/$DOMAIN"
+            [ -d "$BASE" ] || { echo "Folder $BASE not found: check the HOSTINGER_DOMAIN variable"; exit 1; }
+            if [ ! -d "$BASE/repo/.git" ]; then
+              git clone --branch main https://github.com/hasolutions401/pashabakes.git "$BASE/repo"
+            fi
+            cd "$BASE/repo"
+            git fetch origin main
+            git checkout -q main
+            git merge --ff-only origin/main
+            mkdir -p "$BASE/server" "$BASE/public_html"
+            # Copy over the old files only — nothing on the server is deleted:
+            # public_html/uploads (Pasha's photos), server/config.php and server/data (orders) stay as they are.
+            cp -a "$BASE/repo/dist/." "$BASE/public_html/"
+            cp -a "$BASE/repo/server/." "$BASE/server/"
+            git log --oneline -1
+      - name: Check the live site answers
+        if: env.SSH_PASSWORD != ''
+        run: |
+          sleep 5
+          curl -fsS "https://$DOMAIN/api/menu.php" | grep -q '"ok":true'
+          echo "Live site OK: https://$DOMAIN/"

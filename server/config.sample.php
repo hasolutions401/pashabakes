@@ -10,6 +10,10 @@ return [
     // Used for links in emails (e.g. the "Open in admin" button).
     'site_url' => 'https://pashabakess.alwaysdata.net',
 
+    // Public website folder. Leave empty: it is found automatically
+    // (dist/ next to server/ on alwaysdata, public_html/ next to server/ on Hostinger).
+    'public_dir' => '',
+
     // One-time key needed to create the admin login at /admin/setup.php.
     // Change it to any long random text before going live.
     'setup_key' => 'change-this-to-a-long-random-phrase',

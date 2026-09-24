@@ -61,7 +61,7 @@ function cookie_image_variants(string $image): array
 {
     $out = ['img' => $image, 'md' => $image, 'sm' => $image];
     if (preg_match('#^((?:uploads|images)/[a-z0-9-]+)\.jpg$#', $image, $m)) {
-        $dir = dirname(PB_ROOT) . '/dist/';
+        $dir = public_dir() . '/';
         foreach (['md' => '-800', 'sm' => '-160'] as $key => $suffix) {
             if (is_file($dir . $m[1] . $suffix . '.jpg')) {
                 $out[$key] = $m[1] . $suffix . '.jpg';
@@ -136,7 +136,7 @@ function cookie_delete(int $id): void
 }
 
 /**
- * Saves an uploaded cookie photo into dist/uploads/ (resized when GD is available).
+ * Saves an uploaded cookie photo into the website's uploads/ folder (resized when GD is available).
  * Also saves an 800px copy for menu cards and a 160px thumbnail for the order form.
  * Returns the relative path, e.g. "uploads/cookie-1a2b3c.jpg".
  */
@@ -156,7 +156,7 @@ function cookie_store_upload(array $file): string
         throw new RuntimeException('Please upload a JPG, PNG or WebP photo.');
     }
 
-    $dir = dirname(PB_ROOT) . '/dist/uploads';
+    $dir = public_dir() . '/uploads';
     if (!is_dir($dir) && !@mkdir($dir, 0775, true)) {
         throw new RuntimeException('The uploads folder is not writable.');
     }

@@ -40,6 +40,7 @@ function check(string $name, bool $ok): void {
 }
 
 echo "Backend tests on " . strtoupper($driver) . PHP_EOL;
+check('public folder found (dist next to server)', public_dir() === dirname(PB_ROOT) . '/dist' && is_file(public_dir() . '/index.html'));
 
 check('seeded 6 cookies', count(menu_cookies()) === 6);
 $all = menu_cookies(true);
