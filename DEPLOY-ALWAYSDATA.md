@@ -35,7 +35,7 @@ Choose one way:
   Upload the `dist` and `server` folders into `www/pashabakess/`.
 - **Git over SSH:**
   ```bash
-  cd ~/www && git clone -b checkout-backend https://github.com/hasolutions401/pashabakes.git pashabakess
+  cd ~/www && git clone https://github.com/hasolutions401/pashabakes.git pashabakess
   ```
   To update later: `cd ~/www/pashabakess && git pull`
 
@@ -98,9 +98,9 @@ Your SMTP server name is shown under **Emails → Addresses**; it looks like `sm
 
 ## Updating the site
 
-Updates go live automatically: each push to the `checkout-backend` branch is tested and then pulled onto
+Updates go live automatically: each push to the `main` branch is tested and then pulled onto
 alwaysdata by GitHub Actions (`.github/workflows/deploy.yml`, needs the `ALWAYSDATA_SSH_PASSWORD` secret).
-If you change the SSH password on alwaysdata, update that secret too. By hand: `cd ~/pashabakess && git pull`. The database upgrades itself on the first visit after an update —
+If you change the SSH password on alwaysdata, update that secret too. By hand: `cd ~/pashabakess && git checkout main && git pull`. The database upgrades itself on the first visit after an update —
 for example, the September 2026 update added enquiries and gave the existing monthly specials the pickup
 dates of the month customers can next order for. Check **Admin → Menu** afterwards.
 

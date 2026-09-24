@@ -82,7 +82,7 @@ were sent.
 ## Hosting
 
 The live site is **https://pashabakess.alwaysdata.net/** only (see `DEPLOY-ALWAYSDATA.md`).
-**Deploying is automatic:** every push to `checkout-backend` runs the backend tests and, if they pass,
+**Deploying is automatic:** every push to `main` runs the backend tests and, if they pass,
 `.github/workflows/deploy.yml` logs in to alwaysdata and runs `git pull` in `~/pashabakess`, then checks the
 live site answers. It needs the repository secret `ALWAYSDATA_SSH_PASSWORD` (Settings → Secrets and variables →
 Actions). Progress and any errors show in the repository's **Actions** tab. The old GitHub
