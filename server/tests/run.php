@@ -133,7 +133,8 @@ $before = glob($mailDir . '/*-receipt-*.html') ?: [];
 send_customer_receipt(order_find((int) $order['id']));
 $newReceipts = array_values(array_diff(glob($mailDir . '/*-receipt-*.html') ?: [], $before));
 $receipt = $newReceipts ? (string) file_get_contents($newReceipts[0]) : '';
-check('receipt has payment instructions with order number', str_contains($receipt, '$Pashabakess') && str_contains($receipt, $order['code'] . '</strong> in the payment note'));
+check('receipt has payment instructions with order number', str_contains($receipt, '$Pashabakess') && str_contains($receipt, 'Write this in the payment note')
+    && str_contains($receipt, '>' . $order['code'] . '</span>') && str_contains($receipt, 'images/chocolate-chunk-160.jpg'));
 
 // Enquiries
 [$q, $e] = enquiry_validate(['name' => 'Amina', 'email' => 'A@Example.com', 'type' => 'General question', 'date' => '2031-01-01', 'quantity' => '48 cookies', 'message' => 'Do you do nut-free?']);
