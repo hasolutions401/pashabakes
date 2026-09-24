@@ -25,7 +25,7 @@ putenv("PB_CONFIG=$config");
 require dirname(__DIR__) . '/bootstrap.php';
 
 if ($driver === 'mysql') {
-    foreach (['order_items', 'orders', 'cookies', 'settings', 'admin_users', 'email_log', 'rate_hits'] as $t) {
+    foreach (['order_items', 'orders', 'cookies', 'settings', 'admin_users', 'email_log', 'rate_hits', 'enquiries'] as $t) {
         db()->exec("DROP TABLE IF EXISTS $t");
     }
     // Re-run migrations on the now-empty database.
@@ -63,7 +63,29 @@ check('too-soon date rejected', isset($e['pickup_date']));
 [, $e] = order_validate($base(['expected_total_cents' => 100]));
 check('price mismatch rejected', isset($e['box_size']));
 [, $e] = order_validate($base(['payment_method' => 'paypal', 'payer_ref' => '', 'agree' => false]));
-check('payment + agree required', isset($e['payment_method'], $e['payer_ref'], $e['agree']));
+check('payment + agree required', isset($e['payment_method'], $e['agree']));
+[, $e] = order_validate($base(['payer_ref' => '']));
+check('payer name optional (customer pays after ordering)', $e === []);
+
+// Monthly specials: only for pickups in their month.
+$seasonal = array_values(array_filter(menu_cookies(), fn($c) => $c['type'] === 'seasonal'));
+$earliest = earliest_pickup_date();
+check('seeded specials limited to the next orderable month', count($seasonal) === 2
+    && $seasonal[0]['available_from'] === $earliest->format('Y-m-01') && $seasonal[0]['available_until'] === $earliest->format('Y-m-t'));
+$nextMonth = $earliest->modify('first day of next month')->format('Y-m-d');
+settings_save(['max_days_ahead' => '120']);
+[, $e] = order_validate($base(['pickup_date' => $nextMonth]));
+check('special rejected for a pickup next month', isset($e['items']) && str_contains($e['items'], $seasonal[1]['name']));
+[, $e] = order_validate($base(['pickup_date' => $nextMonth, 'items' => [['id' => 1, 'qty' => 6]]]));
+check('signature flavor fine next month', $e === []);
+settings_save(['max_days_ahead' => '90']);
+cookie_save($seasonal[0]['id'], ['available_from' => '2020-01-01', 'available_until' => '2020-01-31'] + $seasonal[0]);
+check('past specials hidden from the public menu', !in_array($seasonal[0]['id'], array_column(public_menu_cookies(), 'id'), true)
+    && count(public_menu_cookies()) === 5);
+cookie_save($seasonal[0]['id'], $seasonal[0]);
+check('window text', cookie_window_text($seasonal[0]) === $earliest->format('F') . ' pickups only');
+[, $ce] = cookie_validate(['name' => 'X', 'available_from' => '2026-10-31', 'available_until' => '2026-10-01']);
+check('admin: first date must be before last', isset($ce['available']));
 [, $e] = order_validate($base(['occasion' => '<script>']));
 check('unknown occasion dropped', $e === []);
 
@@ -100,6 +122,42 @@ check('password hashed', password_verify('secret-pass-1', (string) db_value('SEL
 
 [$ok] = send_customer_confirmation(order_find((int) $order['id']));
 check('confirmation email written', $ok && email_statuses((int) $order['id'])['confirmation'] === 'sent');
+$mailDir = data_dir('mail');
+$before = glob($mailDir . '/*-receipt-*.html') ?: [];
+send_customer_receipt(order_find((int) $order['id']));
+$newReceipts = array_values(array_diff(glob($mailDir . '/*-receipt-*.html') ?: [], $before));
+$receipt = $newReceipts ? (string) file_get_contents($newReceipts[0]) : '';
+check('receipt has payment instructions with order number', str_contains($receipt, '$Pashabakess') && str_contains($receipt, $order['code'] . '</strong> in the payment note'));
+
+// Enquiries
+[$q, $e] = enquiry_validate(['name' => 'Amina', 'email' => 'A@Example.com', 'type' => 'General question', 'date' => '2031-01-01', 'quantity' => '48 cookies', 'message' => 'Do you do nut-free?']);
+check('general enquiry drops event fields', $e === [] && $q['event_date'] === '' && $q['quantity'] === '' && $q['email'] === 'a@example.com');
+[, $e] = enquiry_validate(['name' => 'A', 'email' => 'nope', 'type' => 'Birthday', 'date' => '2001-01-01', 'message' => '']);
+check('enquiry errors', isset($e['name'], $e['email'], $e['date'], $e['message']));
+[$q] = enquiry_validate(['name' => 'Amina', 'email' => 'a@example.com', 'type' => 'Birthday', 'date' => $nextMonth, 'quantity' => '48 cookies (4 dozen)', 'message' => 'Party for 40 people']);
+[$row, $created] = enquiry_create($q);
+[$row2, $created2] = enquiry_create($q);
+check('enquiry saved once', $created && !$created2 && $row['id'] === $row2['id'] && enquiry_new_count() === 1);
+[$ok] = send_enquiry_alert($row);
+check('enquiry emailed to Pasha', $ok);
+enquiry_set_status((int) $row['id'], 'done');
+check('enquiry marked answered', enquiry_new_count() === 0 && enquiry_list('done', 1)['total'] === 1);
+
+// Upgrading a version-1 database adds the new columns and dates the existing specials.
+if ($driver === 'sqlite') {
+    $old = new PDO("sqlite:$tmp/v1.sqlite", null, null, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC]);
+    $old->exec("CREATE TABLE settings (name TEXT PRIMARY KEY, value TEXT NOT NULL)");
+    $old->exec("INSERT INTO settings VALUES ('schema_version', '1'), ('lead_days', '7')");
+    $old->exec("CREATE TABLE cookies (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, description TEXT NOT NULL, type TEXT NOT NULL,
+        image TEXT NOT NULL, is_available INTEGER NOT NULL DEFAULT 1, sort_order INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)");
+    $old->exec("INSERT INTO cookies (name, description, type, image, created_at, updated_at) VALUES ('Old sig', '', 'signature', '', 'x', 'x'), ('Old special', '', 'seasonal', '', 'x', 'x')");
+    migrate($old, 'sqlite');
+    $rows = $old->query('SELECT type, available_from, available_until FROM cookies ORDER BY id')->fetchAll();
+    check('v1 upgrade: specials dated, signatures untouched', $rows[0]['available_from'] === null
+        && $rows[1]['available_from'] === $earliest->format('Y-m-01') && $rows[1]['available_until'] === $earliest->format('Y-m-t')
+        && (int) $old->query("SELECT value FROM settings WHERE name = 'schema_version'")->fetchColumn() === PB_SCHEMA_VERSION
+        && $old->query("SELECT COUNT(*) FROM enquiries")->fetchColumn() !== false);
+}
 
 rate_hit('t'); rate_hit('t');
 check('rate limit counts', !rate_allowed('t', 2, 60) && rate_allowed('t', 3, 60));

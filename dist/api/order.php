@@ -1,5 +1,5 @@
 <?php
-/* Places an order (POST, JSON). */
+/* Places an order (POST, JSON). The customer pays after this, quoting the order number. */
 require dirname(__DIR__, 2) . '/server/bootstrap.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -63,6 +63,10 @@ $response = [
         'pickupDate' => pretty_date($order['pickup_date']),
         'pickupSlot' => $order['pickup_slot'],
         'payment' => payment_label($order['payment_method']),
+        'method' => $order['payment_method'],
+        // Where to send the money — shown with the order number on the next screen.
+        'payTo' => payment_handle($order['payment_method']),
+        'payUrl' => payment_url($order['payment_method']),
         'email' => $order['email'],
     ],
 ];

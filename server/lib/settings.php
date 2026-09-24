@@ -119,3 +119,14 @@ function cashapp_url(): string
 {
     return 'https://cash.app/$' . rawurlencode(setting('cashapp_handle'));
 }
+
+/** The handle customers pay, e.g. "@Palosha-Rashid" or "$Pashabakess". */
+function payment_handle(string $method): string
+{
+    return $method === 'cashapp' ? '$' . setting('cashapp_handle') : '@' . setting('venmo_handle');
+}
+
+function payment_url(string $method): string
+{
+    return $method === 'cashapp' ? cashapp_url() : venmo_url();
+}

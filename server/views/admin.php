@@ -7,6 +7,7 @@ function admin_header(string $title, string $active = '', ?array $user = null): 
 {
     $nav = [
         'orders' => ['index.php', 'Orders'],
+        'enquiries' => ['enquiries.php', 'Enquiries'],
         'menu' => ['menu.php', 'Menu'],
         'settings' => ['settings.php', 'Settings'],
         'account' => ['account.php', 'Account'],
@@ -21,7 +22,7 @@ function admin_header(string $title, string $active = '', ?array $user = null): 
   <meta name="theme-color" content="#442c25">
   <title><?= e($title) ?> · Pashabakess Admin</title>
   <link rel="icon" type="image/png" href="../favicon-64.png">
-  <link rel="stylesheet" href="admin.css?v=2">
+  <link rel="stylesheet" href="admin.css?v=3">
 </head>
 <body>
 <header class="topbar">
@@ -33,8 +34,9 @@ function admin_header(string $title, string $active = '', ?array $user = null): 
   </div>
   <?php if ($user): ?>
   <nav class="tabs" aria-label="Admin">
+    <?php $newEnquiries = enquiry_new_count(); ?>
     <?php foreach ($nav as $key => [$href, $label]): ?>
-      <a href="<?= e($href) ?>"<?= $key === $active ? ' aria-current="page"' : '' ?>><?= e($label) ?></a>
+      <a href="<?= e($href) ?>"<?= $key === $active ? ' aria-current="page"' : '' ?>><?= e($label) ?><?php if ($key === 'enquiries' && $newEnquiries > 0): ?> <span class="count"><?= $newEnquiries ?><span class="sr-only"> new</span></span><?php endif; ?></a>
     <?php endforeach; ?>
     <form method="post" action="logout.php" class="logout"><?= csrf_field() ?><button type="submit">Log out</button></form>
   </nav>

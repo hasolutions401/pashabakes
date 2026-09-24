@@ -34,7 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         case 'mark_cancelled':
             order_set_status($id, 'cancelled');
-            flash('Order cancelled. The customer was not emailed — contact them if needed.', 'warning');
+            flash('Order cancelled. The customer was not emailed — contact them, and refund them if they already paid.', 'warning');
             break;
 
         case 'back_to_pending':
@@ -101,7 +101,8 @@ admin_header('Order ' . $order['code'], 'orders', $user);
   <?php if ($order['status'] === 'pending'): ?>
     <div class="verify">
       <p class="verify-title">Check <?= e(payment_label($order['payment_method'])) ?></p>
-      <p>Look for <strong><?= money((int) $order['total_cents']) ?></strong> from <strong><?= e($order['payer_ref']) ?></strong>. When you see it, mark the order as paid — the customer gets their confirmation email with the pickup address automatically.</p>
+      <p>Look for <strong><?= money((int) $order['total_cents']) ?></strong> with <strong><?= e($order['code']) ?></strong> in the payment note<?= $order['payer_ref'] !== '' ? ' (the customer said they’ll pay from <strong>' . e($order['payer_ref']) . '</strong>)' : '' ?>. When you see it, mark the order as paid — the customer gets their confirmation email with the pickup address automatically.</p>
+      <p class="verify-hint">Can’t fill this order (for example, the date is fully booked)? Email the customer before cancelling. If they already paid, refund them in full.</p>
     </div>
     <div class="action-row">
       <?= $action('mark_paid', '✓ Mark as Paid', 'btn btn-primary btn-lg', 'Mark ' . $order['code'] . ' as paid? The customer will get the confirmation email now.') ?>
@@ -155,7 +156,8 @@ admin_header('Order ' . $order['code'], 'orders', $user);
   <section class="card">
     <h2>Payment</h2>
     <p class="lead"><?= e(payment_label($order['payment_method'])) ?></p>
-    <p>Paid from: <strong><?= e($order['payer_ref']) ?></strong></p>
+    <p>Payment note: <strong><?= e($order['code']) ?></strong></p>
+    <?php if ($order['payer_ref'] !== ''): ?><p>Paying from: <strong><?= e($order['payer_ref']) ?></strong></p><?php endif; ?>
     <p>Amount due: <strong><?= money((int) $order['total_cents']) ?></strong></p>
   </section>
 

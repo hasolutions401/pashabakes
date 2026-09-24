@@ -41,7 +41,7 @@ admin_header('Menu', 'menu', $user);
         <?php endif; ?>
         <div class="cookie-info">
           <strong><?= e($c['name']) ?></strong>
-          <span class="muted"><?= $c['type'] === 'seasonal' ? 'Monthly special' : 'Signature' ?> · <?= $c['is_available'] ? 'On the website' : 'Hidden' ?></span>
+          <span class="muted"><?= $c['type'] === 'seasonal' ? 'Monthly special' : 'Signature' ?> · <?= $c['is_available'] ? 'On the website' : 'Hidden' ?><?php $window = cookie_window_text($c); ?><?= $window !== '' ? ' · ' . e(ucfirst($window)) : '' ?></span>
         </div>
         <div class="cookie-actions">
           <form method="post">

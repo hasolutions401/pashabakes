@@ -1,0 +1,8 @@
+# Pashabakess — https://pashabakess.alwaysdata.net/
+User-agent: *
+Disallow: /admin/
+Disallow: /api/
+# Search engines may read the live menu when rendering pages.
+Allow: /api/menu.php
+
+Sitemap: https://pashabakess.alwaysdata.net/sitemap.xml

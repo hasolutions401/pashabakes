@@ -22,6 +22,7 @@ require_once PB_ROOT . '/lib/db.php';
 require_once PB_ROOT . '/lib/settings.php';
 require_once PB_ROOT . '/lib/menu.php';
 require_once PB_ROOT . '/lib/orders.php';
+require_once PB_ROOT . '/lib/enquiries.php';
 require_once PB_ROOT . '/lib/ratelimit.php';
 require_once PB_ROOT . '/lib/mailer.php';
 require_once PB_ROOT . '/lib/emails.php';

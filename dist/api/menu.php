@@ -6,13 +6,21 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     json_response(['ok' => false, 'message' => 'Method not allowed'], 405);
 }
 
-$cookies = array_map(fn(array $c) => [
-    'id' => $c['id'],
-    'name' => $c['name'],
-    'desc' => $c['description'],
-    'type' => $c['type'],
-    'img' => $c['image'],
-], menu_cookies());
+$cookies = array_map(function (array $c) {
+    $img = cookie_image_variants($c['image']);
+    return [
+        'id' => $c['id'],
+        'name' => $c['name'],
+        'desc' => $c['description'],
+        'type' => $c['type'],
+        'img' => $img['img'],
+        'imgMd' => $img['md'],
+        'imgSm' => $img['sm'],
+        // Pickup dates this flavor can be ordered for (null = no limit).
+        'from' => $c['available_from'] ?: null,
+        'until' => $c['available_until'] ?: null,
+    ];
+}, public_menu_cookies());
 
 $prices = [];
 foreach (box_prices() as $size => $cents) {

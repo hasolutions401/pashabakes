@@ -6,7 +6,7 @@ declare(strict_types=1);
  * Tables are created and seeded automatically on first use.
  */
 
-const PB_SCHEMA_VERSION = 1;
+const PB_SCHEMA_VERSION = 2;
 
 function db(): PDO
 {
@@ -132,6 +132,7 @@ function migrate(PDO $pdo, string $driver): void
     $engine = $mysql ? ' ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci' : '';
 
     // Fast path: already migrated.
+    $version = 0;
     try {
         $version = (int) $pdo->query("SELECT value FROM settings WHERE name = 'schema_version'")->fetchColumn();
         if ($version >= PB_SCHEMA_VERSION) {
@@ -160,6 +161,8 @@ function migrate(PDO $pdo, string $driver): void
             image {$str(500)} NOT NULL,
             is_available INTEGER NOT NULL DEFAULT 1,
             sort_order INTEGER NOT NULL DEFAULT 0,
+            available_from {$str(10)} NULL,
+            available_until {$str(10)} NULL,
             created_at {$str(19)} NOT NULL,
             updated_at {$str(19)} NOT NULL
         ){$engine}",
@@ -206,9 +209,35 @@ function migrate(PDO $pdo, string $driver): void
             bucket {$str(120)} NOT NULL,
             created_at INTEGER NOT NULL
         ){$engine}",
+        "CREATE TABLE IF NOT EXISTS enquiries (
+            id {$id},
+            status {$str(20)} NOT NULL DEFAULT 'new',
+            name {$str(120)} NOT NULL,
+            email {$str(200)} NOT NULL,
+            type {$str(60)} NOT NULL,
+            event_date {$str(10)} NULL,
+            quantity {$str(80)} NOT NULL,
+            message {$text} NOT NULL,
+            created_at {$str(19)} NOT NULL
+        ){$engine}",
     ];
     foreach ($statements as $sql) {
         $pdo->exec($sql);
+    }
+
+    // Version 2: flavors can be limited to a range of pickup dates (e.g. a monthly special).
+    foreach (['available_from', 'available_until'] as $col) {
+        try {
+            $pdo->exec("ALTER TABLE cookies ADD COLUMN {$col} {$str(10)} NULL");
+        } catch (PDOException) {
+            // column already exists (fresh install)
+        }
+    }
+    if ($version === 1) {
+        // Existing monthly specials become available for the month customers can next order for.
+        [$from, $until] = seasonal_window_default($pdo);
+        $pdo->prepare("UPDATE cookies SET available_from = ?, available_until = ? WHERE type = 'seasonal' AND available_from IS NULL AND available_until IS NULL")
+            ->execute([$from, $until]);
     }
 
     $indexes = [
@@ -218,6 +247,7 @@ function migrate(PDO $pdo, string $driver): void
         ['idx_items_order', 'order_items', 'order_id'],
         ['idx_email_order', 'email_log', 'order_id'],
         ['idx_rate_bucket', 'rate_hits', 'bucket, created_at'],
+        ['idx_enquiries_created', 'enquiries', 'created_at'],
     ];
     foreach ($indexes as [$name, $table, $cols]) {
         try {
@@ -241,11 +271,33 @@ function seed_defaults(PDO $pdo): void
 
     if ((int) $pdo->query('SELECT COUNT(*) FROM cookies')->fetchColumn() === 0) {
         $now = now_str();
-        $add = $pdo->prepare('INSERT INTO cookies (name, description, type, image, is_available, sort_order, created_at, updated_at) VALUES (?, ?, ?, ?, 1, ?, ?, ?)');
+        [$from, $until] = seasonal_window_default($pdo);
+        $add = $pdo->prepare('INSERT INTO cookies (name, description, type, image, is_available, sort_order, available_from, available_until, created_at, updated_at)
+            VALUES (?, ?, ?, ?, 1, ?, ?, ?, ?, ?)');
         foreach (default_cookies() as $i => $c) {
-            $add->execute([$c[0], $c[1], $c[2], $c[3], ($i + 1) * 10, $now, $now]);
+            $seasonal = $c[2] === 'seasonal';
+            $add->execute([$c[0], $c[1], $c[2], $c[3], ($i + 1) * 10, $seasonal ? $from : null, $seasonal ? $until : null, $now, $now]);
         }
     }
+}
+
+/**
+ * First and last day of the month of the earliest possible pickup date — the month a
+ * "monthly special" is for. Reads the settings table directly because it runs during migration.
+ */
+function seasonal_window_default(PDO $pdo): array
+{
+    $lead = 7;
+    try {
+        $value = $pdo->query("SELECT value FROM settings WHERE name = 'lead_days'")->fetchColumn();
+        if ($value !== false) {
+            $lead = max(0, min(60, (int) $value));
+        }
+    } catch (PDOException) {
+        // settings not seeded yet: use the default
+    }
+    $earliest = today()->modify("+{$lead} days");
+    return [$earliest->format('Y-m-01'), $earliest->format('Y-m-t')];
 }
 
 function default_cookies(): array

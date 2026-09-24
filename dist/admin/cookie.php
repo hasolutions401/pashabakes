@@ -11,7 +11,9 @@ if ($id && !$cookie) {
 }
 
 $values = $cookie ?? ['name' => '', 'description' => '', 'type' => 'signature', 'image' => '', 'is_available' => 1,
-    'sort_order' => ((int) db_value('SELECT COALESCE(MAX(sort_order), 0) FROM cookies')) + 10];
+    'sort_order' => ((int) db_value('SELECT COALESCE(MAX(sort_order), 0) FROM cookies')) + 10,
+    'available_from' => null, 'available_until' => null];
+[$monthFrom, $monthUntil] = seasonal_window_default(db());
 $errors = [];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -56,6 +58,22 @@ admin_header($cookie ? 'Edit ' . $cookie['name'] : 'Add a flavor', 'menu', $user
       <legend>Type</legend>
       <label class="choice"><input type="radio" name="type" value="signature"<?= $values['type'] !== 'seasonal' ? ' checked' : '' ?>> Signature (all year)</label>
       <label class="choice"><input type="radio" name="type" value="seasonal"<?= $values['type'] === 'seasonal' ? ' checked' : '' ?>> Monthly special</label>
+    </fieldset>
+
+    <fieldset class="window-fields">
+      <legend>Pickup dates it can be ordered for <small>(optional)</small></legend>
+      <p class="muted">Leave both empty for a flavor you offer every day. For a monthly special, set the first and last day of its month
+        (for example <?= e(short_date($monthFrom)) ?> – <?= e(short_date($monthUntil)) ?>). Customers can’t pick it for other dates,
+        and it disappears from the menu once its last date has passed.</p>
+      <div class="two-col">
+        <label>First pickup date
+          <input type="date" name="available_from" value="<?= e((string) ($values['available_from'] ?? '')) ?>">
+        </label>
+        <label>Last pickup date
+          <input type="date" name="available_until" value="<?= e((string) ($values['available_until'] ?? '')) ?>">
+        </label>
+      </div>
+      <?php if (isset($errors['available'])): ?><span class="error"><?= e($errors['available']) ?></span><?php endif; ?>
     </fieldset>
 
     <div class="photo-field">

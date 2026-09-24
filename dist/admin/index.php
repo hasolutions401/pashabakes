@@ -96,7 +96,7 @@ admin_header('Orders', 'orders', $user);
             <p class="who"><?= e($o['customer_name']) ?></p>
             <p class="pickup<?= $o['pickup_date'] === $todayYmd ? ' is-today' : '' ?>">Pickup <?= e(short_date($o['pickup_date'])) ?> · <?= e($o['pickup_slot']) ?></p>
             <p class="items"><?= e($o['items_text']) ?></p>
-            <p class="pay"><?= e(payment_label($o['payment_method'])) ?> from <strong><?= e($o['payer_ref']) ?></strong> · placed <?= e(pretty_datetime($o['created_at'])) ?></p>
+            <p class="pay"><?= e(payment_label($o['payment_method'])) ?><?php if ($o['payer_ref'] !== ''): ?> from <strong><?= e($o['payer_ref']) ?></strong><?php endif; ?> · placed <?= e(pretty_datetime($o['created_at'])) ?></p>
           </a>
         </li>
       <?php endforeach; ?>

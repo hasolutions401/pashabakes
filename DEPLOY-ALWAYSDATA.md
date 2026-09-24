@@ -81,13 +81,25 @@ Your SMTP server name is shown under **Emails → Addresses**; it looks like `sm
 
 ## Everyday use (for Pasha)
 
-- **New order:** you get an email “New order PB1005…”. Check Venmo/Cash App for the amount from
-  the username shown, then tap **Open order in admin → Mark as Paid**. The customer is emailed their
-  confirmation with the pickup address automatically.
+- **New order:** you get an email “New order PB1005…”. The customer has been told to pay with
+  **PB1005 in the payment note**. When that payment shows up in Venmo/Cash App, tap
+  **Open order in admin → Mark as Paid**. The customer is emailed their confirmation with the pickup
+  address automatically.
+- **Can’t fill an order** (date fully booked, etc.)? Email the customer, refund them in full if they paid,
+  then **Cancel order**.
+- **Enquiries:** messages from the Contact and Celebrations pages arrive by email (just reply) and are
+  listed under **Enquiries** — mark them answered there.
 - **Baking list:** the dashboard shows how many of each flavor to bake per pickup day.
 - **After pickup:** tap **Mark as Picked up**.
-- **Menu:** add flavors, upload photos, hide sold-out flavors.
+- **Menu:** add flavors, upload photos, hide sold-out flavors, and set the pickup dates for each
+  monthly special (e.g. 1–31 October) so it can’t be ordered for other months.
 - **Settings:** prices, pickup times, days you’re not available, pausing online orders.
+
+## Updating the site
+
+Upload the new files (or `git pull`). The database upgrades itself on the first visit after an update —
+for example, the September 2026 update added enquiries and gave the existing monthly specials the pickup
+dates of the month customers can next order for. Check **Admin → Menu** afterwards.
 
 ## Backups
 
@@ -106,4 +118,4 @@ now and then (e.g. monthly) via SFTP. alwaysdata also keeps automatic daily back
 
 ## Self-test
 
-Via SSH: `php server/tests/run.php` — runs 27 checks on a throwaway database.
+Via SSH: `php server/tests/run.php` — runs 41 checks on a throwaway database.

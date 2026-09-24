@@ -100,21 +100,30 @@ function order_validate(array $in): array
         $errors['pickup_slot'] = 'Please choose a pickup time.';
     }
 
-    // Payment
+    // Monthly specials (and any flavor with pickup dates set) only for their dates.
+    if ($date && !isset($errors['pickup_date']) && !isset($errors['items'])) {
+        foreach ($data['items'] as $it) {
+            $c = $cookies[$it['cookie_id']];
+            if (!cookie_available_on($c, $data['pickup_date'])) {
+                $errors['items'] = sprintf('%s is available for %s, so it can’t be picked up on %s. Please choose another flavor or pickup date.',
+                    $c['name'], cookie_window_text($c), $date->format('l, F j'));
+                break;
+            }
+        }
+    }
+
+    // Payment happens after the order is placed, so the payer name is optional.
     if (!in_array($data['payment_method'], ['venmo', 'cashapp'], true)) {
         $errors['payment_method'] = 'Please choose Venmo or Cash App.';
     }
-    if (mb_strlen($data['payer_ref']) < 2) {
-        $errors['payer_ref'] = 'Please enter the Venmo/Cash App username (or transaction ID) you paid from.';
-    }
     if (empty($in['agree'])) {
-        $errors['agree'] = 'Please confirm you have read the allergy and cancellation information.';
+        $errors['agree'] = 'Please confirm you have read the allergy information and the cancellation and refund policy.';
     }
 
     // Price check: the total the customer saw must match the current price.
     $data['total_cents'] = $prices[$data['box_size']] ?? 0;
     if (!isset($errors['box_size']) && isset($in['expected_total_cents']) && (int) $in['expected_total_cents'] !== $data['total_cents']) {
-        $errors['box_size'] = 'Prices were just updated. The total for your box is now ' . money($data['total_cents']) . '. Please review before paying.';
+        $errors['box_size'] = 'Prices were just updated. The total for your box is now ' . money($data['total_cents']) . '. Please review your order.';
     }
 
     return [$data, $errors];

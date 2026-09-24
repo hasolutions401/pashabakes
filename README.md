@@ -1,37 +1,78 @@
 # Pashabakess
 
-Bakery website with one-step online ordering and a private admin portal. `dist/` is the public website; `server/` is the PHP ordering system (PHP 8.1+, SQLite or MySQL). Hosted on alwaysdata — see `DEPLOY-ALWAYSDATA.md`.
+Bakery website with online ordering (order first, then pay with Venmo or Cash App) and a private admin portal. `dist/` is the public website; `server/` is the PHP ordering system (PHP 8.1+, SQLite or MySQL). Hosted on alwaysdata — see `DEPLOY-ALWAYSDATA.md`.
 
 ## Content and ordering
 
-Customers order and pay on one page (`dist/order.html`): box, flavors, pickup date/time, Venmo or Cash App
-payment and their payment username. The order is saved by the PHP backend in `server/` and appears in the
-admin portal at `/admin/` as **Payment pending**. Pasha checks Venmo/Cash App and clicks **Mark as Paid**;
-the customer is then emailed a confirmation with the pickup address.
+Customers order first and pay second (`dist/order.html`): box, flavors, pickup date/time and their choice of
+Venmo or Cash App. The PHP backend in `server/` saves the order as **Payment pending** and gives it an order
+number (e.g. PB1005). The next screen, and the receipt email, then show how to pay: the amount, Pasha's
+handle, a QR code, and "write PB1005 in the payment note". Nothing is paid before the order exists, so a failed
+submission can never leave Pasha with money and no order. Pasha checks Venmo/Cash App, then clicks
+**Mark as Paid** in `/admin/`; the customer is emailed a confirmation with the pickup address.
 
+- The checkout form is saved in the browser tab (sessionStorage) so a refresh doesn't lose it, and the payment
+  screen comes back if the page reloads after ordering. Both are cleared when the order is placed or the tab closes.
+- **Monthly specials:** each flavor can have "first/last pickup date" in **Admin → Menu → Edit**. Customers can't
+  choose it for other pickup dates (checked in the browser and on the server), and it drops off the menu once
+  its last date has passed. Pages show the month name from these dates ("October specials").
+- **Enquiries** from the Contact and Celebrations pages are saved on the server, emailed to Pasha (reply goes
+  straight to the customer), and listed in **Admin → Enquiries**. If the server can't be reached, the form offers
+  the message as an email instead. Without JavaScript the form still posts normally.
 - Menu, prices, pickup times, unavailable dates and payment handles are managed in **Admin → Menu / Settings**.
-- Emails: new-order alert to Pasha, receipt to the customer, confirmation when marked paid.
-- Server-side checks: price, box count, one week’s notice, time slots, duplicate submissions, rate limits.
-- Setup and hosting: see `DEPLOY-ALWAYSDATA.md`. Backend tests: `php server/tests/run.php`.
+- Emails: new-order alert to Pasha, receipt with payment instructions to the customer, confirmation when marked
+  paid, and new-enquiry alerts.
+- Server-side checks: price, box count, flavor pickup dates, one week's notice, time slots (Eastern time),
+  duplicate submissions, rate limits.
+- Uploaded flavor photos are saved at 1400px plus an 800px copy for menu cards and a 160px thumbnail for the
+  order form.
+- Setup and hosting: see `DEPLOY-ALWAYSDATA.md`. Backend tests: `php server/tests/run.php`. The database
+  upgrades itself on the first request after an update.
 
-Static text (home page, FAQs) still lives in the HTML files in `dist/`; styles in `dist/style.css`.
+Text that lives in several places — keep it in step when it changes:
+
+- **Cancellation and refund policy:** `dist/order.html`, `dist/faq.html` (`#faq-cancel`) and
+  `refund_policy_text()` in `server/lib/emails.php`.
+- **Menu cards without JavaScript:** the static cards in `dist/index.html` and `dist/menu.html` match
+  `FALLBACK_COOKIES` in `dist/app.js`. The live menu from Admin replaces them as soon as the page loads.
+- **Prices** written in page text (home, menu, FAQs, Celebrations).
+
+Static text (home page, FAQs, privacy notice) lives in the HTML files in `dist/`; styles in `dist/style.css`.
+After editing `style.css` or `app.js`, bump the `?v=` number on their links in every HTML page.
+
+## Search and sharing
+
+Every page has a canonical URL, Open Graph tags and a social preview image (`dist/og-image.jpg`, 1200×630).
+`dist/sitemap.xml` and `dist/robots.txt` list the pages and keep `/admin/` and `/api/` out of search.
+They all use **https://pashabakess.alwaysdata.net/**. If the site moves to its own domain, replace that
+address everywhere: `grep -rl pashabakess.alwaysdata.net dist | xargs sed -i 's#pashabakess.alwaysdata.net#NEW-DOMAIN#g'`
 
 ## Before public launch
 
-- Confirm the final October menu and any larger-order pricing before launch.
-- Replace illustrative recipe photographs with owner-supplied photos or secure image reuse permission. Linked credits are included. The hero image is by American Heritage Chocolate on Unsplash.
+- **Photos:** menu, hero and About photos are still illustrative recipe/stock photos, labelled as such with
+  credits. Replace them with Pasha's own photos (flavor photos via Admin → Menu → Edit; hero and About photos
+  in `dist/index.html` / `dist/about.html`). Restore the "From my kitchen, with love." caption on the About
+  photo once it is Pasha's own.
+- **Refund policy:** the published wording (full refund with at least two days' notice, none after, full
+  refund if Pasha cancels) is awaiting Pasha's confirmation, including how quickly refunds are sent.
+- **Privacy notice** (`dist/privacy.html`): ask Pasha to review it, especially how long records are kept.
+- **Venmo:** payments go to the personal profile @Palosha-Rashid, which shows Pasha's full name. Venmo expects
+  sales to use a business profile; confirm with Pasha.
+- Confirm the monthly specials and any larger-order pricing each month.
 - Original client-supplied logo is included unchanged as `dist/pashabakess-logo.jpg`, used in the header, footer, and favicon.
-- Set up `server/config.php` (SMTP email) and the admin login on alwaysdata — see `DEPLOY-ALWAYSDATA.md`.
-- Preferred domain: pashabakess.com. Availability, purchase, and DNS are not yet checked or configured. No canonical URL claims ownership of this domain.
 - Product labels and home-bakery approval are in progress per the client; no completed approval or certification is claimed on the site.
-- Use cookie photographs only, including in the About section; the client does not want a portrait.
-- Configure public hosting deliberately. This delivery is a local design preview; the prior hosting attempt did not complete.
+- The client previously asked for cookie photographs only (no portrait) in the About section; a baking photo of
+  Pasha would suit "Meet Pasha" better if she changes her mind.
 
 ## Verification
 
-Backend: 27 automated checks pass on SQLite and MySQL 8.4 (`php server/tests/run.php`); 200 orders written by 8 parallel processes were all saved with unique order numbers. Checkout, admin (mark paid, baking list, menu edits, photo upload, settings, test email), login lockout and CSRF protection were tested end to end. WebMCP configure_cookie_box sets the visible box and never submits orders.
-
-September 23 update verified: 4-cookie order at $14; Cash App preference; 7pm Eastern pickup; early-date rejection; 36-cookie enquiry review; mobile layout without horizontal overflow. No test emails or payments were sent.
+Backend: 41 automated checks pass on SQLite (`php server/tests/run.php`), including pay-after-order, flavor pickup
+dates, enquiries and the upgrade of an existing database. Browser checks (Chromium, desktop and 390px mobile)
+covered: menu filters and their screen-reader announcements, Add → order page, checkout draft kept after refresh,
+an October special removed for a November pickup (and rejected by the server), placing an order and seeing the
+payment screen again after a reload, contact/celebration enquiries (with and without JavaScript, and the email
+fallback when the server is down), admin enquiries, flavor dates and photo resizing. No real emails or payments
+were sent.
 
 ## Hosting on GitHub Pages
 
