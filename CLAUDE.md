@@ -6,6 +6,13 @@ Owner of the project: Hamza (developer). Client: Pasha (the baker). Customers ar
 ## Hosting — read before touching deployment
 - Live now: **alwaysdata** (`https://pashabakess.alwaysdata.net`, files in `~/pashabakess`).
 - **Planned move to Hostinger.** Everything is prepared; the steps are in `HOSTINGER.md`.
+- **Agreed plan (Sept 2026): one Hostinger *Business Web Hosting* account for both of Hamza's client sites:**
+  this one and `hasolutions401/ra-brothers-roofing-2` (Next.js + Laravel 13 + MySQL, steps in its
+  `backend/README.md` → "Deploy to Hostinger"). Business was chosen for its daily backups.
+  Both sites must run fully there: website, backend/admin, ordering and lead forms, and emails.
+  Once the client buys the plan, walk Hamza through the full setup for **both** sites end to end.
+  Emails: the bakery sends through Pasha's Gmail app password. The roofing site uses a Hostinger mailbox
+  (`smtp.hostinger.com`) or Gmail SMTP.
 - **Never delete** deployment or hosting files (`.github/workflows/deploy.yml`, `DEPLOY-ALWAYSDATA.md`,
   `HOSTINGER.md`, `server/tools/`, any `.htaccess`) without asking Hamza first.
 - These exist **only on the server, never in git** — never delete, overwrite or reset them on a server:
