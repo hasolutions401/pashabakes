@@ -58,8 +58,9 @@ address everywhere: `grep -rl pashabakess.alwaysdata.net dist | xargs sed -i 's#
   **hidden** flavor with its photo, ready for a future rotation: set its pickup dates and click Show.
 - **Payment deadline:** Admin → Settings → Payments → "Ask customers to pay within (hours)". 0 (default) states
   no deadline; customers are told their pickup date is held while Pasha waits for payment.
-- **Refund policy:** the published wording (full refund with at least two days' notice, none after, full
-  refund if Pasha cancels) is awaiting Pasha's confirmation, including how quickly refunds are sent.
+- **Policy (confirmed by Pasha):** cancel or reschedule by email at least two calendar days before pickup for a full
+  refund within 3–5 business days; less notice, no refund; orders not picked up within two days of the pickup date
+  aren't refunded; full refund if Pasha cancels. Customers pay right away after ordering. Daily limit: 60 cookies.
 - **Privacy notice** (`dist/privacy.html`): ask Pasha to review it, especially how long records are kept.
 - **Venmo:** payments go to the personal profile @Palosha-Rashid, which shows Pasha's full name. Venmo expects
   sales to use a business profile; confirm with Pasha.
@@ -71,7 +72,7 @@ address everywhere: `grep -rl pashabakess.alwaysdata.net dist | xargs sed -i 's#
 
 ## Verification
 
-Backend: 62 automated checks pass on SQLite (`php server/tests/run.php`), including pay-after-order, flavor pickup
+Backend: 67 automated checks pass on SQLite (`php server/tests/run.php`), including pay-after-order, flavor pickup
 dates, enquiries and the upgrade of an existing database. Browser checks (Chromium, desktop and 390px mobile)
 covered: menu filters and their screen-reader announcements, Add → order page, checkout draft kept after refresh,
 an October special removed for a November pickup (and rejected by the server), placing an order and seeing the

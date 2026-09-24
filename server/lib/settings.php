@@ -14,7 +14,7 @@ function default_settings(): array
         'prices'            => json_encode(['4' => 1400, '6' => 2000, '12' => 3800, '24' => 7600, '36' => 11400]),
         'lead_days'         => '7',
         'max_days_ahead'    => '90',
-        'max_cookies_per_day' => '0',   // 0 = no daily limit
+        'max_cookies_per_day' => '60',  // 5 dozen a day (Pasha); 0 = no daily limit
         'payment_hours'     => '0',   // 0 = no payment deadline shown
         'pickup_slots'      => implode("\n", [
             '10:00 AM – 11:00 AM', '11:00 AM – 12:00 PM', '12:00 PM – 1:00 PM', '1:00 PM – 2:00 PM',
@@ -190,7 +190,7 @@ function payment_hold_text(): string
     $h = payment_hours();
     return $h > 0
         ? "Please send your payment within {$h} hours of ordering. Your pickup date is held for you until then; unpaid orders may be cancelled after that."
-        : 'Your pickup date is held for you while Pasha waits for your payment.';
+        : 'Please send your payment right away — your order is confirmed once it arrives, and your pickup date is held for you in the meantime.';
 }
 
 /** True if a pending order has passed the payment deadline. */

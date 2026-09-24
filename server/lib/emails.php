@@ -12,9 +12,10 @@ declare(strict_types=1);
 /** Cancellation and refund policy — keep in step with order.html and faq.html. */
 function refund_policy_text(): string
 {
-    return 'Need to cancel? Email pashabakess@gmail.com at least two days before your pickup date for a full refund '
-        . 'to the account you paid from. Cancellations made less than two days before pickup can’t be refunded, and '
-        . 'treats can’t be returned or exchanged. If Pasha has to cancel your order, you’ll receive a full refund.';
+    return 'Need to cancel or reschedule? Email pashabakess@gmail.com at least two calendar days before your pickup date '
+        . '(for a Saturday pickup, by Thursday) for a full refund to the account you paid from, sent within 3–5 business days. '
+        . 'Cancellations with less notice can’t be refunded, and treats can’t be returned or exchanged. Orders not picked up '
+        . 'within two days of the pickup date can’t be refunded. If Pasha has to cancel your order, you’ll receive a full refund.';
 }
 
 function payer_text(array $order): string

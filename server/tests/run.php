@@ -155,7 +155,7 @@ check('payment deadline text', str_contains(payment_hold_text(), 'within 24 hour
 check('overdue after deadline', payment_overdue(['status' => 'pending', 'created_at' => today()->modify('-2 days')->format('Y-m-d H:i:s')])
     && !payment_overdue(['status' => 'paid', 'created_at' => today()->modify('-2 days')->format('Y-m-d H:i:s')]));
 settings_save(['payment_hours' => '0']);
-check('no deadline by default', !str_contains(payment_hold_text(), 'within'));
+check('no deadline by default: pay right away', str_contains(payment_hold_text(), 'right away'));
 enquiry_set_status((int) $row['id'], 'done');
 check('enquiry marked answered', enquiry_new_count() === 0 && enquiry_list('done', 1)['total'] === 1);
 
@@ -188,7 +188,7 @@ $day = earliest_pickup_date()->modify('+3 days')->format('Y-m-d');
 $dayOrder = fn(int $size, array $items) => $base(['client_token' => bin2hex(random_bytes(12)), 'pickup_date' => $day, 'box_size' => $size,
     'items' => $items, 'expected_total_cents' => box_prices()[$size]]);
 [, $e] = order_validate($dayOrder(12, [['id' => 1, 'qty' => 12]]));
-check('no limit by default', $e === [] && max_cookies_per_day() === 0);
+check('default daily limit is 5 dozen', $e === [] && max_cookies_per_day() === 60);
 settings_save(['max_cookies_per_day' => '16']);
 [$d1, $e] = order_validate($dayOrder(12, [['id' => 1, 'qty' => 12]]));
 [, $created] = order_create($d1);

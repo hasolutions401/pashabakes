@@ -6,7 +6,7 @@ declare(strict_types=1);
  * Tables are created and seeded automatically on first use.
  */
 
-const PB_SCHEMA_VERSION = 4;
+const PB_SCHEMA_VERSION = 5;
 
 function db(): PDO
 {
@@ -274,6 +274,10 @@ function migrate(PDO $pdo, string $driver): void
         foreach (own_photo_swaps() as $old => $new) {
             $swap->execute([$new, $old]);
         }
+    }
+    // Version 5: Pasha's daily limit is 5 dozen (60 cookies), unless a limit was already set in Settings.
+    if ($version >= 1 && $version < 5) {
+        $pdo->prepare("UPDATE settings SET value = '60' WHERE name = 'max_cookies_per_day' AND value IN ('', '0')")->execute();
     }
     if ($version < 3) {
         if ((int) $pdo->query("SELECT COUNT(*) FROM cookies WHERE name LIKE 'M&M%' OR name LIKE 'M & M%'")->fetchColumn() === 0) {
