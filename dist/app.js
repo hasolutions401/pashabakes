@@ -9,19 +9,9 @@ const FALLBACK_COOKIES = [
   {id:2,name:'Biscoff',type:'signature',desc:'Brown butter base with Biscoff cookie pieces, white chocolate chips, drizzled with Biscoff spread.',img:'images/biscoff.jpg',imgSm:'images/biscoff-160.jpg'},
   {id:3,name:'Chocolate Sea Salt Toffee',type:'signature',desc:'Rich brown butter cookie with toffee bits, semi-sweet chocolate chips, topped with sea salt flakes.',img:'images/chocolate-sea-salt-toffee.jpg',imgSm:'images/chocolate-sea-salt-toffee-160.jpg'},
   {id:4,name:'Red Velvet',type:'signature',desc:'Red cookie base with cocoa powder, white chocolate chips and white chocolate drizzle.',img:'images/red-velvet.jpg',imgSm:'images/red-velvet-160.jpg'},
-  {id:5,name:'Pumpkin Chocolate Chip',type:'seasonal',desc:'Brown butter base with pumpkin purée, cinnamon, and chocolate chips.',img:'https://sallysbakingaddiction.com/wp-content/uploads/2013/09/chewy-pumpkin-chocolate-chip-cookies-3.jpg'},
-  {id:6,name:'Maple Pecan',type:'seasonal',desc:'Brown butter base with cinnamon, maple syrup, pecans.',img:'https://confessionsofabakingqueen.com/wp-content/uploads/2020/11/plate-of-maple-pecan-cookies-1-of-1-1024x1536-1.jpg'}
+  {id:5,name:'Pumpkin Chocolate Chip',type:'seasonal',desc:'Brown butter base with pumpkin purée, cinnamon, and chocolate chips.',img:'images/coming-soon.jpg',imgSm:'images/coming-soon-160.jpg'},
+  {id:6,name:'Maple Pecan',type:'seasonal',desc:'Brown butter base with cinnamon, maple syrup, pecans.',img:'images/coming-soon.jpg',imgSm:'images/coming-soon-160.jpg'}
 ];
-
-// Credits for the temporary reference photos (not needed for Pasha's own uploads).
-const PHOTO_CREDITS = {
-  'images.unsplash.com/photo-1673551490160': ['American Heritage Chocolate / Unsplash', 'https://unsplash.com/photos/chocolate-chip-cookies-and-a-glass-of-milk-tqKB97R-eOw'],
-  'Biscoff-Cookies-WEB-RES-1': ['Silver Spoon', 'https://www.silverspoon.co.uk/recipes/biscoff-cookies'],
-  'salted-toffee-chocolate-chip-cookies': ['Scientifically Sweet', 'https://scientificallysweet.com/salted-toffee-chocolate-chip-cookies/'],
-  'red-velvet-white-chocolate-chip-cookies': ['Sally’s Baking', 'https://sallysbakingaddiction.com/red-velvet-chocolate-chip-cookies/'],
-  'chewy-pumpkin-chocolate-chip-cookies': ['Sally’s Baking', 'https://sallysbakingaddiction.com/2013/09/04/pumpkin-chocolate-chip-cookies/'],
-  'plate-of-maple-pecan-cookies': ['Confessions of a Baking Queen', 'https://confessionsofabakingqueen.com/maple-pecan-cookies/']
-};
 
 const $ = s => document.querySelector(s);
 const $$ = s => Array.from(document.querySelectorAll(s));
@@ -149,7 +139,7 @@ function renderMenu() {
     return `
     <article class="cookie-card" data-type="${seasonal ? 'seasonal' : 'signature'}">
       <div class="cookie-image">
-        <img src="${esc(cardImg(c))}" alt="${own ? '' : 'Illustrative photograph of '}${esc(c.name)} cookies" width="900" height="760" loading="lazy" decoding="async">
+        <img src="${esc(cardImg(c))}" alt="${c.img.includes('coming-soon') ? `${esc(c.name)}: photo coming soon` : `${own ? '' : 'Illustrative photograph of '}${esc(c.name)} cookies`}" width="900" height="760" loading="lazy" decoding="async">
         <span class="cookie-tag ${seasonal ? 'seasonal' : 'signature'}">${seasonal ? `${esc((windowMonth(c) || month || 'Seasonal').toUpperCase())} SPECIAL` : 'SIGNATURE'}</span>
       </div>
       <h3>${esc(c.name)}</h3>
@@ -166,18 +156,8 @@ function renderMenu() {
   $$('[data-filter]').forEach(b => { const n = b.querySelector('.filter-count'); if (n) n.textContent = counts[b.dataset.filter] ?? ''; });
   $$('[data-flavor-count]').forEach(el => { el.textContent = cookies.length; });
   applyFilter(false);
-  renderPhotoNote();
 }
 
-// "Illustrative photo" note: names the flavors still shown with sample photos, and disappears once all are Pasha's.
-function renderPhotoNote() {
-  const samples = cookies.filter(c => !ownPhoto(c.img)).map(c => c.name);
-  $$('[data-photo-note]').forEach(el => {
-    el.hidden = !samples.length;
-    const text = el.querySelector('[data-photo-note-text]');
-    if (text && samples.length) text.textContent = `The ${samples.join(' and ')} ${samples.length === 1 ? 'photo is' : 'photos are'} illustrative for now — Pasha’s own ${samples.length === 1 ? 'photo is' : 'photos are'} coming soon.`;
-  });
-}
 
 function renderFlavorChoices() {
   const wrap = $('#flavor-choices');
@@ -194,24 +174,6 @@ function renderFlavorChoices() {
     </div>`).join('');
   const hint = $('.flavor-dates-hint');
   if (hint) hint.hidden = !cookies.some(c => c.from || c.until);
-}
-
-// Credits for any borrowed photo on the page (menu cards, hero, about photo).
-function renderCredits() {
-  const el = $('#photo-credits');
-  if (!el) return;
-  const seen = new Set();
-  const sources = [
-    ...cookies.map(c => [c.img, c.name]),
-    ...$$('img[data-credit-label]').map(img => [img.currentSrc || img.src, img.dataset.creditLabel])
-  ];
-  el.innerHTML = sources.map(([src, label]) => {
-    const key = Object.keys(PHOTO_CREDITS).find(k => String(src).includes(k));
-    if (!key || seen.has(key + label)) return '';
-    seen.add(key + label);
-    const [credit, source] = PHOTO_CREDITS[key];
-    return `<a href="${source}" target="_blank" rel="noreferrer">${esc(label)} — ${esc(credit)} ${icon('external')}<span class="sr-only">(opens in a new tab)</span></a>`;
-  }).join('') || '<p>All photos are Pashabakess’s own.</p>';
 }
 
 function renderPrices() {
@@ -583,7 +545,6 @@ $$('dialog').forEach(d => d.addEventListener('click', e => {
   const r = d.getBoundingClientRect();
   if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) d.close();
 }));
-$('#credits-open')?.addEventListener('click', () => { renderCredits(); $('#credits-dialog').showModal(); });
 
 /* ——— Checkout draft: kept in this browser tab so a refresh doesn't lose it ——— */
 const DRAFT_KEY = 'pashabakess-checkout';
@@ -732,7 +693,7 @@ $('#order-form')?.addEventListener('submit', async e => {
   }
 });
 
-/* ——— Enquiries (Contact & Celebrations pages) — sent to Pasha through the server ——— */
+/* ——— Inquiries (Contact & Celebrations pages) — sent to Pasha through the server ——— */
 const ENQUIRY_FIELDS = {name: 'e-name', email: 'e-email', date: 'e-date', message: 'e-message'};
 // Keep in step with PB_ORDER_ENQUIRIES in server/lib/enquiries.php.
 const ORDER_TOPICS = ['Existing order', 'Payment question', 'Change or cancel an order', 'Pickup question'];
@@ -805,7 +766,7 @@ function setupEnquiry(form) {
         + `\n\n${d.get('message')}`;
       showSummary(form, [{
         msg: 'Sorry, we couldn’t send your message just now. Please try again in a moment, or',
-        href: `mailto:pashabakess@gmail.com?subject=${encodeURIComponent(`${d.get('type')} enquiry`)}&body=${encodeURIComponent(body)}`,
+        href: `mailto:pashabakess@gmail.com?subject=${encodeURIComponent(`${d.get('type')} inquiry`)}&body=${encodeURIComponent(body)}`,
         linkText: 'send it by email instead.'
       }]);
     } finally {
@@ -874,7 +835,6 @@ function renderAll() {
   renderSeason();
   renderMenu();
   renderFlavorChoices();
-  renderCredits();
   renderPrices();
   refreshDates();
   if ($('#order-form')) {

@@ -6,7 +6,7 @@ declare(strict_types=1);
  *  - admin_alert   → Pasha, as soon as an order is placed (with an "Open order" link)
  *  - receipt       → customer, as soon as an order is placed: order details + how to pay
  *  - confirmation  → customer, when Pasha clicks "Mark as Paid" (includes pickup address)
- * Enquiries from the website are emailed to Pasha as kind "enquiry".
+ * Inquiries from the website are emailed to Pasha as kind "enquiry".
  */
 
 /** Cancellation and refund policy — keep in step with order.html and faq.html. */
@@ -144,7 +144,7 @@ function send_test_email(string $to): array
     return send_email($to, 'Pashabakess test email', $html, 'Good news — email sending works.', 'test');
 }
 
-/** New website enquiry → Pasha. Replies go straight to the customer. */
+/** New website inquiry → Pasha. Replies go straight to the customer. */
 function send_enquiry_alert(array $q): array
 {
     $to = setting('notify_email');
@@ -164,9 +164,9 @@ function send_enquiry_alert(array $q): array
         $table .= '<tr><td style="padding:4px 12px 4px 0;color:#6e5c52;white-space:nowrap;vertical-align:top">' . e($label) . '</td><td style="padding:4px 0">' . e($value) . '</td></tr>';
         $text .= "{$label}: {$value}\n";
     }
-    $html = email_layout('New enquiry: ' . $q['type'],
+    $html = email_layout('New inquiry: ' . $q['type'],
         '<table role="presentation" cellpadding="0" cellspacing="0" style="font-size:15px;margin:0 0 18px">' . $table . '</table>'
         . '<div style="background:#f6e7df;border-radius:10px;padding:16px 18px;font-size:15px;line-height:1.6">' . nl2br(e($q['message'])) . '</div>'
         . '<p style="font-size:14px;color:#6e5c52;margin:18px 0 0">Reply to this email to answer ' . e($q['name']) . ' directly.</p>');
-    return send_email($to, "New enquiry: {$q['type']} · {$q['name']}" . (($q['order_ref'] ?? '') !== '' ? " · {$q['order_ref']}" : ''), $html, $text . "\n" . $q['message'], 'enquiry', null, $q['email']);
+    return send_email($to, "New inquiry: {$q['type']} · {$q['name']}" . (($q['order_ref'] ?? '') !== '' ? " · {$q['order_ref']}" : ''), $html, $text . "\n" . $q['message'], 'enquiry', null, $q['email']);
 }

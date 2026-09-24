@@ -7,7 +7,7 @@ function admin_header(string $title, string $active = '', ?array $user = null): 
 {
     $nav = [
         'orders' => ['index.php', 'Orders'],
-        'enquiries' => ['enquiries.php', 'Enquiries'],
+        'enquiries' => ['enquiries.php', 'Inquiries'],
         'menu' => ['menu.php', 'Menu'],
         'settings' => ['settings.php', 'Settings'],
         'account' => ['account.php', 'Account'],

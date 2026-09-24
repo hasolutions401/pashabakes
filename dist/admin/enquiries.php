@@ -26,24 +26,24 @@ $counts = [
 $counts['all'] = $counts['new'] + $counts['done'];
 $tabs = ['new' => 'New', 'done' => 'Answered', 'all' => 'All'];
 
-admin_header('Enquiries', 'enquiries', $user);
+admin_header('Inquiries', 'enquiries', $user);
 ?>
 <section class="card">
   <div class="list-head">
     <div>
-      <h1>Enquiries</h1>
+      <h1>Inquiries</h1>
       <p class="muted">Messages from the Contact and Celebrations pages. Each one is also emailed to <?= e(setting('notify_email')) ?> — reply from your email.</p>
     </div>
   </div>
 
-  <nav class="status-tabs" aria-label="Enquiry status">
+  <nav class="status-tabs" aria-label="Inquiry status">
     <?php foreach ($tabs as $key => $label): ?>
       <a href="?status=<?= e($key) ?>"<?= $key === $status ? ' aria-current="page"' : '' ?>><?= e($label) ?> <span class="count"><?= $counts[$key] ?></span></a>
     <?php endforeach; ?>
   </nav>
 
   <?php if (!$list['rows']): ?>
-    <p class="empty"><?= $status === 'new' ? 'No new enquiries.' : 'No enquiries here yet.' ?></p>
+    <p class="empty"><?= $status === 'new' ? 'No new inquiries.' : 'No inquiries here yet.' ?></p>
   <?php else: ?>
     <ul class="order-list">
       <?php foreach ($list['rows'] as $q): ?>
@@ -53,7 +53,7 @@ admin_header('Enquiries', 'enquiries', $user);
             <span class="pill<?= $q['status'] === 'new' ? ' pill-pending' : ' pill-completed' ?>"><?= $q['status'] === 'new' ? 'New' : 'Answered' ?></span>
             <span class="muted enquiry-date"><?= e(pretty_datetime($q['created_at'])) ?></span>
           </div>
-          <p class="who"><?= e($q['name']) ?> · <a href="mailto:<?= e($q['email']) ?>?subject=<?= rawurlencode('Re: ' . $q['type'] . ' enquiry') ?>"><?= e($q['email']) ?></a></p>
+          <p class="who"><?= e($q['name']) ?> · <a href="mailto:<?= e($q['email']) ?>?subject=<?= rawurlencode('Re: ' . $q['type'] . ' inquiry') ?>"><?= e($q['email']) ?></a></p>
           <?php if ($q['event_date'] || $q['quantity'] !== ''): ?>
             <p class="muted"><?= $q['event_date'] ? 'Event ' . e(pretty_date($q['event_date'])) : '' ?><?= $q['event_date'] && $q['quantity'] !== '' ? ' · ' : '' ?><?= e($q['quantity']) ?></p>
           <?php endif; ?>
@@ -74,7 +74,7 @@ admin_header('Enquiries', 'enquiries', $user);
     <?php if ($list['pages'] > 1): ?>
       <nav class="pager" aria-label="Pages">
         <?php if ($list['page'] > 1): ?><a class="btn btn-ghost" href="?status=<?= e($status) ?>&amp;page=<?= $list['page'] - 1 ?>">← Previous</a><?php endif; ?>
-        <span>Page <?= $list['page'] ?> of <?= $list['pages'] ?> · <?= $list['total'] ?> enquiries</span>
+        <span>Page <?= $list['page'] ?> of <?= $list['pages'] ?> · <?= $list['total'] ?> inquiries</span>
         <?php if ($list['page'] < $list['pages']): ?><a class="btn btn-ghost" href="?status=<?= e($status) ?>&amp;page=<?= $list['page'] + 1 ?>">Next →</a><?php endif; ?>
       </nav>
     <?php endif; ?>

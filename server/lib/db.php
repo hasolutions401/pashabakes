@@ -6,7 +6,7 @@ declare(strict_types=1);
  * Tables are created and seeded automatically on first use.
  */
 
-const PB_SCHEMA_VERSION = 3;
+const PB_SCHEMA_VERSION = 4;
 
 function db(): PDO
 {
@@ -268,11 +268,14 @@ function migrate(PDO $pdo, string $driver): void
 
     // Version 3: Pasha's own photos replace the sample photos (only where a flavor still has
     // the original sample), and M&M is added as a hidden flavor, ready for a future rotation.
-    if ($version < 3) {
+    // Version 4: the last two borrowed photos become a "photo coming soon" placeholder.
+    if ($version < 4) {
         $swap = $pdo->prepare('UPDATE cookies SET image = ? WHERE image = ?');
         foreach (own_photo_swaps() as $old => $new) {
             $swap->execute([$new, $old]);
         }
+    }
+    if ($version < 3) {
         if ((int) $pdo->query("SELECT COUNT(*) FROM cookies WHERE name LIKE 'M&M%' OR name LIKE 'M & M%'")->fetchColumn() === 0) {
             $now = now_str();
             $pdo->prepare('INSERT INTO cookies (name, description, type, image, is_available, sort_order, created_at, updated_at) VALUES (?, ?, ?, ?, 0, ?, ?, ?)')
@@ -330,6 +333,9 @@ function own_photo_swaps(): array
         'https://assets-eu-01.kc-usercontent.com/21d2ecef-fb9b-01b1-9022-cf60b52c2c77/d79e9c4f-6fbe-4c62-8ca7-fe295e3169b3/Biscoff-Cookies-WEB-RES-1.jpg?auto=format&lossless=1&q=85&w=900' => 'images/biscoff.jpg',
         'https://scientificallysweet.com/wp-content/uploads/2022/09/IMG_3198-salted-toffee-chocolate-chip-cookies-feature2.jpg' => 'images/chocolate-sea-salt-toffee.jpg',
         'https://sallysbakingaddiction.com/wp-content/uploads/2013/12/red-velvet-white-chocolate-chip-cookies-2.jpg' => 'images/red-velvet.jpg',
+        // No photo from Pasha yet: branded placeholder instead of a borrowed picture.
+        'https://sallysbakingaddiction.com/wp-content/uploads/2013/09/chewy-pumpkin-chocolate-chip-cookies-3.jpg' => 'images/coming-soon.jpg',
+        'https://confessionsofabakingqueen.com/wp-content/uploads/2020/11/plate-of-maple-pecan-cookies-1-of-1-1024x1536-1.jpg' => 'images/coming-soon.jpg',
     ];
 }
 
@@ -341,7 +347,7 @@ function default_cookies(): array
         ['Biscoff', 'Brown butter base with Biscoff cookie pieces, white chocolate chips, drizzled with Biscoff spread.', 'signature', 'images/biscoff.jpg'],
         ['Chocolate Sea Salt Toffee', 'Rich brown butter cookie with toffee bits, semi-sweet chocolate chips, topped with sea salt flakes.', 'signature', 'images/chocolate-sea-salt-toffee.jpg'],
         ['Red Velvet', 'Red cookie base with cocoa powder, white chocolate chips and white chocolate drizzle.', 'signature', 'images/red-velvet.jpg'],
-        ['Pumpkin Chocolate Chip', 'Brown butter base with pumpkin purée, cinnamon, and chocolate chips.', 'seasonal', 'https://sallysbakingaddiction.com/wp-content/uploads/2013/09/chewy-pumpkin-chocolate-chip-cookies-3.jpg'],
-        ['Maple Pecan', 'Brown butter base with cinnamon, maple syrup, pecans.', 'seasonal', 'https://confessionsofabakingqueen.com/wp-content/uploads/2020/11/plate-of-maple-pecan-cookies-1-of-1-1024x1536-1.jpg'],
+        ['Pumpkin Chocolate Chip', 'Brown butter base with pumpkin purée, cinnamon, and chocolate chips.', 'seasonal', 'images/coming-soon.jpg'],
+        ['Maple Pecan', 'Brown butter base with cinnamon, maple syrup, pecans.', 'seasonal', 'images/coming-soon.jpg'],
     ];
 }

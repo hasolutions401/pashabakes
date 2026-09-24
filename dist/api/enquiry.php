@@ -28,7 +28,7 @@ function enquiry_reply(bool $isJson, bool $ok, string $message, array $errors = 
 }
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    enquiry_reply($isJson, false, 'Please use the enquiry form on the website.', [], 405);
+    enquiry_reply($isJson, false, 'Please use the inquiry form on the website.', [], 405);
 }
 
 // Only accept submissions from this website.
@@ -36,7 +36,7 @@ $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
 if ($origin !== '' && $origin !== 'null') {
     $host = explode(':', (string) ($_SERVER['HTTP_HOST'] ?? ''))[0];
     if (parse_url($origin, PHP_URL_HOST) !== $host) {
-        enquiry_reply($isJson, false, 'Enquiries can only be sent from the Pashabakess website.', [], 403);
+        enquiry_reply($isJson, false, 'Inquiries can only be sent from the Pashabakess website.', [], 403);
     }
 }
 
