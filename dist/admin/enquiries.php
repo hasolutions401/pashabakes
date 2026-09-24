@@ -49,7 +49,7 @@ admin_header('Enquiries', 'enquiries', $user);
       <?php foreach ($list['rows'] as $q): ?>
         <li class="enquiry">
           <div class="order-row-top">
-            <strong><?= e($q['type']) ?></strong>
+            <strong><?= e($q['type']) ?></strong><?php if ($q['order_ref'] !== ''): ?> · <?= e($q['order_ref']) ?><?php endif; ?>
             <span class="pill<?= $q['status'] === 'new' ? ' pill-pending' : ' pill-completed' ?>"><?= $q['status'] === 'new' ? 'New' : 'Answered' ?></span>
             <span class="muted enquiry-date"><?= e(pretty_datetime($q['created_at'])) ?></span>
           </div>

@@ -91,7 +91,7 @@ admin_header('Orders', 'orders', $user);
           <a class="order-row" href="order.php?id=<?= (int) $o['id'] ?>">
             <div class="order-row-top">
               <strong class="code"><?= e($o['code']) ?></strong>
-              <?= status_pill($o['status']) ?>
+              <?= status_pill($o['status']) ?><?php if (payment_overdue($o)): ?> <span class="pill pill-cancelled">Overdue</span><?php endif; ?>
               <span class="total"><?= money((int) $o['total_cents']) ?></span>
             </div>
             <p class="who"><?= e($o['customer_name']) ?></p>

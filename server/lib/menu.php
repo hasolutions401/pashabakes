@@ -60,7 +60,7 @@ function cookie_window_text(array $c): string
 function cookie_image_variants(string $image): array
 {
     $out = ['img' => $image, 'md' => $image, 'sm' => $image];
-    if (preg_match('#^(uploads/cookie-[a-f0-9]+)\.jpg$#', $image, $m)) {
+    if (preg_match('#^((?:uploads|images)/[a-z0-9-]+)\.jpg$#', $image, $m)) {
         $dir = dirname(PB_ROOT) . '/dist/';
         foreach (['md' => '-800', 'sm' => '-160'] as $key => $suffix) {
             if (is_file($dir . $m[1] . $suffix . '.jpg')) {
@@ -103,7 +103,7 @@ function cookie_validate(array $in): array
     if (!isset($errors['available']) && $data['available_from'] && $data['available_until'] && $data['available_from'] > $data['available_until']) {
         $errors['available'] = 'The first pickup date must be before the last pickup date.';
     }
-    if ($data['image'] !== '' && !preg_match('#^(https://|uploads/)#', $data['image'])) {
+    if ($data['image'] !== '' && !preg_match('#^(https://|uploads/|images/)#', $data['image'])) {
         $errors['image'] = 'The image must be an uploaded photo or a link starting with https://';
     }
     return [$data, $errors];
@@ -209,4 +209,10 @@ function cookie_photo_orient(GdImage $src, string $file): GdImage
     }
     $rotated = imagerotate($src, $angle, 0);
     return $rotated === false ? $src : $rotated;
+}
+
+/** True for photos stored on this website (uploads/ from admin, images/ shipped with the site). */
+function cookie_image_is_local(string $image): bool
+{
+    return str_starts_with($image, 'uploads/') || str_starts_with($image, 'images/');
 }

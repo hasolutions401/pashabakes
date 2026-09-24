@@ -22,8 +22,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=13">
-  <script src="app.js?v=10" defer></script>
+  <link rel="stylesheet" href="style.css?v=14">
+  <script src="app.js?v=11" defer></script>
 </head>
 <body>
 <!-- Icon sprite: one consistent stroke-icon set used across the site -->
@@ -85,26 +85,24 @@
 
 <main id="main" tabindex="-1" data-page="order">
 <section class="section order-section" id="order" aria-labelledby="order-title">
-    <div class="section-heading">
+    <div class="order-intro">
       <div>
         <p class="eyebrow">ORDER ONLINE</p>
-        <h1 id="order-title">Let’s bake you<br><em>something happy.</em></h1>
+        <h1 id="order-title">Build your <em>cookie box.</em></h1>
+        <p class="order-lede">Choose your pickup, pick your cookies and place your order. Then pay with Venmo or Cash App using your order number. Please allow one week’s notice.</p>
       </div>
-      <p class="heading-aside">Build your box, choose your pickup and place your order. Then pay through Venmo or Cash App using your order number.<br>Please allow one week’s notice.</p>
+      <ol class="order-steps order-steps-4" aria-label="How ordering works">
+        <li><span>1</span>Pickup date &amp; time</li>
+        <li><span>2</span>Box &amp; flavors</li>
+        <li><span>3</span>Your details</li>
+        <li><span>4</span>Review, order, then pay</li>
+      </ol>
     </div>
 
-    <ol class="order-steps order-steps-5" aria-label="How ordering works">
-      <li><span>1</span>Build your box</li>
-      <li><span>2</span>Pick your pickup</li>
-      <li><span>3</span>Place your order and get your order number</li>
-      <li><span>4</span>Pay with Venmo or Cash App</li>
-      <li><span>5</span>Get your confirmation email</li>
-    </ol>
-
-    <aside class="order-callout" aria-label="Urgent or large orders">
+    <p class="order-callout">
       <svg class="icon" aria-hidden="true"><use href="#i-mail"/></svg>
-      <p><strong>Need cookies in less than a week, or more than 3 dozen?</strong> <a href="celebrations.html?type=Large%20order#enquiry">Send an enquiry</a> or email <a href="mailto:pashabakess@gmail.com?subject=Urgent%20or%20large%20order">pashabakess@gmail.com</a>, and Pasha will let you know what’s possible.</p>
-    </aside>
+      <span>Need cookies in less than a week? <a href="contact.html?type=Urgent%20order#enquiry">Ask about an urgent order</a>. More than 3 dozen? <a href="celebrations.html?type=Large%20order#enquiry">Ask about a large order</a>.</span>
+    </p>
 
     <div class="order-status-note" id="order-unavailable" role="alert" hidden></div>
 
@@ -122,7 +120,29 @@
         </div>
 
         <fieldset>
-          <legend><span class="step-num" aria-hidden="true">01</span> Make it your mix</legend>
+          <legend><span class="step-num" aria-hidden="true">01</span> Pickup</legend>
+          <div class="pickup-card">
+            <svg class="icon" aria-hidden="true"><use href="#i-bag"/></svg>
+            <p><strong>Pickup only in <span data-pickup-area>Tyngsboro, MA</span></strong><br>The exact address is included in your confirmation email.</p>
+          </div>
+          <div class="form-grid">
+            <div class="field">
+              <label for="pickup-date">Pickup date</label>
+              <input id="pickup-date" required type="date" name="date" aria-describedby="pickup-date-hint pickup-date-error" data-error="Please choose a pickup date.">
+              <p class="field-hint" id="pickup-date-hint">Earliest date: one week from today.</p>
+              <p class="field-error" id="pickup-date-error" hidden></p>
+              <p class="field-notice" id="pickup-notice" role="status" hidden></p>
+            </div>
+            <div class="field">
+              <label for="pickup-time">Pickup time (Eastern)</label>
+              <select id="pickup-time" name="time" required aria-describedby="pickup-time-error" data-error="Please choose a pickup time."><option value="">Choose a time</option></select>
+              <p class="field-error" id="pickup-time-error" hidden></p>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend><span class="step-num" aria-hidden="true">02</span> Make it your mix</legend>
 
           <fieldset class="box-sizes" id="box-sizes" tabindex="-1">
             <legend class="field-label">Choose your box</legend>
@@ -150,7 +170,7 @@
         </fieldset>
 
         <fieldset>
-          <legend><span class="step-num" aria-hidden="true">02</span> Your details</legend>
+          <legend><span class="step-num" aria-hidden="true">03</span> Your details</legend>
           <p class="field-help form-note">All fields are required unless marked optional. Your details are only used for your order — see our <a class="text-underline" href="privacy.html">privacy notice</a>.</p>
           <div class="form-grid">
             <div class="field">
@@ -177,33 +197,15 @@
         </fieldset>
 
         <fieldset>
-          <legend><span class="step-num" aria-hidden="true">03</span> Pickup</legend>
-          <div class="pickup-card">
-            <svg class="icon" aria-hidden="true"><use href="#i-bag"/></svg>
-            <p><strong>Pickup only in <span data-pickup-area>Tyngsboro, MA</span></strong><br>The exact address is included in your confirmation email.</p>
-          </div>
-          <div class="form-grid">
-            <div class="field">
-              <label for="pickup-date">Pickup date</label>
-              <input id="pickup-date" required type="date" name="date" aria-describedby="pickup-date-hint pickup-date-error" data-error="Please choose a pickup date.">
-              <p class="field-hint" id="pickup-date-hint">Earliest date: one week from today.</p>
-              <p class="field-error" id="pickup-date-error" hidden></p>
-              <p class="field-notice" id="pickup-notice" role="status" hidden></p>
-            </div>
-            <div class="field">
-              <label for="pickup-time">Pickup time (Eastern)</label>
-              <select id="pickup-time" name="time" required aria-describedby="pickup-time-error" data-error="Please choose a pickup time."><option value="">Choose a time</option></select>
-              <p class="field-error" id="pickup-time-error" hidden></p>
-            </div>
-          </div>
-        </fieldset>
-
-        <fieldset>
-          <legend><span class="step-num" aria-hidden="true">04</span> Payment &amp; review</legend>
-          <div class="pay-total">
-            <span>Total</span>
-            <strong id="pay-total">$14</strong>
-            <small id="pay-total-size">4 cookies</small>
+          <legend><span class="step-num" aria-hidden="true">04</span> Review &amp; place order</legend>
+          <div class="review-box" aria-labelledby="review-title">
+            <p class="review-title" id="review-title">Your order</p>
+            <div id="review-items" class="review-items"><p>No cookies chosen yet.</p></div>
+            <dl class="review-facts">
+              <div><dt>Box</dt><dd id="review-size">4 cookies</dd></div>
+              <div><dt>Pickup</dt><dd id="review-pickup">Choose a date and time above</dd></div>
+              <div class="review-total"><dt>Total</dt><dd id="pay-total">$14</dd></div>
+            </dl>
           </div>
 
           <fieldset class="pay-methods" id="pay-methods" tabindex="-1">
@@ -216,7 +218,7 @@
 
           <div class="pay-later">
             <svg class="icon" aria-hidden="true"><use href="#i-check-circle"/></svg>
-            <p><strong>Don’t send money yet.</strong> Place your order first. You’ll get an order number and payment details on the next screen and by email. Put the order number in your payment note so Pasha can match your payment.</p>
+            <p><strong>Don’t send money yet.</strong> Place your order first. You’ll get an order number and payment details on the next screen and by email. Put the order number in your payment note so Pasha can match your payment. <span data-hold-text>Your pickup date is held for you while Pasha waits for your payment.</span></p>
           </div>
 
           <div class="field">
@@ -248,6 +250,7 @@
             <p class="field-error" id="o-allergy-error" hidden></p>
           </div>
 
+          <p class="field-notice" id="submit-warning" hidden></p>
           <button class="button submit" type="submit" id="place-order"><span id="place-order-label">Place order · <span data-pay-amount>$14</span></span> <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></button>
           <p class="field-help">Nothing is charged on this website. After you place your order, you’ll pay through <span id="pay-method-name">Venmo</span> using your order number, and Pasha confirms your order by email once your payment arrives.</p>
         </fieldset>
@@ -269,6 +272,7 @@
           </div>
         </div>
 
+        <p class="success-hold" id="success-hold"></p>
         <ol class="success-next">
           <li>We’ve emailed your order details and these payment instructions to <strong id="success-email"></strong>.</li>
           <li>Pasha checks for your payment, then emails your confirmation with the pickup address.</li>
@@ -286,8 +290,10 @@
         <p class="eyebrow">GOOD THINGS COME IN BOXES</p>
         <h3 id="summary-title">Your happy box</h3>
         <div id="summary-items"><p>Your favorites go here.<br>Pick a flavor to get started.</p></div>
-        <div class="summary-total"><span>Box price</span><strong id="summary-total">$14</strong></div>
-        <p id="summary-size">4 cookies · Mix &amp; match</p>
+        <p class="summary-warning" id="summary-warning" hidden></p>
+        <div class="summary-total"><span id="summary-total-label">4-cookie box</span><strong id="summary-total">$14</strong></div>
+        <p id="summary-size">0 of 4 cookies chosen</p>
+        <p id="summary-pickup" class="summary-pickup"></p>
         <hr>
         <ul class="summary-points">
           <li><svg class="icon sparkle" aria-hidden="true"><use href="#i-sparkle"/></svg>Baked fresh for your order</li>
@@ -295,7 +301,6 @@
           <li><svg class="icon sparkle" aria-hidden="true"><use href="#i-sparkle"/></svg>Pickup only · 10am–7pm ET</li>
           <li><svg class="icon sparkle" aria-hidden="true"><use href="#i-sparkle"/></svg>Please allow one week</li>
         </ul>
-        <div class="summary-bottom">A little treat.<br><em>A whole lot of love.</em></div>
       </aside>
     </div>
   </section>

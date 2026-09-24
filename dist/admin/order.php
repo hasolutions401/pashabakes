@@ -100,6 +100,7 @@ admin_header('Order ' . $order['code'], 'orders', $user);
 <section class="card actions-card">
   <?php if ($order['status'] === 'pending'): ?>
     <div class="verify">
+      <?php if (payment_overdue($order)): ?><p class="verify-title">⚠ Payment overdue — placed more than <?= payment_hours() ?> hours ago. You can cancel it to free the date.</p><?php endif; ?>
       <p class="verify-title">Check <?= e(payment_label($order['payment_method'])) ?></p>
       <p>Look for <strong><?= money((int) $order['total_cents']) ?></strong> with <strong><?= e($order['code']) ?></strong> in the payment note<?= $order['payer_ref'] !== '' ? ' (the customer said they’ll pay from <strong>' . e($order['payer_ref']) . '</strong>)' : '' ?>. When you see it, mark the order as paid — the customer gets their confirmation email with the pickup address automatically.</p>
       <p class="verify-hint">Can’t fill this order (for example, the date is fully booked)? Email the customer before cancelling. If they already paid, refund them in full.</p>

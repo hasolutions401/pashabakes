@@ -35,7 +35,7 @@ admin_header('Menu', 'menu', $user);
     <?php foreach ($cookies as $c): ?>
       <li class="<?= $c['is_available'] ? '' : 'is-hidden' ?>">
         <?php if ($c['image'] !== ''): ?>
-          <img src="<?= e(str_starts_with($c['image'], 'uploads/') ? '../' . $c['image'] : $c['image']) ?>" alt="" width="72" height="72" loading="lazy">
+          <?php $thumb = cookie_image_variants($c['image'])['sm']; ?><img src="<?= e(cookie_image_is_local($thumb) ? '../' . $thumb : $thumb) ?>" alt="" width="72" height="72" loading="lazy">
         <?php else: ?>
           <span class="no-photo">No photo</span>
         <?php endif; ?>

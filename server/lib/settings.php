@@ -15,6 +15,7 @@ function default_settings(): array
         'lead_days'         => '7',
         'max_days_ahead'    => '90',
         'max_cookies_per_day' => '0',   // 0 = no daily limit
+        'payment_hours'     => '0',   // 0 = no payment deadline shown
         'pickup_slots'      => implode("\n", [
             '10:00 AM – 11:00 AM', '11:00 AM – 12:00 PM', '12:00 PM – 1:00 PM', '1:00 PM – 2:00 PM',
             '2:00 PM – 3:00 PM', '3:00 PM – 4:00 PM', '4:00 PM – 5:00 PM', '5:00 PM – 6:00 PM', '6:00 PM – 7:00 PM',
@@ -175,4 +176,30 @@ function capacity_problem(string $ymd, int $boxSize, ?int $booked = null): ?stri
     return $left < min(PB_BOX_SIZES)
         ? "Sorry, {$day} is fully booked. Please choose another pickup date."
         : "Pasha can only take {$left} more cookies for {$day}. Please choose a smaller box or another pickup date.";
+}
+
+/** Hours customers are asked to pay within after ordering (0 = no deadline stated). */
+function payment_hours(): int
+{
+    return max(0, min(168, (int) setting('payment_hours')));
+}
+
+/** What customers are told about paying: the deadline (if set) and that their date is held meanwhile. */
+function payment_hold_text(): string
+{
+    $h = payment_hours();
+    return $h > 0
+        ? "Please send your payment within {$h} hours of ordering. Your pickup date is held for you until then; unpaid orders may be cancelled after that."
+        : 'Your pickup date is held for you while Pasha waits for your payment.';
+}
+
+/** True if a pending order has passed the payment deadline. */
+function payment_overdue(array $order): bool
+{
+    $h = payment_hours();
+    if ($h === 0 || $order['status'] !== 'pending') {
+        return false;
+    }
+    $placed = DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $order['created_at'], new DateTimeZone(PB_TZ));
+    return $placed && $placed->modify("+{$h} hours") < new DateTimeImmutable('now', new DateTimeZone(PB_TZ));
 }

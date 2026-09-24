@@ -5,10 +5,10 @@
 
 // Keep in step with the static cards in index.html and menu.html (shown without JavaScript).
 const FALLBACK_COOKIES = [
-  {id:1,name:'Chocolate Chunk',type:'signature',desc:'Brown butter base with semi-sweet chocolate chips, dark chocolate chunks, topped with sea salt flakes.',img:'https://images.unsplash.com/photo-1673551490160-3f2e712b9373?auto=format&fit=crop&w=900&q=80'},
-  {id:2,name:'Biscoff',type:'signature',desc:'Brown butter base with Biscoff cookie pieces, white chocolate chips, drizzled with Biscoff spread.',img:'https://assets-eu-01.kc-usercontent.com/21d2ecef-fb9b-01b1-9022-cf60b52c2c77/d79e9c4f-6fbe-4c62-8ca7-fe295e3169b3/Biscoff-Cookies-WEB-RES-1.jpg?auto=format&lossless=1&q=85&w=900'},
-  {id:3,name:'Chocolate Sea Salt Toffee',type:'signature',desc:'Rich brown butter cookie with toffee bits, semi-sweet chocolate chips, topped with sea salt flakes.',img:'https://scientificallysweet.com/wp-content/uploads/2022/09/IMG_3198-salted-toffee-chocolate-chip-cookies-feature2.jpg'},
-  {id:4,name:'Red Velvet',type:'signature',desc:'Red cookie base with cocoa powder, white chocolate chips and white chocolate drizzle.',img:'https://sallysbakingaddiction.com/wp-content/uploads/2013/12/red-velvet-white-chocolate-chip-cookies-2.jpg'},
+  {id:1,name:'Chocolate Chunk',type:'signature',desc:'Brown butter base with semi-sweet chocolate chips, dark chocolate chunks, topped with sea salt flakes.',img:'images/chocolate-chunk.jpg',imgSm:'images/chocolate-chunk-160.jpg'},
+  {id:2,name:'Biscoff',type:'signature',desc:'Brown butter base with Biscoff cookie pieces, white chocolate chips, drizzled with Biscoff spread.',img:'images/biscoff.jpg',imgSm:'images/biscoff-160.jpg'},
+  {id:3,name:'Chocolate Sea Salt Toffee',type:'signature',desc:'Rich brown butter cookie with toffee bits, semi-sweet chocolate chips, topped with sea salt flakes.',img:'images/chocolate-sea-salt-toffee.jpg',imgSm:'images/chocolate-sea-salt-toffee-160.jpg'},
+  {id:4,name:'Red Velvet',type:'signature',desc:'Red cookie base with cocoa powder, white chocolate chips and white chocolate drizzle.',img:'images/red-velvet.jpg',imgSm:'images/red-velvet-160.jpg'},
   {id:5,name:'Pumpkin Chocolate Chip',type:'seasonal',desc:'Brown butter base with pumpkin purée, cinnamon, and chocolate chips.',img:'https://sallysbakingaddiction.com/wp-content/uploads/2013/09/chewy-pumpkin-chocolate-chip-cookies-3.jpg'},
   {id:6,name:'Maple Pecan',type:'seasonal',desc:'Brown butter base with cinnamon, maple syrup, pecans.',img:'https://confessionsofabakingqueen.com/wp-content/uploads/2020/11/plate-of-maple-pecan-cookies-1-of-1-1024x1536-1.jpg'}
 ];
@@ -45,6 +45,8 @@ const clientToken = (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${
 const total = () => cookies.reduce((sum, c) => sum + (qty[c.id] || 0), 0);
 const cookieById = id => cookies.find(c => c.id === Number(id));
 const cardImg = c => c.imgMd || c.img || 'logo-192.jpg';
+// Photos stored on this site are Pasha's own; anything else is an illustrative sample.
+const ownPhoto = img => /^(uploads|images)\//.test(img || '');
 const thumbImg = c => c.imgSm || c.img || 'logo-192.jpg';
 
 /* ——— Seamless announcement strips, with keyboard/touch pause controls ——— */
@@ -143,7 +145,7 @@ function renderMenu() {
   const month = seasonMonth();
   grid.innerHTML = list.map(c => {
     const seasonal = c.type === 'seasonal';
-    const own = c.img.startsWith('uploads/');
+    const own = ownPhoto(c.img);
     return `
     <article class="cookie-card" data-type="${seasonal ? 'seasonal' : 'signature'}">
       <div class="cookie-image">
@@ -154,8 +156,8 @@ function renderMenu() {
       <p>${esc(c.desc)}</p>
       <div class="cookie-bottom">
         <span>${esc(windowText(c) || (seasonal ? 'A seasonal favorite' : 'A forever favorite'))}</span>
-        <a class="add-cookie" href="order.html?flavor=${c.id}" data-add="${c.id}" aria-label="Add ${esc(c.name)} to your box">
-          ${icon('plus')}<span class="add-label">Add</span>
+        <a class="add-cookie" href="order.html?flavor=${c.id}" data-add="${c.id}" aria-label="Choose ${esc(c.name)} for your box">
+          ${icon('plus')}<span class="add-label">Choose</span>
         </a>
       </div>
     </article>`;
@@ -164,6 +166,17 @@ function renderMenu() {
   $$('[data-filter]').forEach(b => { const n = b.querySelector('.filter-count'); if (n) n.textContent = counts[b.dataset.filter] ?? ''; });
   $$('[data-flavor-count]').forEach(el => { el.textContent = cookies.length; });
   applyFilter(false);
+  renderPhotoNote();
+}
+
+// "Illustrative photo" note: names the flavors still shown with sample photos, and disappears once all are Pasha's.
+function renderPhotoNote() {
+  const samples = cookies.filter(c => !ownPhoto(c.img)).map(c => c.name);
+  $$('[data-photo-note]').forEach(el => {
+    el.hidden = !samples.length;
+    const text = el.querySelector('[data-photo-note-text]');
+    if (text && samples.length) text.textContent = `The ${samples.join(' and ')} ${samples.length === 1 ? 'photo is' : 'photos are'} illustrative for now — Pasha’s own ${samples.length === 1 ? 'photo is' : 'photos are'} coming soon.`;
+  });
 }
 
 function renderFlavorChoices() {
@@ -218,8 +231,8 @@ function update() {
     const c = cookieById(btn.dataset.add);
     const q = qty[btn.dataset.add] || 0;
     btn.classList.toggle('in-box', q > 0);
-    btn.querySelector('.add-label').textContent = q > 0 ? `${q} in box` : 'Add';
-    if (c) btn.setAttribute('aria-label', q > 0 ? `Add another ${c.name} (${q} in your box)` : `Add ${c.name} to your box`);
+    btn.querySelector('.add-label').textContent = q > 0 ? `${q} in box` : 'Choose';
+    if (c) btn.setAttribute('aria-label', q > 0 ? `Add another ${c.name} (${q} in your box)` : `Choose ${c.name} for your box`);
   });
   if (!$('#order-form')) return;
 
@@ -242,10 +255,27 @@ function update() {
   $('.selection-status').classList.toggle('is-complete', count === box);
   $('#clear-box').disabled = count === 0;
   $('#summary-total').textContent = money(price);
-  $('#summary-size').textContent = `${box} cookies · Mix & match`;
+  $('#summary-total-label').textContent = `${box}-cookie box`;
+  $('#summary-size').textContent = `Selected: ${count} of ${box} cookies`;
   $('#pay-total').textContent = money(price);
-  $('#pay-total-size').textContent = `${box} cookies`;
+  $('#review-size').textContent = `${box} cookies · mix & match`;
   $$('[data-pay-amount]').forEach(el => { el.textContent = money(price); });
+
+  // Quantity doesn't match the box: say exactly what to do, beside the summary and the order button.
+  const fix = count > box ? `Remove ${count - box} cookie${count - box === 1 ? '' : 's'} to continue — your box holds ${box}.`
+    : count > 0 && count < box ? `Choose ${box - count} more cookie${box - count === 1 ? '' : 's'} to fill your box of ${box}.` : '';
+  const summaryWarning = $('#summary-warning');
+  summaryWarning.textContent = fix;
+  summaryWarning.hidden = !fix;
+  summaryWarning.classList.toggle('is-over', count > box);
+  const submitWarning = $('#submit-warning');
+  submitWarning.textContent = fix || (count === 0 ? 'Choose your cookies in step 2 to fill your box.' : '');
+  submitWarning.hidden = !submitWarning.textContent;
+
+  const time = $('#pickup-time')?.value;
+  const pickup = date ? `${prettyDate(date)}${time ? `, ${time}` : ''}` : '';
+  $('#review-pickup').textContent = pickup ? `${pickup} (Eastern)` : 'Choose a date and time in step 1';
+  $('#summary-pickup').textContent = pickup ? `Pickup: ${pickup}` : '';
 
   cookies.forEach(c => {
     const q = qty[c.id] || 0;
@@ -279,6 +309,9 @@ function update() {
     items.append(row);
   });
   if (!count) items.innerHTML = '<p>Your favorites go here.<br>Pick a flavor to get started.</p>';
+  const review = $('#review-items');
+  review.replaceChildren(...[...items.children].map(n => n.cloneNode(true)));
+  if (!count) review.innerHTML = '<p>No cookies chosen yet.</p>';
 
   $('#flavor-error').textContent = count > box
     ? `Your box has ${count} cookies. Remove ${count - box} to fit your selected size.`
@@ -293,9 +326,11 @@ function enforceAvailability() {
   const removed = date ? cookies.filter(c => qty[c.id] > 0 && !availableOn(c, date)) : [];
   removed.forEach(c => { delete qty[c.id]; });
   if (removed.length) {
-    const names = removed.map(c => c.name).join(' and ');
     const one = removed.length === 1;
-    notice.innerHTML = `${esc(names)} ${one ? 'isn’t' : 'aren’t'} available for pickup on ${esc(prettyDate(date))} (${esc(removed.map(windowText).join('; '))}), so ${one ? 'it was' : 'they were'} taken out of your box. <a href="#flavor-choices">Choose ${one ? 'another flavor' : 'other flavors'}</a>.`;
+    const groups = new Map();
+    removed.forEach(c => groups.set(windowText(c), [...(groups.get(windowText(c)) || []), c.name]));
+    const why = [...groups].map(([when, names]) => `${names.join(' and ')} (${when})`).join('; ');
+    notice.innerHTML = `${esc(why)}: not available for pickup on ${esc(prettyDate(date))}, so ${one ? 'it was' : 'they were'} taken out of your box. <a href="#flavor-choices">Choose ${one ? 'another flavor' : 'other flavors'}</a>.`;
     notice.hidden = false;
   } else if (!date || notice.dataset.date !== date) {
     notice.hidden = true;
@@ -435,6 +470,7 @@ function renderSlots(slots) {
   if (slots.includes(current)) select.value = current;
 }
 $('#pickup-date')?.addEventListener('focus', refreshDates);
+$('#pickup-time')?.addEventListener('change', update);
 $('#pickup-date')?.addEventListener('change', () => {
   enforceAvailability();
   const date = $('#pickup-date');
@@ -605,13 +641,14 @@ function showSuccess(order) {
   $('#success-qr').src = `api/qr.php?m=${method}`;
   $('#success-qr').alt = `QR code for ${order.payment || info.app} ${payTo}`;
   $('#success-email').textContent = order.email;
+  $('#success-hold').textContent = order.holdText || settings?.paymentHoldText || '';
   const lines = order.items.map(i => `<li><span>${esc(i.name)}</span><strong>× ${i.qty}</strong></li>`).join('');
   $('#success-summary').innerHTML = `<ul>${lines}</ul>
     <p class="success-total"><span>${order.boxSize} cookies</span><strong>${esc(order.total)}</strong></p>
     <p class="success-pickup"><strong>Pickup:</strong> ${esc(order.pickupDate)}, ${esc(order.pickupSlot)} (Eastern)</p>`;
   $('#order-form').hidden = true;
   $('.order-summary').hidden = true;
-  $('.order-steps').hidden = true;
+  $('.order-intro').hidden = true;
   $('.order-callout').hidden = true;
   $('#order-unavailable').hidden = true;
   $('#order-success').hidden = false;
@@ -697,15 +734,23 @@ $('#order-form')?.addEventListener('submit', async e => {
 
 /* ——— Enquiries (Contact & Celebrations pages) — sent to Pasha through the server ——— */
 const ENQUIRY_FIELDS = {name: 'e-name', email: 'e-email', date: 'e-date', message: 'e-message'};
+// Keep in step with PB_ORDER_ENQUIRIES in server/lib/enquiries.php.
+const ORDER_TOPICS = ['Existing order', 'Payment question', 'Change or cancel an order', 'Pickup question'];
 function setupEnquiry(form) {
   const type = form.elements.type;
   const eventFields = form.querySelector('.event-fields');
   const preset = new URLSearchParams(location.search).get('type');
   if (preset && [...type.options].some(o => o.value === preset)) type.value = preset;
+  const orderFields = form.querySelector('.order-fields');
   const syncType = () => {
-    const general = type.value === 'General question';
-    eventFields.hidden = general;
-    eventFields.querySelectorAll('input, select').forEach(el => { el.disabled = general; });
+    // Order questions ask for the order number; events, urgent and large orders ask for date and quantity.
+    const orderTopic = ORDER_TOPICS.includes(type.value);
+    const eventTopic = !orderTopic && type.value !== 'General question';
+    eventFields.hidden = !eventTopic;
+    orderFields.hidden = !orderTopic;
+    eventFields.querySelectorAll('input, select').forEach(el => { el.disabled = !eventTopic; });
+    orderFields.querySelectorAll('input').forEach(el => { el.disabled = !orderTopic; });
+    form.querySelector('#e-date-label').textContent = type.value === 'Urgent order' ? 'Date you need them' : 'Event date';
   };
   type.addEventListener('change', syncType);
   syncType();
@@ -755,6 +800,7 @@ function setupEnquiry(form) {
     } catch {
       // Server unreachable (or a static copy of the site): offer the same message as an email.
       const body = `Hello Pasha!\n\nName: ${d.get('name')}\nEmail: ${d.get('email')}\nType: ${d.get('type')}`
+        + (d.get('order_ref') ? `\nOrder number: ${d.get('order_ref')}` : '')
         + (d.get('date') ? `\nEvent date: ${d.get('date')}` : '') + (d.get('quantity') ? `\nQuantity: ${d.get('quantity')}` : '')
         + `\n\n${d.get('message')}`;
       showSummary(form, [{
@@ -788,6 +834,7 @@ function applySettings(data) {
     if (!pricesCents[box]) box = Number(Object.keys(pricesCents)[0]);
   }
   $$('[data-pickup-area]').forEach(el => { el.textContent = data.pickupArea || 'Tyngsboro, MA'; });
+  if (data.paymentHoldText) $$('[data-hold-text]').forEach(el => { el.textContent = data.paymentHoldText; });
   if (Array.isArray(data.slots)) renderSlots(data.slots);
   if (Array.isArray(data.occasions) && data.occasions.length && $('#o-occasion')) {
     $('#o-occasion').innerHTML = data.occasions.map(o => `<option>${esc(o)}</option>`).join('');
@@ -846,7 +893,7 @@ if ($('#order-form')) {
   const params = new URLSearchParams(location.search);
   const chosen = Number(params.get('flavor'));
   const last = store.get(LAST_ORDER_KEY);
-  if (chosen > 0) store.remove(LAST_ORDER_KEY);
+  if (chosen > 0 || params.get('box')) store.remove(LAST_ORDER_KEY);
   else if (last?.order?.code && Date.now() - last.savedAt < 6 * 3600e3) showSuccess(last.order);
 
   draft = store.get(DRAFT_KEY) || {};
@@ -859,6 +906,12 @@ if ($('#order-form')) {
     box = Number(saved.size);
     Object.entries(saved.qty).forEach(([id, q]) => { if (Number.isInteger(q) && q > 0 && q <= 36) qty[id] = q; });
     if (total() > box) Object.keys(qty).forEach(k => delete qty[k]);
+  }
+  const size = Number(params.get('box'));
+  if (pricesCents[size]) {
+    box = size;
+    params.delete('box');
+    history.replaceState(null, '', location.pathname + (params.size ? '?' + params.toString() : '') + location.hash);
   }
   if (chosen > 0) {
     if (total() < box) qty[chosen] = (qty[chosen] || 0) + 1;

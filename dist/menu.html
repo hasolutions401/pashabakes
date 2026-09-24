@@ -23,8 +23,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preconnect" href="https://images.unsplash.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=13">
-  <script src="app.js?v=10" defer></script>
+  <link rel="stylesheet" href="style.css?v=14">
+  <script src="app.js?v=11" defer></script>
 </head>
 <body>
 <!-- Icon sprite: one consistent stroke-icon set used across the site -->
@@ -93,9 +93,17 @@
       </div>
       <div class="heading-aside">
         <p>Four signature favorites. Two seasonal flavors that rotate every month and can be picked up during their month.<br>Mix, match, and make it your own.</p>
-        <a class="text-link" href="order.html">Build a little happiness <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+        <a class="text-link" href="order.html">Build your box <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a>
       </div>
     </div>
+    <nav class="price-line" aria-label="Box sizes and prices">
+      <a href="order.html?box=4"><strong>4 cookies</strong> <span data-price-for="4">$14</span></a>
+      <a href="order.html?box=6"><strong>6 cookies</strong> <span data-price-for="6">$20</span></a>
+      <a href="order.html?box=12"><strong>12 cookies</strong> <span data-price-for="12">$38</span></a>
+      <a href="order.html?box=24"><strong>24 cookies</strong> <span data-price-for="24">$76</span></a>
+      <a href="order.html?box=36"><strong>36 cookies</strong> <span data-price-for="36">$114</span></a>
+      <span class="price-line-note">Minimum 4 · one week’s notice</span>
+    </nav>
     <div class="filter-bar">
       <div role="group" aria-label="Filter cookie menu" class="filters">
         <button type="button" class="filter active" data-filter="all" aria-pressed="true">All cookies <span class="filter-count">6</span></button>
@@ -108,50 +116,50 @@
     <div id="cookie-grid" class="cookie-grid">
       <article class="cookie-card" data-type="signature">
         <div class="cookie-image">
-          <img src="https://images.unsplash.com/photo-1673551490160-3f2e712b9373?auto=format&amp;fit=crop&amp;w=900&amp;q=80" alt="Illustrative photograph of Chocolate Chunk cookies" width="900" height="760" loading="lazy" decoding="async">
+          <img src="images/chocolate-chunk.jpg" alt="Chocolate Chunk cookies" width="900" height="760" loading="lazy" decoding="async">
           <span class="cookie-tag signature">SIGNATURE</span>
         </div>
         <h3>Chocolate Chunk</h3>
         <p>Brown butter base with semi-sweet chocolate chips, dark chocolate chunks, topped with sea salt flakes.</p>
         <div class="cookie-bottom">
           <span>A forever favorite</span>
-          <a class="add-cookie" href="order.html?flavor=1" data-add="1" aria-label="Add Chocolate Chunk to your box"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg><span class="add-label">Add</span></a>
+          <a class="add-cookie" href="order.html?flavor=1" data-add="1" aria-label="Choose Chocolate Chunk for your box"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg><span class="add-label">Choose</span></a>
         </div>
       </article>
       <article class="cookie-card" data-type="signature">
         <div class="cookie-image">
-          <img src="https://assets-eu-01.kc-usercontent.com/21d2ecef-fb9b-01b1-9022-cf60b52c2c77/d79e9c4f-6fbe-4c62-8ca7-fe295e3169b3/Biscoff-Cookies-WEB-RES-1.jpg?auto=format&amp;lossless=1&amp;q=85&amp;w=900" alt="Illustrative photograph of Biscoff cookies" width="900" height="760" loading="lazy" decoding="async">
+          <img src="images/biscoff.jpg" alt="Biscoff cookies" width="900" height="760" loading="lazy" decoding="async">
           <span class="cookie-tag signature">SIGNATURE</span>
         </div>
         <h3>Biscoff</h3>
         <p>Brown butter base with Biscoff cookie pieces, white chocolate chips, drizzled with Biscoff spread.</p>
         <div class="cookie-bottom">
           <span>A forever favorite</span>
-          <a class="add-cookie" href="order.html?flavor=2" data-add="2" aria-label="Add Biscoff to your box"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg><span class="add-label">Add</span></a>
+          <a class="add-cookie" href="order.html?flavor=2" data-add="2" aria-label="Choose Biscoff for your box"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg><span class="add-label">Choose</span></a>
         </div>
       </article>
       <article class="cookie-card" data-type="signature">
         <div class="cookie-image">
-          <img src="https://scientificallysweet.com/wp-content/uploads/2022/09/IMG_3198-salted-toffee-chocolate-chip-cookies-feature2.jpg" alt="Illustrative photograph of Chocolate Sea Salt Toffee cookies" width="900" height="760" loading="lazy" decoding="async">
+          <img src="images/chocolate-sea-salt-toffee.jpg" alt="Chocolate Sea Salt Toffee cookies" width="900" height="760" loading="lazy" decoding="async">
           <span class="cookie-tag signature">SIGNATURE</span>
         </div>
         <h3>Chocolate Sea Salt Toffee</h3>
         <p>Rich brown butter cookie with toffee bits, semi-sweet chocolate chips, topped with sea salt flakes.</p>
         <div class="cookie-bottom">
           <span>A forever favorite</span>
-          <a class="add-cookie" href="order.html?flavor=3" data-add="3" aria-label="Add Chocolate Sea Salt Toffee to your box"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg><span class="add-label">Add</span></a>
+          <a class="add-cookie" href="order.html?flavor=3" data-add="3" aria-label="Choose Chocolate Sea Salt Toffee for your box"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg><span class="add-label">Choose</span></a>
         </div>
       </article>
       <article class="cookie-card" data-type="signature">
         <div class="cookie-image">
-          <img src="https://sallysbakingaddiction.com/wp-content/uploads/2013/12/red-velvet-white-chocolate-chip-cookies-2.jpg" alt="Illustrative photograph of Red Velvet cookies" width="900" height="760" loading="lazy" decoding="async">
+          <img src="images/red-velvet.jpg" alt="Red Velvet cookies" width="900" height="760" loading="lazy" decoding="async">
           <span class="cookie-tag signature">SIGNATURE</span>
         </div>
         <h3>Red Velvet</h3>
         <p>Red cookie base with cocoa powder, white chocolate chips and white chocolate drizzle.</p>
         <div class="cookie-bottom">
           <span>A forever favorite</span>
-          <a class="add-cookie" href="order.html?flavor=4" data-add="4" aria-label="Add Red Velvet to your box"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg><span class="add-label">Add</span></a>
+          <a class="add-cookie" href="order.html?flavor=4" data-add="4" aria-label="Choose Red Velvet for your box"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg><span class="add-label">Choose</span></a>
         </div>
       </article>
       <article class="cookie-card" data-type="seasonal">
@@ -163,7 +171,7 @@
         <p>Brown butter base with pumpkin purée, cinnamon, and chocolate chips.</p>
         <div class="cookie-bottom">
           <span>A seasonal favorite</span>
-          <a class="add-cookie" href="order.html?flavor=5" data-add="5" aria-label="Add Pumpkin Chocolate Chip to your box"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg><span class="add-label">Add</span></a>
+          <a class="add-cookie" href="order.html?flavor=5" data-add="5" aria-label="Choose Pumpkin Chocolate Chip for your box"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg><span class="add-label">Choose</span></a>
         </div>
       </article>
       <article class="cookie-card" data-type="seasonal">
@@ -175,12 +183,12 @@
         <p>Brown butter base with cinnamon, maple syrup, pecans.</p>
         <div class="cookie-bottom">
           <span>A seasonal favorite</span>
-          <a class="add-cookie" href="order.html?flavor=6" data-add="6" aria-label="Add Maple Pecan to your box"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg><span class="add-label">Add</span></a>
+          <a class="add-cookie" href="order.html?flavor=6" data-add="6" aria-label="Choose Maple Pecan for your box"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg><span class="add-label">Choose</span></a>
         </div>
       </article>
     </div>
     <p class="halal-note"><svg class="icon" aria-hidden="true"><use href="#i-check-circle"/></svg><span><strong>Made with halal ingredients.</strong> Every ingredient we use is halal, including items such as marshmallows.</span></p>
-    <p class="photo-disclosure">Photos are illustrative. They show the flavors, not Pashabakess cookies; Pasha’s own photos are coming soon. <button type="button" class="inline-button" id="credits-open">Photo credits</button></p>
+    <p class="photo-disclosure" data-photo-note><span data-photo-note-text>Some flavor photos are illustrative for now — Pasha’s own photos are coming soon.</span> <button type="button" class="inline-button" id="credits-open">Photo credits</button></p>
 
     <div class="pricing-strip">
       <div class="pricing-intro">
@@ -188,11 +196,11 @@
         <h3>A sweet little mix &amp; match.</h3>
         <p>Minimum order: 4 cookies · One week’s notice</p>
       </div>
-      <div class="price"><strong>4 cookies</strong><span>$14</span></div>
-      <div class="price"><strong>Half dozen</strong><span>$20</span></div>
-      <div class="price"><strong>Dozen</strong><span>$38</span></div>
-      <div class="price"><strong>2 dozen</strong><span>$76</span></div>
-      <div class="price"><strong>3 dozen</strong><span>$114</span></div>
+      <a class="price" href="order.html?box=4"><strong>4 cookies</strong><span>$14</span></a>
+      <a class="price" href="order.html?box=6"><strong>Half dozen</strong><span>$20</span></a>
+      <a class="price" href="order.html?box=12"><strong>Dozen</strong><span>$38</span></a>
+      <a class="price" href="order.html?box=24"><strong>2 dozen</strong><span>$76</span></a>
+      <a class="price" href="order.html?box=36"><strong>3 dozen</strong><span>$114</span></a>
     </div>
   </section>
 <aside class="menu-qr" aria-label="Instagram and payment handles">

@@ -1,14 +1,20 @@
 # Pasha's own photos (originals)
 
-Received from Pasha, not yet on the website. They will replace the illustrative photos once the full set is in.
-This folder is outside `dist/`, so none of it is public.
+Originals as received from Pasha. This folder is outside `dist/`, so none of it is public.
+Web versions (cropped/resized) live in `dist/images/`; they were made from these files.
 
-| File | Flavor | Notes |
+| File | Flavor / use | On the website |
 | --- | --- | --- |
-| chocolate-chunk-1.jpg | Chocolate Chunk | Cookies with milk and cake stand, portrait |
-| chocolate-chunk-2.webp | Chocolate Chunk | Dipping a cookie in milk, Pashabakess box behind |
-| biscoff-1.jpg | Biscoff | Stack in front of the Pashabakess box (top cookie Biscoff) |
-| chocolate-sea-salt-toffee-1.webp | Chocolate Sea Salt Toffee | Flat lay with book and milk |
-| chocolate-sea-salt-toffee-2.webp | Chocolate Sea Salt Toffee | Cake stand, vase and milk |
+| chocolate-chunk-1.jpg | Chocolate Chunk | Menu card + thumbnail (`images/chocolate-chunk*.jpg`) |
+| chocolate-chunk-2.webp | Chocolate Chunk, dipped in milk | Meet Pasha photo (`images/about-pasha.jpg`) |
+| chocolate-chunk-stack.webp | Chocolate Chunk stack (flavor assumed) | Not used yet |
+| biscoff-1.jpg | Stack in front of the gift box | Home hero, Celebrations (`images/hero-*.jpg`, `images/celebrate-box.jpg`) |
+| biscoff-2.webp | Biscoff on a tray | Menu card + thumbnail (`images/biscoff*.jpg`) |
+| chocolate-sea-salt-toffee-1.webp | Flat lay with book and milk | Menu card, Celebrations (`images/chocolate-sea-salt-toffee*.jpg`, `images/celebrate-plate.jpg`) |
+| chocolate-sea-salt-toffee-2.webp | Cake stand, vase and milk | Home "Hi, I'm Pasha" photo (`images/home-about.jpg`) |
+| assortment-red-velvet-mm-biscoff-chocolate-chunk.webp | Red velvet, M&M, Biscoff, chocolate chunk | Red Velvet card crop (`images/red-velvet*.jpg`) |
+| assortment-top-view.webp | Chocolate chunk, Biscoff, M&M (top view) | Not used (shows M&M) |
+| mm-1.webp | M&M | `images/mm*.jpg`, for the hidden M&M flavor in admin |
 
-Still needed: Red Velvet, Pumpkin Chocolate Chip, Maple Pecan (and any box/party photos).
+Still needed: Pumpkin Chocolate Chip and Maple Pecan (they still use sample photos, labelled as illustrative).
+Higher-resolution originals (straight from the phone, not via WhatsApp) would make everything sharper.

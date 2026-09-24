@@ -7,6 +7,8 @@ declare(strict_types=1);
  */
 
 const PB_GENERAL_ENQUIRY = 'General question';
+/** Topics about an order already placed: they ask for the order number instead of event details. */
+const PB_ORDER_ENQUIRIES = ['Existing order', 'Payment question', 'Change or cancel an order', 'Pickup question'];
 
 /** Returns [clean data, errors keyed by field]. */
 function enquiry_validate(array $in): array
@@ -18,7 +20,9 @@ function enquiry_validate(array $in): array
         'event_date' => clean_text($in['date'] ?? '', 10),
         'quantity' => clean_text($in['quantity'] ?? '', 80),
         'message' => clean_text($in['message'] ?? '', 1800),
+        'order_ref' => strtoupper(preg_replace('/[^A-Za-z0-9]/', '', clean_text($in['order_ref'] ?? '', 40))),
     ];
+    $data['order_ref'] = substr($data['order_ref'], 0, 20);
     $errors = [];
 
     if (mb_strlen($data['name']) < 2) {
@@ -31,10 +35,15 @@ function enquiry_validate(array $in): array
         $errors['message'] = 'Please tell Pasha a little about what you have in mind.';
     }
 
-    // Event date and quantity only matter for events and large orders.
-    if ($data['type'] === PB_GENERAL_ENQUIRY) {
+    // Event date and quantity only matter for events, urgent and large orders;
+    // the order number only for questions about an existing order.
+    $orderTopic = in_array($data['type'], PB_ORDER_ENQUIRIES, true);
+    if ($data['type'] === PB_GENERAL_ENQUIRY || $orderTopic) {
         $data['event_date'] = '';
         $data['quantity'] = '';
+    }
+    if (!$orderTopic) {
+        $data['order_ref'] = '';
     }
     if ($data['event_date'] !== '') {
         $date = parse_date($data['event_date']);
@@ -58,9 +67,9 @@ function enquiry_create(array $data): array
     if ($existing) {
         return [$existing, false];
     }
-    db_exec('INSERT INTO enquiries (status, name, email, type, event_date, quantity, message, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', [
+    db_exec('INSERT INTO enquiries (status, name, email, type, event_date, quantity, message, order_ref, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', [
         'new', $data['name'], $data['email'], $data['type'], $data['event_date'] !== '' ? $data['event_date'] : null,
-        $data['quantity'], $data['message'], now_str(),
+        $data['quantity'], $data['message'], $data['order_ref'], now_str(),
     ]);
     return [db_one('SELECT * FROM enquiries WHERE id = ?', [(int) db()->lastInsertId()]), true];
 }

@@ -69,6 +69,7 @@ $response = [
         // Where to send the money — shown with the order number on the next screen.
         'payTo' => payment_handle($order['payment_method']),
         'payUrl' => payment_url($order['payment_method']),
+        'holdText' => payment_hold_text(),
         'email' => $order['email'],
     ],
 ];

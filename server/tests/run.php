@@ -42,6 +42,11 @@ function check(string $name, bool $ok): void {
 echo "Backend tests on " . strtoupper($driver) . PHP_EOL;
 
 check('seeded 6 cookies', count(menu_cookies()) === 6);
+$all = menu_cookies(true);
+$mm = array_values(array_filter($all, fn($c) => $c['name'] === 'M&M'));
+check('M&M added hidden, ready for later', count($all) === 7 && $mm && $mm[0]['is_available'] === 0
+    && !in_array('M&M', array_column(public_menu_cookies(), 'name'), true));
+check('seeded flavors use Pasha photos', menu_cookies()[0]['image'] === 'images/chocolate-chunk.jpg');
 check('seeded prices', box_prices() === [4 => 1400, 6 => 2000, 12 => 3800, 24 => 7600, 36 => 11400]);
 check('9 pickup slots', count(pickup_slots()) === 9);
 
@@ -140,6 +145,16 @@ check('enquiry errors', isset($e['name'], $e['email'], $e['date'], $e['message']
 check('enquiry saved once', $created && !$created2 && $row['id'] === $row2['id'] && enquiry_new_count() === 1);
 [$ok] = send_enquiry_alert($row);
 check('enquiry emailed to Pasha', $ok);
+[$q, $e] = enquiry_validate(['name' => 'Sam', 'email' => 's@example.com', 'type' => 'Payment question', 'order_ref' => ' pb-1005 ', 'date' => $nextMonth, 'message' => 'I paid but got no email']);
+check('order question keeps order number, drops event fields', $e === [] && $q['order_ref'] === 'PB1005' && $q['event_date'] === '');
+[$q] = enquiry_validate(['name' => 'Sam', 'email' => 's@example.com', 'type' => 'Birthday', 'order_ref' => 'PB1', 'message' => 'Party next month']);
+check('event enquiry ignores order number', $q['order_ref'] === '');
+settings_save(['payment_hours' => '24']);
+check('payment deadline text', str_contains(payment_hold_text(), 'within 24 hours'));
+check('overdue after deadline', payment_overdue(['status' => 'pending', 'created_at' => today()->modify('-2 days')->format('Y-m-d H:i:s')])
+    && !payment_overdue(['status' => 'paid', 'created_at' => today()->modify('-2 days')->format('Y-m-d H:i:s')]));
+settings_save(['payment_hours' => '0']);
+check('no deadline by default', !str_contains(payment_hold_text(), 'within'));
 enquiry_set_status((int) $row['id'], 'done');
 check('enquiry marked answered', enquiry_new_count() === 0 && enquiry_list('done', 1)['total'] === 1);
 
@@ -151,12 +166,20 @@ if ($driver === 'sqlite') {
     $old->exec("CREATE TABLE cookies (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, description TEXT NOT NULL, type TEXT NOT NULL,
         image TEXT NOT NULL, is_available INTEGER NOT NULL DEFAULT 1, sort_order INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)");
     $old->exec("INSERT INTO cookies (name, description, type, image, created_at, updated_at) VALUES ('Old sig', '', 'signature', '', 'x', 'x'), ('Old special', '', 'seasonal', '', 'x', 'x')");
+    $ins = $old->prepare("INSERT INTO cookies (name, description, type, image, created_at, updated_at) VALUES (?, '', 'signature', ?, 'x', 'x')");
+    $ins->execute(['Chocolate Chunk', array_key_first(own_photo_swaps())]);
+    $ins->execute(['Red Velvet', 'uploads/cookie-abc123.jpg']);   // Pasha's own upload: must be kept
     migrate($old, 'sqlite');
     $rows = $old->query('SELECT type, available_from, available_until FROM cookies ORDER BY id')->fetchAll();
     check('v1 upgrade: specials dated, signatures untouched', $rows[0]['available_from'] === null
         && $rows[1]['available_from'] === $earliest->format('Y-m-01') && $rows[1]['available_until'] === $earliest->format('Y-m-t')
         && (int) $old->query("SELECT value FROM settings WHERE name = 'schema_version'")->fetchColumn() === PB_SCHEMA_VERSION
         && $old->query("SELECT COUNT(*) FROM enquiries")->fetchColumn() !== false);
+    $img = fn($n) => $old->query("SELECT image FROM cookies WHERE name = " . $old->quote($n))->fetchColumn();
+    check('upgrade: sample photo swapped, own upload kept', $img('Chocolate Chunk') === 'images/chocolate-chunk.jpg' && $img('Red Velvet') === 'uploads/cookie-abc123.jpg');
+    check('upgrade: M&M added hidden', (int) $old->query("SELECT is_available FROM cookies WHERE name = 'M&M'")->fetchColumn() === 0);
+    migrate($old, 'sqlite');
+    check('upgrade runs once (no second M&M)', (int) $old->query("SELECT COUNT(*) FROM cookies WHERE name = 'M&M'")->fetchColumn() === 1);
 }
 
 // Daily cookie limit

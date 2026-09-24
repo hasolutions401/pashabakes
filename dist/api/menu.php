@@ -36,6 +36,8 @@ json_response([
     'leadDays' => lead_days(),
     'unavailableDates' => unavailable_dates(),
     'maxCookiesPerDay' => max_cookies_per_day(),
+    'payWithinHours' => payment_hours(),
+    'paymentHoldText' => payment_hold_text(),
     'dayRemaining' => (object) days_remaining(),
     'slots' => pickup_slots(),
     'occasions' => occasions(),

@@ -36,7 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $values = $data + $values;
 }
 
-$preview = $values['image'] !== '' ? (str_starts_with($values['image'], 'uploads/') ? '../' . $values['image'] : $values['image']) : '';
+$preview = $values['image'] !== '' ? (cookie_image_is_local($values['image']) ? '../' . $values['image'] : $values['image']) : '';
 admin_header($cookie ? 'Edit ' . $cookie['name'] : 'Add a flavor', 'menu', $user);
 ?>
 <a class="back" href="menu.php">← Menu</a>

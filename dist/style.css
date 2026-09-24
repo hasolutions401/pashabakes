@@ -1016,3 +1016,64 @@ dialog p { font-size: 15px; }
   .enquiry-card { padding: 22px 18px; }
   .pay-now { margin: 18px 0; }
 }
+
+/* ——— Order page: shorter intro, pickup first, review box ——— */
+.order-section { padding-top: 56px; }
+.order-intro { display: grid; grid-template-columns: 1.1fr 1fr; gap: 36px; align-items: end; margin-bottom: 20px; }
+.order-intro h1 { font-size: clamp(38px, 4.4vw, 60px); margin-bottom: 12px; }
+.order-lede { font-size: 16px; line-height: 1.7; color: var(--muted); margin: 0; max-width: 56ch; }
+.order-intro .order-steps { margin: 0; }
+.order-steps-4 { grid-template-columns: 1fr 1fr; }
+.order-steps-4 li { padding: 12px 16px; font-size: 14px; }
+.order-steps-4 li:nth-child(3) { border-left: 0; }
+.order-steps-4 li:nth-child(n+3) { border-top: 1px solid var(--line); }
+p.order-callout { margin: 0 0 28px; padding: 12px 18px; font-size: 15px; }
+.review-box { margin: 0 0 22px; padding: 18px 20px; border-radius: var(--radius); background: var(--blush); }
+.review-title { font-family: var(--serif); font-size: 22px; margin: 0 0 8px; }
+.review-items .summary-line { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #e8d2c8; font-size: 15px; }
+.review-items p { margin: 0 0 6px; color: var(--muted); font-size: 15px; }
+.review-facts { margin: 10px 0 0; display: grid; gap: 6px; font-size: 15px; }
+.review-facts div { display: flex; justify-content: space-between; gap: 16px; }
+.review-facts dt { color: var(--muted); }
+.review-facts dd { margin: 0; text-align: right; font-weight: 600; }
+.review-total { padding-top: 8px; border-top: 1px solid #d7bdb3; }
+.review-total dd { font-family: var(--serif); font-size: 26px; }
+#submit-warning { margin: 0 0 14px; }
+.summary-warning { margin: 10px 0 0; padding: 10px 12px; border-radius: var(--radius-sm); background: #fff4d9; border: 1px solid #efd9a3; font-size: 14px; font-weight: 600; }
+.summary-warning.is-over { background: #fbe9ec; border-color: #e2a9b4; color: var(--error); }
+.summary-pickup { font-size: 14px; color: var(--muted); margin: 4px 0 0; }
+.summary-pickup:empty { display: none; }
+.success-hold { text-align: left; font-size: 15px; margin: 0 0 12px; }
+.success-hold:empty { display: none; }
+@media (max-width: 1000px) {
+  .order-intro { grid-template-columns: 1fr; gap: 18px; }
+}
+@media (max-width: 760px) {
+  .order-section { padding-top: 36px; }
+  .order-steps-4 { grid-template-columns: 1fr 1fr; }
+  .order-steps-4 li { flex-direction: row; }
+  .order-steps-4 li:nth-child(2) { border-top: 0; border-left: 1px solid var(--line); }
+  .order-steps-4 li:nth-child(4) { border-left: 1px solid var(--line); }
+}
+
+/* ——— Menu price line, clickable prices, About buttons, Celebrations photos ——— */
+.price-line { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin: -12px 0 24px; }
+.price-line a {
+  display: inline-flex; align-items: baseline; gap: 6px; min-height: var(--tap); padding: 8px 14px; border-radius: 999px;
+  border: 1.5px solid var(--line-strong); background: var(--field); font-size: 14px; transition: border-color var(--fast), background-color var(--fast);
+}
+.price-line a:hover { border-color: var(--rose); background: #fbeff1; }
+.price-line a span { font-family: var(--serif); font-size: 18px; }
+.price-line-note { font-size: 14px; color: var(--muted); }
+a.price { display: block; border-radius: var(--radius-sm); transition: background-color var(--fast); }
+a.price:hover { background: rgb(255 255 255 / .55); }
+.about-actions { display: flex; flex-wrap: wrap; gap: 12px; margin: 8px 0 18px; }
+.celebrate-gallery { display: grid; grid-template-columns: 1.25fr 1fr; gap: 18px; margin: 36px 0 0; }
+.celebrate-gallery figure { margin: 0; }
+.celebrate-gallery img { width: 100%; height: 420px; object-fit: cover; border-radius: var(--radius-lg); }
+.celebrate-gallery figcaption { font-size: 14px; color: var(--muted); margin-top: 8px; }
+@media (max-width: 760px) {
+  .celebrate-gallery { grid-template-columns: 1fr; }
+  .celebrate-gallery img { height: 300px; }
+  .price-line { margin-top: 0; }
+}

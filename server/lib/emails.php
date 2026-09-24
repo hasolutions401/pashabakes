@@ -106,12 +106,13 @@ function send_customer_receipt(array $order): array
     $html = email_layout('Thank you, ' . $first . '! Now send your payment.',
         '<p style="font-size:15px;margin:0 0 18px">Your order <strong>' . e($order['code']) . '</strong> is saved. Pasha confirms it — and emails you the pickup address — once your payment arrives.</p>'
         . $payBox
+        . '<p style="font-size:15px;margin:0 0 18px">' . e(payment_hold_text()) . '</p>'
         . email_order_table($order)
         . '<p style="font-size:14px;color:#6e5c52;margin:18px 0 0">' . e(refund_policy_text()) . '</p>'
         . '<p style="font-size:14px;color:#6e5c52;margin:12px 0 0">Questions or changes? Just reply to this email.</p>');
     $text = "Thank you, {$first}! Your order {$order['code']} is saved.\n\n"
         . "How to pay:\n1. Send {$amount} to {$handle} on {$app} ({$url}).\n2. Write {$order['code']} in the payment note.\n\n"
-        . "Pasha confirms your order, and emails you the pickup address, once your payment arrives.\n\n"
+        . "Pasha confirms your order, and emails you the pickup address, once your payment arrives.\n" . payment_hold_text() . "\n\n"
         . email_order_text($order)
         . "\n\n" . refund_policy_text() . "\nQuestions? Reply to this email.";
     return send_email($order['email'], "Order {$order['code']} saved — how to pay", $html, $text, 'receipt', (int) $order['id']);
@@ -148,6 +149,9 @@ function send_enquiry_alert(array $q): array
 {
     $to = setting('notify_email');
     $rows = [['Type', $q['type']], ['Name', $q['name']], ['Email', $q['email']]];
+    if (($q['order_ref'] ?? '') !== '') {
+        $rows[] = ['Order number', $q['order_ref']];
+    }
     if (!empty($q['event_date'])) {
         $rows[] = ['Event date', pretty_date($q['event_date'])];
     }
@@ -164,5 +168,5 @@ function send_enquiry_alert(array $q): array
         '<table role="presentation" cellpadding="0" cellspacing="0" style="font-size:15px;margin:0 0 18px">' . $table . '</table>'
         . '<div style="background:#f6e7df;border-radius:10px;padding:16px 18px;font-size:15px;line-height:1.6">' . nl2br(e($q['message'])) . '</div>'
         . '<p style="font-size:14px;color:#6e5c52;margin:18px 0 0">Reply to this email to answer ' . e($q['name']) . ' directly.</p>');
-    return send_email($to, "New enquiry: {$q['type']} · {$q['name']}", $html, $text . "\n" . $q['message'], 'enquiry', null, $q['email']);
+    return send_email($to, "New enquiry: {$q['type']} · {$q['name']}" . (($q['order_ref'] ?? '') !== '' ? " · {$q['order_ref']}" : ''), $html, $text . "\n" . $q['message'], 'enquiry', null, $q['email']);
 }

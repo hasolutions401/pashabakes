@@ -56,6 +56,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!preg_match('/^\d{1,4}$/', $dayMax === '' ? '0' : $dayMax)) {
         $errors['max_cookies_per_day'] = 'Use a whole number, or 0 for no limit.';
     }
+    $payHours = trim((string) ($in['payment_hours'] ?? '0'));
+    if (!preg_match('/^\d{1,3}$/', $payHours === '' ? '0' : $payHours) || (int) $payHours > 168) {
+        $errors['payment_hours'] = 'Use a number of hours between 0 and 168 (one week), or 0 for no deadline.';
+    }
     $maxAhead = (int) ($in['max_days_ahead'] ?? 90);
     if ($maxAhead < 14 || $maxAhead > 365) {
         $errors['max_days_ahead'] = 'Use a number between 14 and 365.';
@@ -89,6 +93,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'lead_days' => (string) $lead,
         'max_days_ahead' => (string) $maxAhead,
         'max_cookies_per_day' => (string) (int) $dayMax,
+        'payment_hours' => (string) (int) $payHours,
         'pickup_slots' => implode("\n", $slots),
         'unavailable_dates' => implode("\n", $dates),
         'occasions' => implode("\n", $occasions),
@@ -192,6 +197,11 @@ admin_header('Settings', 'settings', $user);
 
   <section class="card">
     <h2>Payments</h2>
+    <label>Ask customers to pay within (hours) <small>(0 = don’t mention a deadline)</small>
+      <input type="number" name="payment_hours" value="<?= e($form['payment_hours'] ?? '0') ?>" min="0" max="168" step="1" inputmode="numeric"><?= $err('payment_hours') ?>
+    </label>
+    <p class="muted">Shown on the payment screen and in the “how to pay” email. Orders still unpaid after this are marked
+      <strong>Overdue</strong> in your order list, so you can cancel them and free the date.</p>
     <div class="two-col">
       <label>Venmo username
         <span class="money-input"><span>@</span><input name="venmo_handle" value="<?= e($form['venmo_handle'] ?? '') ?>" autocapitalize="none"></span><?= $err('venmo_handle') ?>

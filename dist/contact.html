@@ -22,8 +22,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=13">
-  <script src="app.js?v=10" defer></script>
+  <link rel="stylesheet" href="style.css?v=14">
+  <script src="app.js?v=11" defer></script>
 </head>
 <body>
 <!-- Icon sprite: one consistent stroke-icon set used across the site -->
@@ -115,12 +115,18 @@
           </div>
           <div class="field field-wide">
             <label for="e-type">What’s it about?</label>
-            <select name="type" id="e-type"><option>Birthday</option><option>Holiday</option><option>Baby shower</option><option>Bridal shower</option><option>Eid</option><option>Aqiqah</option><option>Graduation</option><option>Office treat</option><option>Just because</option><option>Large order</option><option selected>General question</option></select>
+            <select name="type" id="e-type"><option selected>General question</option><option>Existing order</option><option>Payment question</option><option>Change or cancel an order</option><option>Pickup question</option><option>Urgent order</option><option>Large order</option><option>Birthday</option><option>Holiday</option><option>Baby shower</option><option>Bridal shower</option><option>Eid</option><option>Aqiqah</option><option>Graduation</option><option>Office treat</option><option>Just because</option></select>
+          </div>
+        </div>
+        <div class="order-fields" hidden>
+          <div class="field">
+            <label for="e-order">Order number <span class="optional">(optional, e.g. PB1005)</span></label>
+            <input id="e-order" name="order_ref" maxlength="20" autocapitalize="characters" autocomplete="off" placeholder="PB1005">
           </div>
         </div>
         <div class="form-grid event-fields">
           <div class="field">
-            <label for="e-date">Event date <span class="optional">(if known)</span></label>
+            <label for="e-date"><span id="e-date-label">Event date</span> <span class="optional">(if known)</span></label>
             <input id="e-date" name="date" type="date" aria-describedby="e-date-error" data-error="Please enter a valid event date.">
             <p class="field-error" id="e-date-error" hidden></p>
           </div>

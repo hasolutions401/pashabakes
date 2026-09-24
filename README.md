@@ -52,10 +52,12 @@ address everywhere: `grep -rl pashabakess.alwaysdata.net dist | xargs sed -i 's#
 
 ## Before public launch
 
-- **Photos:** menu, hero and About photos are still illustrative recipe/stock photos, labelled as such with
-  credits. Replace them with Pasha's own photos (flavor photos via Admin → Menu → Edit; hero and About photos
-  in `dist/index.html` / `dist/about.html`). Restore the "From my kitchen, with love." caption on the About
-  photo once it is Pasha's own.
+- **Photos:** Pasha's own photos are in `dist/images/` (originals in `photos/`). Pumpkin Chocolate Chip and
+  Maple Pecan still use sample photos; the menu names them as illustrative and credits them until they're
+  replaced (upload in Admin → Menu → Edit, and the note disappears by itself). M&M is in Admin → Menu as a
+  **hidden** flavor with its photo, ready for a future rotation: set its pickup dates and click Show.
+- **Payment deadline:** Admin → Settings → Payments → "Ask customers to pay within (hours)". 0 (default) states
+  no deadline; customers are told their pickup date is held while Pasha waits for payment.
 - **Refund policy:** the published wording (full refund with at least two days' notice, none after, full
   refund if Pasha cancels) is awaiting Pasha's confirmation, including how quickly refunds are sent.
 - **Privacy notice** (`dist/privacy.html`): ask Pasha to review it, especially how long records are kept.
@@ -69,7 +71,7 @@ address everywhere: `grep -rl pashabakess.alwaysdata.net dist | xargs sed -i 's#
 
 ## Verification
 
-Backend: 41 automated checks pass on SQLite (`php server/tests/run.php`), including pay-after-order, flavor pickup
+Backend: 61 automated checks pass on SQLite (`php server/tests/run.php`), including pay-after-order, flavor pickup
 dates, enquiries and the upgrade of an existing database. Browser checks (Chromium, desktop and 390px mobile)
 covered: menu filters and their screen-reader announcements, Add → order page, checkout draft kept after refresh,
 an October special removed for a November pickup (and rejected by the server), placing an order and seeing the
