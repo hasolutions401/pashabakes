@@ -1,0 +1,63 @@
+# Puts the website live on alwaysdata whenever checkout-backend changes.
+#  1. Runs the backend tests — if any fail, nothing is deployed.
+#  2. Logs in to alwaysdata over SSH and runs `git pull` in ~/pashabakess.
+#  3. Checks that the live menu API answers.
+# One-time setup: repository Settings → Secrets and variables → Actions → New repository secret
+#   ALWAYSDATA_SSH_PASSWORD = the password of the alwaysdata SSH user "pashabakess".
+# Can also be started by hand: Actions → "Deploy to alwaysdata" → Run workflow.
+name: Deploy to alwaysdata
+
+on:
+  push:
+    branches: [checkout-backend]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-alwaysdata
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: pdo_sqlite, gd, mbstring
+          coverage: none
+      - name: Backend tests
+        run: php server/tests/run.php
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    env:
+      SSH_PASSWORD: ${{ secrets.ALWAYSDATA_SSH_PASSWORD }}
+    steps:
+      - name: Password not set yet
+        if: env.SSH_PASSWORD == ''
+        run: echo "::warning::Not deployed — add the ALWAYSDATA_SSH_PASSWORD secret (Settings → Secrets and variables → Actions)."
+      - name: Update the live site
+        if: env.SSH_PASSWORD != ''
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ssh-pashabakess.alwaysdata.net
+          username: pashabakess
+          password: ${{ secrets.ALWAYSDATA_SSH_PASSWORD }}
+          script: |
+            set -e
+            cd ~/pashabakess
+            git fetch origin checkout-backend
+            git checkout checkout-backend
+            git merge --ff-only origin/checkout-backend
+            git log --oneline -1
+      - name: Check the live site answers
+        if: env.SSH_PASSWORD != ''
+        run: |
+          sleep 5
+          curl -fsS https://pashabakess.alwaysdata.net/api/menu.php | grep -q '"ok":true'
+          echo "Live site OK: https://pashabakess.alwaysdata.net/"

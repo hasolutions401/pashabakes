@@ -98,7 +98,9 @@ Your SMTP server name is shown under **Emails → Addresses**; it looks like `sm
 
 ## Updating the site
 
-Upload the new files (or `git pull`). The database upgrades itself on the first visit after an update —
+Updates go live automatically: each push to the `checkout-backend` branch is tested and then pulled onto
+alwaysdata by GitHub Actions (`.github/workflows/deploy.yml`, needs the `ALWAYSDATA_SSH_PASSWORD` secret).
+If you change the SSH password on alwaysdata, update that secret too. By hand: `cd ~/pashabakess && git pull`. The database upgrades itself on the first visit after an update —
 for example, the September 2026 update added enquiries and gave the existing monthly specials the pickup
 dates of the month customers can next order for. Check **Admin → Menu** afterwards.
 
