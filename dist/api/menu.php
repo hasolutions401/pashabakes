@@ -35,6 +35,8 @@ json_response([
     'maxDate' => latest_pickup_date()->format('Y-m-d'),
     'leadDays' => lead_days(),
     'unavailableDates' => unavailable_dates(),
+    'maxCookiesPerDay' => max_cookies_per_day(),
+    'dayRemaining' => (object) days_remaining(),
     'slots' => pickup_slots(),
     'occasions' => occasions(),
     'accepting' => accepting_orders(),

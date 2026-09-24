@@ -23,7 +23,10 @@ submission can never leave Pasha with money and no order. Pasha checks Venmo/Cas
 - Emails: new-order alert to Pasha, receipt with payment instructions to the customer, confirmation when marked
   paid, and new-enquiry alerts.
 - Server-side checks: price, box count, flavor pickup dates, one week's notice, time slots (Eastern time),
-  duplicate submissions, rate limits.
+  the daily cookie limit, duplicate submissions, rate limits.
+- **Daily limit:** Admin → Settings → "Most cookies you can bake for one pickup day" (0 = no limit). Unpaid
+  orders hold their place; cancelling frees it. It is re-checked while saving, so two customers ordering at the
+  same moment can't both take the last spot.
 - Uploaded flavor photos are saved at 1400px plus an 800px copy for menu cards and a 160px thumbnail for the
   order form.
 - Setup and hosting: see `DEPLOY-ALWAYSDATA.md`. Backend tests: `php server/tests/run.php`. The database
@@ -74,10 +77,9 @@ payment screen again after a reload, contact/celebration enquiries (with and wit
 fallback when the server is down), admin enquiries, flavor dates and photo resizing. No real emails or payments
 were sent.
 
-## GitHub Pages (old address)
+## Hosting
 
-The live site is **https://pashabakess.alwaysdata.net/** only. GitHub Pages cannot run the PHP ordering
-system, so `.github/workflows/pages.yml` publishes nothing but redirects: every page at
-https://hasolutions401.github.io/pashabakes/ forwards to the same page on alwaysdata (it runs on every push
-to `main`). Before this, GitHub Pages served an old copy whose "order" button only opened an email draft,
-so orders placed there never reached the admin portal.
+The live site is **https://pashabakess.alwaysdata.net/** only (see `DEPLOY-ALWAYSDATA.md`). The old GitHub
+Pages copy at hasolutions401.github.io/pashabakes was an early version whose "order" button only opened an
+email draft, so orders placed there never reached the admin portal. Its workflow has been removed and the
+site unpublished (repository Settings → Pages). Don't re-enable GitHub Pages: it can't run the ordering system.

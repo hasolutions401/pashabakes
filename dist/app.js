@@ -335,6 +335,9 @@ document.addEventListener('click', e => {
 $$('input[name="box"]').forEach(r => r.addEventListener('change', () => {
   box = Number(r.value);
   update();
+  // A bigger box may no longer fit the chosen day's limit (or a smaller one now does).
+  const date = $('#pickup-date');
+  if (date?.value) showFieldError(date, fieldMessage(date));
 }));
 
 $('#clear-box')?.addEventListener('click', () => {
@@ -432,7 +435,11 @@ function renderSlots(slots) {
   if (slots.includes(current)) select.value = current;
 }
 $('#pickup-date')?.addEventListener('focus', refreshDates);
-$('#pickup-date')?.addEventListener('change', enforceAvailability);
+$('#pickup-date')?.addEventListener('change', () => {
+  enforceAvailability();
+  const date = $('#pickup-date');
+  if (date.value) showFieldError(date, fieldMessage(date));
+});
 
 /* ——— Payment method (Venmo / Cash App) ——— */
 function payInfo(method) {
@@ -465,6 +472,12 @@ function fieldMessage(el) {
     if (value < minimumDate()) return `Orders need one week’s notice. The earliest pickup date is ${prettyDate(minimumDate())}. For anything sooner, please email pashabakess@gmail.com.`;
     if (value > maximumDate()) return `Please choose a date before ${prettyDate(maximumDate())}.`;
     if (settings?.unavailableDates?.includes(value)) return 'Pasha isn’t available for pickups on that date. Please choose another day.';
+    const left = settings?.maxCookiesPerDay ? settings.dayRemaining?.[value] : undefined;
+    if (left !== undefined && box > left) {
+      return left < Math.min(...Object.keys(pricesCents).map(Number))
+        ? `Sorry, ${prettyDate(value)} is fully booked. Please choose another pickup date.`
+        : `Pasha can only take ${left} more cookies for ${prettyDate(value)}. Please choose a smaller box or another pickup date.`;
+    }
   } else if (el.type === 'date' && el.min && value < el.min) {
     return 'That date has already passed. Please check the date.';
   }
@@ -670,7 +683,7 @@ $('#order-form')?.addEventListener('submit', async e => {
         if (el && el.matches('input, select, textarea')) showFieldError(el, msg);
         problems.push({id: el ? id : null, msg});
       });
-      if (data.errors.box_size || data.errors.items) loadMenu(); // prices or flavors changed — refresh them
+      if (data.errors.box_size || data.errors.items || data.errors.pickup_date) loadMenu(); // prices, flavors or free days changed — refresh them
     } else {
       problems.push({msg: data?.message || 'Sorry, something went wrong and your order was not placed. Please try again.'});
     }

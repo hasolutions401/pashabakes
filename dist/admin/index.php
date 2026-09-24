@@ -17,6 +17,7 @@ $weekYmd = today()->modify('+6 days')->format('Y-m-d');
 $todayPickups = (int) db_value("SELECT COUNT(*) FROM orders WHERE status = 'paid' AND pickup_date = ?", [$todayYmd]);
 $weekPickups = (int) db_value("SELECT COUNT(*) FROM orders WHERE status = 'paid' AND pickup_date BETWEEN ? AND ?", [$todayYmd, $weekYmd]);
 $plan = baking_plan(14);
+$dayMax = max_cookies_per_day();
 
 $tabs = [
     'pending' => 'Payment pending',
@@ -50,7 +51,7 @@ admin_header('Orders', 'orders', $user);
       <?php foreach ($plan as $date => $day): ?>
         <div class="plan-day<?= $date === $todayYmd ? ' is-today' : '' ?>">
           <p class="plan-date"><?= e(short_date($date)) ?><?= $date === $todayYmd ? ' · Today' : '' ?></p>
-          <p class="plan-meta"><?= $day['orders'] ?> order<?= $day['orders'] === 1 ? '' : 's' ?> · <?= $day['cookies'] ?> cookies</p>
+          <p class="plan-meta"><?= $day['orders'] ?> order<?= $day['orders'] === 1 ? '' : 's' ?> · <?= $day['cookies'] ?> cookies<?php if ($dayMax > 0): ?> · <?= booked_cookies($date) ?> of <?= $dayMax ?> booked<?php endif; ?></p>
           <ul>
             <?php foreach ($day['flavors'] as $name => $qty): ?>
               <li><span><?= e($name) ?></span><strong><?= $qty ?></strong></li>

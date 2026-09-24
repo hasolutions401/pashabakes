@@ -93,7 +93,8 @@ Your SMTP server name is shown under **Emails → Addresses**; it looks like `sm
 - **After pickup:** tap **Mark as Picked up**.
 - **Menu:** add flavors, upload photos, hide sold-out flavors, and set the pickup dates for each
   monthly special (e.g. 1–31 October) so it can’t be ordered for other months.
-- **Settings:** prices, pickup times, days you’re not available, pausing online orders.
+- **Settings:** prices, pickup times, days you’re not available, pausing online orders, and the most
+  cookies you can bake per pickup day (full days close automatically).
 
 ## Updating the site
 

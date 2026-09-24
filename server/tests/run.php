@@ -159,6 +159,32 @@ if ($driver === 'sqlite') {
         && $old->query("SELECT COUNT(*) FROM enquiries")->fetchColumn() !== false);
 }
 
+// Daily cookie limit
+$day = earliest_pickup_date()->modify('+3 days')->format('Y-m-d');
+$dayOrder = fn(int $size, array $items) => $base(['client_token' => bin2hex(random_bytes(12)), 'pickup_date' => $day, 'box_size' => $size,
+    'items' => $items, 'expected_total_cents' => box_prices()[$size]]);
+[, $e] = order_validate($dayOrder(12, [['id' => 1, 'qty' => 12]]));
+check('no limit by default', $e === [] && max_cookies_per_day() === 0);
+settings_save(['max_cookies_per_day' => '16']);
+[$d1, $e] = order_validate($dayOrder(12, [['id' => 1, 'qty' => 12]]));
+[, $created] = order_create($d1);
+check('order within the limit', $e === [] && $created);
+[, $e] = order_validate($dayOrder(6, [['id' => 1, 'qty' => 6]]));
+check('box too big for what is left', isset($e['pickup_date']) && str_contains($e['pickup_date'], 'only take 4 more'));
+[$d2, $e] = order_validate($dayOrder(4, [['id' => 1, 'qty' => 4]]));
+[, $created] = order_create($d2);
+check('smaller box still fits', $e === [] && $created);
+[$d3, $e] = order_validate($dayOrder(4, [['id' => 1, 'qty' => 4]]));
+check('day now fully booked', isset($e['pickup_date']) && str_contains($e['pickup_date'], 'fully booked'));
+$threw = false;
+try { order_create($d3); } catch (DayFullException) { $threw = true; }
+check('limit re-checked when saving', $threw);
+check('menu shows 0 left that day', days_remaining()[$day] === 0);
+order_set_status((int) db_value('SELECT id FROM orders WHERE client_token = ?', [$d2['client_token']]), 'cancelled');
+[, $e] = order_validate($dayOrder(4, [['id' => 1, 'qty' => 4]]));
+check('cancelling frees the space', $e === [] && days_remaining()[$day] === 4);
+settings_save(['max_cookies_per_day' => '0']);
+
 $_SERVER['REMOTE_ADDR'] = '203.0.113.9';
 $_SERVER['HTTP_X_FORWARDED_FOR'] = '198.51.100.7';
 check('client IP: direct visitor', client_ip() === '203.0.113.9');

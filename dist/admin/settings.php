@@ -52,6 +52,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($lead < 0 || $lead > 60) {
         $errors['lead_days'] = 'Use a number between 0 and 60.';
     }
+    $dayMax = trim((string) ($in['max_cookies_per_day'] ?? '0'));
+    if (!preg_match('/^\d{1,4}$/', $dayMax === '' ? '0' : $dayMax)) {
+        $errors['max_cookies_per_day'] = 'Use a whole number, or 0 for no limit.';
+    }
     $maxAhead = (int) ($in['max_days_ahead'] ?? 90);
     if ($maxAhead < 14 || $maxAhead > 365) {
         $errors['max_days_ahead'] = 'Use a number between 14 and 365.';
@@ -84,6 +88,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'prices' => json_encode($prices),
         'lead_days' => (string) $lead,
         'max_days_ahead' => (string) $maxAhead,
+        'max_cookies_per_day' => (string) (int) $dayMax,
         'pickup_slots' => implode("\n", $slots),
         'unavailable_dates' => implode("\n", $dates),
         'occasions' => implode("\n", $occasions),
@@ -156,6 +161,11 @@ admin_header('Settings', 'settings', $user);
         <input type="number" name="max_days_ahead" value="<?= e($form['max_days_ahead'] ?? '90') ?>" min="14" max="365" inputmode="numeric"><?= $err('max_days_ahead') ?>
       </label>
     </div>
+    <label>Most cookies you can bake for one pickup day <small>(0 = no limit)</small>
+      <input type="number" name="max_cookies_per_day" value="<?= e($form['max_cookies_per_day'] ?? '0') ?>" min="0" max="9999" step="1" inputmode="numeric"><?= $err('max_cookies_per_day') ?>
+    </label>
+    <p class="muted">When a day’s orders reach this number, customers can’t choose that day any more (or only a smaller box).
+      Unpaid orders hold their place until you cancel them; cancelled orders free it up.</p>
     <label>Pickup times <small>(one per line, shown in the order form)</small>
       <textarea name="pickup_slots" rows="6"><?= e($form['pickup_slots'] ?? '') ?></textarea><?= $err('pickup_slots') ?>
     </label>

@@ -9,6 +9,11 @@ declare(strict_types=1);
 const PB_STATUSES = ['pending', 'paid', 'completed', 'cancelled'];
 const PB_MAX_COOKIES = 36;
 
+/** Thrown when the pickup day filled up while the order was being placed. */
+class DayFullException extends RuntimeException
+{
+}
+
 /**
  * Validates a checkout submission.
  * Returns [clean data, errors keyed by field]. Errors are customer-friendly.
@@ -95,6 +100,8 @@ function order_validate(array $in): array
         $errors['pickup_date'] = 'That date is too far ahead. Please choose a date before ' . latest_pickup_date()->format('F j, Y') . '.';
     } elseif (in_array($data['pickup_date'], unavailable_dates(), true)) {
         $errors['pickup_date'] = 'Pasha isn’t available for pickups on that date. Please choose another day.';
+    } elseif (isset($prices[$data['box_size']]) && ($full = capacity_problem($data['pickup_date'], $data['box_size']))) {
+        $errors['pickup_date'] = $full;
     }
     if (!in_array($data['pickup_slot'], pickup_slots(), true)) {
         $errors['pickup_slot'] = 'Please choose a pickup time.';
@@ -143,6 +150,15 @@ function order_create(array $data): array
 
     try {
         $order = db_transaction(function (PDO $pdo) use ($data) {
+            // Re-check the daily limit inside the transaction, so two customers can't both take the last spot.
+            if (max_cookies_per_day() > 0) {
+                $lock = db_driver() === 'mysql' ? ' FOR UPDATE' : '';   // SQLite: BEGIN IMMEDIATE already serialises writers
+                $st = $pdo->prepare("SELECT COALESCE(SUM(box_size), 0) FROM orders WHERE pickup_date = ? AND status <> 'cancelled'{$lock}");
+                $st->execute([$data['pickup_date']]);
+                if ($problem = capacity_problem($data['pickup_date'], $data['box_size'], (int) $st->fetchColumn())) {
+                    throw new DayFullException($problem);
+                }
+            }
             $pdo->prepare('INSERT INTO orders (client_token, status, customer_name, email, phone, occasion, notes, box_size, total_cents,
                     pickup_date, pickup_slot, payment_method, payer_ref, admin_note, created_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
@@ -160,6 +176,8 @@ function order_create(array $data): array
             }
             return $id;
         });
+    } catch (DayFullException $e) {
+        throw $e;
     } catch (PDOException $e) {
         // A parallel duplicate submission won the race — return that order.
         $existing = db_one('SELECT * FROM orders WHERE client_token = ?', [$data['client_token']]);
