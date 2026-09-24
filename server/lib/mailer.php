@@ -7,6 +7,9 @@ use PHPMailer\PHPMailer\PHPMailer;
  * Sends one email. Never throws: returns [bool ok, string error] and records
  * the attempt in email_log so failures are visible (and resendable) in admin.
  */
+/** Stored on emails that went out through the web server instead of Pasha's Gmail. */
+const SPAM_RISK_NOTE = 'Sent without Gmail — may land in spam';
+
 function send_email(string $to, string $subject, string $html, string $text, string $kind, ?int $orderId = null, ?string $replyTo = null): array
 {
     $transport = (string) (config('mail.transport') ?: 'mail');
@@ -87,7 +90,12 @@ function send_email(string $to, string $subject, string $html, string $text, str
         error_log("[pashabakess] Email '{$kind}' to {$to} failed: {$e->getMessage()}");
     }
 
-    [$sent, $err] = email_log_result($to, $kind, $orderId, $ok, $ok ? '' : $error);
+    // Sent, but not through Gmail: record why, so admin can show it may have gone to spam.
+    $note = '';
+    if ($ok && $transport !== 'log') {
+        $note = SPAM_RISK_NOTE . ($gmailPass === '' ? ' (no Gmail app password saved in Settings)' : ' (Gmail refused: ' . $error . ')');
+    }
+    [$sent, $err] = email_log_result($to, $kind, $orderId, $ok, $ok ? $note : $error);
     // If Gmail failed but the fallback worked, still report the Gmail problem.
     return [$sent, $sent ? $error : $err];
 }

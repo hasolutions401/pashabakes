@@ -187,7 +187,7 @@ admin_header('Order ' . $order['code'], 'orders', $user);
           <?php elseif ($st === 'failed'): ?><span class="pill pill-cancelled">Failed</span>
           <?php else: ?><span class="pill">Not sent yet</span><?php endif; ?>
         </li>
-        <?php if ($st === 'failed' && $mail['error'] !== ''): ?><li class="email-error"><?= e($mail['error']) ?></li><?php endif; ?>
+        <?php if ($mail && $mail['error'] !== ''): ?><li class="email-error"><?= e($mail['error']) ?><?= $st === 'sent' ? ' — set up the Gmail app password in Settings → Email sending.' : '' ?></li><?php endif; ?>
       <?php endforeach; ?>
     </ul>
     <?php if (in_array($order['status'], ['paid', 'completed'], true)): ?>
