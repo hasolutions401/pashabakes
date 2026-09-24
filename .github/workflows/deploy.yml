@@ -1,4 +1,4 @@
-# Puts the website live on alwaysdata whenever checkout-backend changes.
+# Puts the website live on alwaysdata whenever main changes.
 #  1. Runs the backend tests — if any fail, nothing is deployed.
 #  2. Logs in to alwaysdata over SSH and runs `git pull` in ~/pashabakess.
 #  3. Checks that the live menu API answers.
@@ -9,7 +9,7 @@ name: Deploy to alwaysdata
 
 on:
   push:
-    branches: [checkout-backend]
+    branches: [main]
   workflow_dispatch:
 
 concurrency:
@@ -51,9 +51,9 @@ jobs:
           script: |
             set -e
             cd ~/pashabakess
-            git fetch origin checkout-backend
-            git checkout checkout-backend
-            git merge --ff-only origin/checkout-backend
+            git fetch origin main
+            git checkout main
+            git merge --ff-only origin/main
             git log --oneline -1
       - name: Check the live site answers
         if: env.SSH_PASSWORD != ''
