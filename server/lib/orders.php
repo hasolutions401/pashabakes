@@ -292,3 +292,47 @@ function baking_plan(int $days = 14): array
     ksort($plan);
     return $plan;
 }
+
+/** Permanently deletes a cancelled order with its items and email history. Returns false for any other status. */
+function order_delete(int $id): bool
+{
+    $order = order_find($id);
+    if (!$order || $order['status'] !== 'cancelled') {
+        return false;
+    }
+    db_transaction(function (PDO $pdo) use ($id) {
+        $pdo->prepare('DELETE FROM order_items WHERE order_id = ?')->execute([$id]);
+        $pdo->prepare('DELETE FROM email_log WHERE order_id = ?')->execute([$id]);
+        $pdo->prepare('DELETE FROM orders WHERE id = ?')->execute([$id]);
+    });
+    return true;
+}
+
+/** The number the next order will get, e.g. "PB1016". */
+function next_order_code(): string
+{
+    if (db_driver() === 'mysql') {
+        $next = (int) db_value("SELECT AUTO_INCREMENT FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'orders'");
+    } else {
+        $next = (int) db_value("SELECT seq FROM sqlite_sequence WHERE name = 'orders'") + 1;
+    }
+    return 'PB' . (1000 + max(1, $next));
+}
+
+/**
+ * Starts order numbers again at PB1001. Only allowed when there are no orders at all,
+ * so two orders can never share a number. Returns false if orders still exist.
+ */
+function restart_order_numbers(): bool
+{
+    if ((int) db_value('SELECT COUNT(*) FROM orders') > 0) {
+        return false;
+    }
+    if (db_driver() === 'mysql') {
+        db()->exec('ALTER TABLE orders AUTO_INCREMENT = 1');
+        db()->exec('ALTER TABLE order_items AUTO_INCREMENT = 1');
+    } else {
+        db_exec("DELETE FROM sqlite_sequence WHERE name IN ('orders', 'order_items')");
+    }
+    return true;
+}

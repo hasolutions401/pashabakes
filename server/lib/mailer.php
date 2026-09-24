@@ -114,3 +114,13 @@ function email_statuses(int $orderId): array
     }
     return $out;
 }
+
+/** Latest attempt per email kind for an order: status, recipient, time and any error. */
+function email_details(int $orderId): array
+{
+    $out = [];
+    foreach (db_all('SELECT kind, recipient, status, error, created_at FROM email_log WHERE order_id = ? ORDER BY id', [$orderId]) as $row) {
+        $out[$row['kind']] = $row;
+    }
+    return $out;
+}

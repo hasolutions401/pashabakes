@@ -9,6 +9,13 @@ $form = settings_all();
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_check();
 
+    if (($_POST['action'] ?? '') === 'restart_numbering') {
+        restart_order_numbers()
+            ? flash('Order numbers restarted. The next order will be PB1001.')
+            : flash('Order numbers can only restart when there are no orders at all. Cancel and delete every order first.', 'warning');
+        redirect('settings.php');
+    }
+
     if (($_POST['action'] ?? '') === 'test_email') {
         $to = setting('notify_email');
         [$ok, $err] = send_test_email($to);
@@ -244,6 +251,17 @@ admin_header('Settings', 'settings', $user);
 
   <div class="sticky-save"><button class="btn btn-primary btn-lg" type="submit">Save settings</button></div>
 </form>
+
+<section class="card">
+  <h2>Order numbers</h2>
+  <?php $orderCount = (int) db_value('SELECT COUNT(*) FROM orders'); ?>
+  <p class="muted">The next order will be <strong><?= e(next_order_code()) ?></strong>.
+    <?= $orderCount > 0 ? "To start again from PB1001, first cancel and delete all {$orderCount} order" . ($orderCount === 1 ? '' : 's') . ' (open each one → Cancel order → Delete permanently).' : '' ?></p>
+  <?php if ($orderCount === 0): ?>
+    <form method="post"><?= csrf_field() ?><input type="hidden" name="action" value="restart_numbering">
+      <button class="btn" type="submit" data-confirm="Restart order numbers so the next order is PB1001?">Restart order numbers at PB1001</button></form>
+  <?php endif; ?>
+</section>
 
 <section class="card">
   <h2>Test your email</h2>

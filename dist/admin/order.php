@@ -59,6 +59,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             break;
 
+        case 'delete_order':
+            if (order_delete($id)) {
+                flash("Order {$order['code']} was deleted permanently.");
+                redirect('index.php?status=cancelled');
+            }
+            flash('Only cancelled orders can be deleted. Cancel the order first.', 'warning');
+            break;
+
         case 'resend_receipt':
             [$ok, $err] = send_customer_receipt($order);
             $ok ? flash('Receipt email sent again.') : flash('Could not send the email: ' . $err, 'error');
@@ -71,7 +79,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $items = order_items($id);
-$emails = email_statuses($id);
+$emails = email_details($id);
 $emailLabels = [
     'admin_alert' => 'New-order alert to you',
     'receipt' => 'Receipt to customer',
@@ -110,6 +118,9 @@ admin_header('Order ' . $order['code'], 'orders', $user);
       <?= $action('mark_cancelled', 'Cancel order', 'btn btn-danger', 'Cancel order ' . $order['code'] . '?') ?>
     </div>
   <?php elseif ($order['status'] === 'paid'): ?>
+    <?php if (trim(setting('pickup_address')) === ''): ?>
+      <p class="flash flash-warning">Your pickup address is empty in <a href="settings.php">Settings</a>, so the confirmation email had no pickup details. Add it, then tap <strong>Resend confirmation</strong>.</p>
+    <?php endif; ?>
     <p class="verify-title">Paid · ready to bake for <?= e(short_date($order['pickup_date'])) ?></p>
     <div class="action-row">
       <?= $action('mark_completed', '✓ Mark as Picked up', 'btn btn-primary btn-lg') ?>
@@ -122,7 +133,10 @@ admin_header('Order ' . $order['code'], 'orders', $user);
     <div class="action-row"><?= $action('back_to_paid', 'Move back to Paid', 'btn btn-ghost') ?></div>
   <?php else: ?>
     <p class="verify-title">This order was cancelled.</p>
-    <div class="action-row"><?= $action('back_to_pending', 'Restore order', 'btn', 'Restore this order to “Payment pending”?') ?></div>
+    <div class="action-row">
+      <?= $action('back_to_pending', 'Restore order', 'btn', 'Restore this order to “Payment pending”?') ?>
+      <?= $action('delete_order', 'Delete permanently', 'btn btn-danger', 'Delete order ' . $order['code'] . ' permanently? This cannot be undone.') ?>
+    </div>
   <?php endif; ?>
 </section>
 
@@ -166,16 +180,21 @@ admin_header('Order ' . $order['code'], 'orders', $user);
     <h2>Emails</h2>
     <ul class="email-status">
       <?php foreach ($emailLabels as $kind => $label): ?>
-        <?php $st = $emails[$kind] ?? null; ?>
+        <?php $mail = $emails[$kind] ?? null; $st = $mail['status'] ?? null; ?>
         <li>
-          <span><?= e($label) ?></span>
+          <span><?= e($label) ?><?php if ($mail): ?><small class="muted email-meta">to <?= e($mail['recipient']) ?> · <?= e(pretty_datetime($mail['created_at'])) ?></small><?php endif; ?></span>
           <?php if ($st === 'sent'): ?><span class="pill pill-completed">Sent</span>
           <?php elseif ($st === 'failed'): ?><span class="pill pill-cancelled">Failed</span>
           <?php else: ?><span class="pill">Not sent yet</span><?php endif; ?>
         </li>
+        <?php if ($st === 'failed' && $mail['error'] !== ''): ?><li class="email-error"><?= e($mail['error']) ?></li><?php endif; ?>
       <?php endforeach; ?>
     </ul>
-    <?php if (($emails['receipt'] ?? '') === 'failed'): ?>
+    <?php if (in_array($order['status'], ['paid', 'completed'], true)): ?>
+      <p class="muted">Customer didn’t get it? Ask them to check spam, check the email address above, then resend.</p>
+      <?= $action('resend_confirmation', 'Resend confirmation', 'btn btn-small') ?>
+    <?php endif; ?>
+    <?php if (($emails['receipt']['status'] ?? '') === 'failed'): ?>
       <?= $action('resend_receipt', 'Resend receipt', 'btn btn-small') ?>
     <?php endif; ?>
   </section>

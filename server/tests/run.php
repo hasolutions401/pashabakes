@@ -209,6 +209,21 @@ order_set_status((int) db_value('SELECT id FROM orders WHERE client_token = ?', 
 check('cancelling frees the space', $e === [] && days_remaining()[$day] === 4);
 settings_save(['max_cookies_per_day' => '0']);
 
+// Deleting orders and restarting the numbers
+$someId = (int) db_value("SELECT id FROM orders WHERE status <> 'cancelled' LIMIT 1");
+check('only cancelled orders can be deleted', !order_delete($someId) && order_find($someId) !== null);
+check('restart refused while orders exist', !restart_order_numbers());
+foreach (db_all('SELECT id FROM orders') as $row) {
+    order_set_status((int) $row['id'], 'cancelled');
+    order_delete((int) $row['id']);
+}
+check('cancelled orders deleted with their items and emails', (int) db_value('SELECT COUNT(*) FROM orders') === 0
+    && (int) db_value('SELECT COUNT(*) FROM order_items') === 0 && (int) db_value('SELECT COUNT(*) FROM email_log WHERE order_id IS NOT NULL') === 0);
+check('restart numbering', restart_order_numbers() && next_order_code() === 'PB1001');
+[$fresh] = order_validate($base(['client_token' => bin2hex(random_bytes(12))]));
+[$first] = order_create($fresh);
+check('next order is PB1001', $first['code'] === 'PB1001' && next_order_code() === 'PB1002');
+
 $_SERVER['REMOTE_ADDR'] = '203.0.113.9';
 $_SERVER['HTTP_X_FORWARDED_FOR'] = '198.51.100.7';
 check('client IP: direct visitor', client_ip() === '203.0.113.9');
