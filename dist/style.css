@@ -15,6 +15,20 @@
   src: url('fonts/playfair-display-latin.woff2') format('woff2');
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
+/* Until the web fonts arrive, Arial/Georgia are resized to take up exactly the same space, so nothing moves
+   when the fonts swap in (no layout shift). Values measured from the font files (letter-frequency weighted). */
+@font-face {
+  font-family: 'DM Sans Fallback'; src: local('Arial'), local('ArialMT');
+  size-adjust: 106.73%; ascent-override: 92.95%; descent-override: 29.05%; line-gap-override: 0%;
+}
+@font-face {
+  font-family: 'Playfair Display Fallback'; font-style: normal; src: local('Georgia');
+  size-adjust: 102.38%; ascent-override: 105.69%; descent-override: 24.52%; line-gap-override: 0%;
+}
+@font-face {
+  font-family: 'Playfair Display Fallback'; font-style: italic; src: local('Georgia Italic'), local('Georgia-Italic');
+  size-adjust: 94.25%; ascent-override: 114.80%; descent-override: 26.63%; line-gap-override: 0%;
+}
 @font-face {
   font-family: 'Playfair Display'; font-style: italic; font-weight: 500 600; font-display: swap;
   src: url('fonts/playfair-display-italic-latin.woff2') format('woff2');
@@ -38,8 +52,8 @@
   --error: #9b2335;
 
   /* Type */
-  --serif: 'Playfair Display', Georgia, serif;
-  --sans: 'DM Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --serif: 'Playfair Display', 'Playfair Display Fallback', Georgia, serif;
+  --sans: 'DM Sans', 'DM Sans Fallback', system-ui, -apple-system, 'Segoe UI', sans-serif;
 
   /* Shape & depth */
   --radius-sm: 6px;
