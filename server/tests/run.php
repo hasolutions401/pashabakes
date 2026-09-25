@@ -175,7 +175,14 @@ if ($driver === 'sqlite') {
     $ins = $old->prepare("INSERT INTO cookies (name, description, type, image, created_at, updated_at) VALUES (?, '', 'signature', ?, 'x', 'x')");
     $ins->execute(['Chocolate Chunk', array_key_first(own_photo_swaps())]);
     $ins->execute(['Red Velvet', 'uploads/cookie-abc123.jpg']);   // Pasha's own upload: must be kept
+    $backupsBefore = glob(data_dir('backups') . '/*.sqlite') ?: [];
     migrate($old, 'sqlite');
+    $newBackups = array_values(array_diff(glob(data_dir('backups') . '/*.sqlite') ?: [], $backupsBefore));
+    $copy = $newBackups ? new PDO('sqlite:' . $newBackups[0]) : null;
+    check('upgrade: database copied first (old version, same data)', count($newBackups) === 1 && str_contains($newBackups[0], 'v1-before-v')
+        && (int) $copy->query("SELECT value FROM settings WHERE name = 'schema_version'")->fetchColumn() === 1
+        && (int) $copy->query('SELECT COUNT(*) FROM cookies')->fetchColumn() === 4);
+    $copy = null;
     $rows = $old->query('SELECT type, available_from, available_until FROM cookies ORDER BY id')->fetchAll();
     check('v1 upgrade: specials dated, signatures untouched', $rows[0]['available_from'] === null
         && $rows[1]['available_from'] === $earliest->format('Y-m-01') && $rows[1]['available_until'] === $earliest->format('Y-m-t')

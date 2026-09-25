@@ -125,24 +125,81 @@ function db_exec(string $sql, array $params = []): int
     return $st->rowCount();
 }
 
+function schema_version(PDO $pdo): int
+{
+    try {
+        return (int) $pdo->query("SELECT value FROM settings WHERE name = 'schema_version'")->fetchColumn();
+    } catch (PDOException) {
+        return 0;   // settings table does not exist yet
+    }
+}
+
 function migrate(PDO $pdo, string $driver): void
+{
+    // Fast path: already migrated.
+    if (schema_version($pdo) >= PB_SCHEMA_VERSION) {
+        return;
+    }
+    // One request migrates at a time; the others wait, then see the new version.
+    $lock = @fopen(data_dir() . '/migrate.lock', 'c');
+    if ($lock) {
+        flock($lock, LOCK_EX);
+    }
+    try {
+        $version = schema_version($pdo);
+        if ($version >= PB_SCHEMA_VERSION) {
+            return;
+        }
+        if ($version >= 1 && $driver === 'sqlite') {
+            backup_sqlite($pdo, "v{$version}-before-v" . PB_SCHEMA_VERSION);
+        }
+        migrate_steps($pdo, $driver, $version);
+    } finally {
+        if ($lock) {
+            flock($lock, LOCK_UN);
+            fclose($lock);
+        }
+    }
+}
+
+/**
+ * Consistent copy of the SQLite database in server/data/backups/ (never web-accessible),
+ * taken before the schema changes. Keeps the newest $keep copies. Returns the file, or null.
+ */
+function backup_sqlite(PDO $pdo, string $label, int $keep = 5): ?string
+{
+    $dir = data_dir('backups');
+    $file = $dir . '/pashabakess-' . preg_replace('/[^a-z0-9-]/i', '', $label) . '-' . date('Ymd-His') . '.sqlite';
+    try {
+        $pdo->exec('VACUUM INTO ' . $pdo->quote($file));
+    } catch (PDOException $e) {
+        // Older SQLite without VACUUM INTO: plain file copy (the migration lock is held).
+        $main = null;
+        foreach ($pdo->query('PRAGMA database_list')->fetchAll() as $db) {
+            if ($db['name'] === 'main') {
+                $main = $db['file'];
+            }
+        }
+        if (!$main || !@copy($main, $file)) {
+            error_log('[pashabakess] Backup before database upgrade failed: ' . $e->getMessage());
+            return null;
+        }
+    }
+    $copies = glob($dir . '/pashabakess-*.sqlite') ?: [];
+    usort($copies, fn($a, $b) => [filemtime($a), $a] <=> [filemtime($b), $b]);
+    foreach (array_slice($copies, 0, max(0, count($copies) - $keep)) as $old) {
+        @unlink($old);
+    }
+    return $file;
+}
+
+function migrate_steps(PDO $pdo, string $driver, int $version): void
 {
     $mysql = $driver === 'mysql';
     $id = $mysql ? 'INT AUTO_INCREMENT PRIMARY KEY' : 'INTEGER PRIMARY KEY AUTOINCREMENT';
     $text = $mysql ? 'TEXT' : 'TEXT';
     $str = fn(int $n) => $mysql ? "VARCHAR($n)" : 'TEXT';
     $engine = $mysql ? ' ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci' : '';
-
-    // Fast path: already migrated.
-    $version = 0;
-    try {
-        $version = (int) $pdo->query("SELECT value FROM settings WHERE name = 'schema_version'")->fetchColumn();
-        if ($version >= PB_SCHEMA_VERSION) {
-            return;
-        }
-    } catch (PDOException) {
-        // settings table does not exist yet
-    }
 
     $statements = [
         "CREATE TABLE IF NOT EXISTS settings (
