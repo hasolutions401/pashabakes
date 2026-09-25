@@ -8,7 +8,8 @@ declare(strict_types=1);
 
 // 8 was the ingredients list, since removed (live databases may keep an unused cookies.ingredients column).
 // 9: unpaid orders hold their pickup day for 24 hours. 10: archived_orders (kept when numbers restart).
-const PB_SCHEMA_VERSION = 10;
+// 11: admin_users.session_version (changing the password logs out other devices).
+const PB_SCHEMA_VERSION = 11;
 
 function db(): PDO
 {
@@ -210,7 +211,8 @@ function migrate_steps(PDO $pdo, string $driver, int $version): void
             id {$id},
             username {$str(64)} NOT NULL UNIQUE,
             password_hash {$str(255)} NOT NULL,
-            created_at {$str(19)} NOT NULL
+            created_at {$str(19)} NOT NULL,
+            session_version INTEGER NOT NULL DEFAULT 1
         ){$engine}",
         "CREATE TABLE IF NOT EXISTS cookies (
             id {$id},
@@ -320,6 +322,12 @@ function migrate_steps(PDO $pdo, string $driver, int $version): void
     // Version 3: enquiries can mention an existing order number.
     try {
         $pdo->exec("ALTER TABLE enquiries ADD COLUMN order_ref {$str(20)} NOT NULL DEFAULT ''");
+    } catch (PDOException) {
+        // column already exists
+    }
+    // Version 11: a password change logs out the admin's other devices.
+    try {
+        $pdo->exec('ALTER TABLE admin_users ADD COLUMN session_version INTEGER NOT NULL DEFAULT 1');
     } catch (PDOException) {
         // column already exists
     }

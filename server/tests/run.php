@@ -142,6 +142,10 @@ check('cookie deleted', cookie_find($id) === null);
 admin_create('Pasha', 'secret-pass-1');
 check('admin created (username lower-cased)', db_value('SELECT username FROM admin_users') === 'pasha');
 check('password hashed', password_verify('secret-pass-1', (string) db_value('SELECT password_hash FROM admin_users')));
+$adminId = (int) db_value('SELECT id FROM admin_users');
+admin_set_password($adminId, 'secret-pass-2');
+check('password change logs out other devices (session version bumped)', (int) db_value('SELECT session_version FROM admin_users WHERE id = ?', [$adminId]) === 2
+    && password_verify('secret-pass-2', (string) db_value('SELECT password_hash FROM admin_users WHERE id = ?', [$adminId])));
 check('after login: admin pages allowed', safe_admin_next('/admin/order.php?id=12') === '/admin/order.php?id=12'
     && safe_admin_next('/admin/') === 'index.php' && safe_admin_next('/sub/admin/index.php?status=paid&q=PB10') === '/sub/admin/index.php?status=paid&q=PB10');
 check('after login: other websites refused', array_unique(array_map('safe_admin_next', ['//evil.example/admin/index.php', '/\\evil.example/admin/x.php',
@@ -252,7 +256,10 @@ if ($driver === 'sqlite') {
         $v8 = new PDO("sqlite:$tmp/v8-$was.sqlite", null, null, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC]);
         $v8->exec("CREATE TABLE settings (name TEXT PRIMARY KEY, value TEXT NOT NULL)");
         $v8->exec("INSERT INTO settings VALUES ('schema_version', '8'), ('lead_days', '7'), ('payment_hours', '$was')");
+        $v8->exec("CREATE TABLE admin_users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT NOT NULL UNIQUE, password_hash TEXT NOT NULL, created_at TEXT NOT NULL)");
+        $v8->exec("INSERT INTO admin_users (username, password_hash, created_at) VALUES ('pasha', 'x', 'x')");
         migrate($v8, 'sqlite');
+        check("v8 upgrade ($was): existing admin keeps working (session version 1)", (int) $v8->query("SELECT session_version FROM admin_users WHERE username = 'pasha'")->fetchColumn() === 1);
         check("v8 upgrade: payment hours $was → $expect", $v8->query("SELECT value FROM settings WHERE name = 'payment_hours'")->fetchColumn() === $expect
             && (int) $v8->query("SELECT value FROM settings WHERE name = 'schema_version'")->fetchColumn() === PB_SCHEMA_VERSION);
         $v8 = null;
