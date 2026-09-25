@@ -168,6 +168,13 @@ check('overdue after deadline', payment_overdue(['status' => 'pending', 'created
     && !payment_overdue(['status' => 'paid', 'created_at' => today()->modify('-2 days')->format('Y-m-d H:i:s')]));
 settings_save(['payment_hours' => '0']);
 check('no deadline when set to 0: pay right away', str_contains(payment_hold_text(), 'right away'));
+check('Gmail password: none by default', gmail_password_source() === '' && gmail_app_password() === '');
+settings_save(['gmail_app_password' => 'testtesttesttest']);
+check('Gmail password: saved in admin', gmail_password_source() === 'admin' && gmail_app_password() === 'testtesttesttest');
+putenv('PB_GMAIL_APP_PASSWORD=envx envx envx envx');
+check('Gmail password: server setting wins over the database', gmail_password_source() === 'env' && gmail_app_password() === 'envxenvxenvxenvx');
+putenv('PB_GMAIL_APP_PASSWORD');
+settings_save(['gmail_app_password' => '']);
 enquiry_set_status((int) $row['id'], 'done');
 check('enquiry marked answered', enquiry_new_count() === 0 && enquiry_list('done', 1)['total'] === 1);
 

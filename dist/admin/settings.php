@@ -20,7 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $to = setting('notify_email');
         [$ok, $err] = send_test_email($to);
         if ($ok && $err === '') {
-            flash("Test email sent to {$to}" . (setting('gmail_app_password') !== '' ? ' through Gmail' : '') . '. Check your inbox.');
+            flash("Test email sent to {$to}" . (gmail_app_password() !== '' ? ' through Gmail' : '') . '. Check your inbox.');
         } elseif ($ok) {
             flash("Test email sent to {$to}, but NOT through Gmail (it may go to spam). Gmail said: {$err} — check the Gmail address and app password below.", 'warning');
         } else {
@@ -223,15 +223,19 @@ admin_header('Settings', 'settings', $user);
   <section class="card">
     <h2>Email sending</h2>
     <p class="muted">For emails to reach customers’ inboxes (not spam), they’re sent through Pasha’s own Gmail. This needs a Gmail <strong>app password</strong> — see the steps below.</p>
-    <?php $hasApp = setting('gmail_app_password') !== ''; ?>
-    <p class="flash <?= $hasApp ? 'flash-success' : 'flash-warning' ?>"><?= $hasApp ? '✓ Gmail app password saved — emails are sent through Gmail.' : 'Not connected yet — emails are sent by the server and may go to spam.' ?></p>
+    <?php $source = gmail_password_source(); $hasApp = $source !== ''; $inServer = in_array($source, ['env', 'config'], true); ?>
+    <p class="flash <?= $hasApp ? 'flash-success' : 'flash-warning' ?>"><?= $hasApp ? '✓ Gmail app password set up — emails are sent through Gmail.' : 'Not connected yet — emails are sent by the server and may go to spam.' ?></p>
     <label>Gmail address
       <input type="email" name="gmail_address" value="<?= e($form['gmail_address'] ?? setting('gmail_address')) ?>" autocapitalize="none"><?= $err('gmail_address') ?>
     </label>
-    <label>Gmail app password <small>(leave empty to keep the saved one)</small>
-      <input type="password" name="gmail_app_password" value="" autocomplete="new-password" placeholder="<?= $hasApp ? '•••• •••• •••• ••••  (saved)' : 'abcd efgh ijkl mnop' ?>"><?= $err('gmail_app_password') ?>
-    </label>
-    <?php if ($hasApp): ?><label class="choice"><input type="checkbox" name="gmail_remove" value="1"> Remove the saved app password</label><?php endif; ?>
+    <?php if ($inServer): ?>
+      <p class="muted">The app password is kept in the server configuration (not with the orders). To change it, ask Hamza.</p>
+    <?php else: ?>
+      <label>Gmail app password <small>(leave empty to keep the saved one)</small>
+        <input type="password" name="gmail_app_password" value="" autocomplete="new-password" placeholder="<?= $hasApp ? '•••• •••• •••• ••••  (saved)' : 'abcd efgh ijkl mnop' ?>"><?= $err('gmail_app_password') ?>
+      </label>
+      <?php if ($hasApp): ?><label class="choice"><input type="checkbox" name="gmail_remove" value="1"> Remove the saved app password</label><?php endif; ?>
+    <?php endif; ?>
     <details>
       <summary>How to get a Gmail app password (2 minutes)</summary>
       <ol>

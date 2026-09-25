@@ -44,5 +44,10 @@ return [
         'smtp_secure' => 'tls',   // 'tls' for port 587, 'ssl' for port 465
         'smtp_user'   => 'orders@pashabakess.alwaysdata.net',
         'smtp_pass'   => '',
+
+        // Pasha's Gmail app password (16 letters). Emails are sent through her Gmail when this
+        // (or the one saved in Admin → Settings) is set. Keeping it here — or in the
+        // PB_GMAIL_APP_PASSWORD environment variable — keeps it out of database copies and backups.
+        'gmail_app_password' => '',
     ],
 ];
