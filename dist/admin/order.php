@@ -49,7 +49,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         case 'back_to_pending':
             order_set_status($id, 'pending');
-            flash('Moved back to “Payment pending”.');
+            flash($order['status'] === 'cancelled' ? 'Order restored to “Payment pending”.' : 'Moved back to “Payment pending”.');
+            // A restored order takes its place again, and the day may have been booked up meanwhile.
+            $overBy = max_cookies_per_day() > 0 ? booked_cookies($order['pickup_date']) - max_cookies_per_day() : 0;
+            if ($order['status'] === 'cancelled' && $overBy > 0) {
+                flash('Heads up: ' . pretty_date($order['pickup_date']) . " is now {$overBy} cookies over your daily limit.", 'warning');
+            }
             break;
 
         case 'back_to_paid':
