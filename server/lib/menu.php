@@ -56,6 +56,7 @@ function cookie_window_text(array $c): string
 /**
  * Image URLs for a flavor: full size, card size and thumbnail. Uploaded photos have
  * resized copies (see cookie_store_upload); links to other sites are used as they are.
+ * Photos on this site get "?v=<file time>" so browsers fetch a replaced photo right away.
  */
 function cookie_image_variants(string $image): array
 {
@@ -65,6 +66,12 @@ function cookie_image_variants(string $image): array
         foreach (['md' => '-800', 'sm' => '-160'] as $key => $suffix) {
             if (is_file($dir . $m[1] . $suffix . '.jpg')) {
                 $out[$key] = $m[1] . $suffix . '.jpg';
+            }
+        }
+        foreach ($out as $key => $path) {
+            $time = @filemtime($dir . $path);
+            if ($time) {
+                $out[$key] = $path . '?v=' . $time;
             }
         }
     }

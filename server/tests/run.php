@@ -48,6 +48,9 @@ $mm = array_values(array_filter($all, fn($c) => $c['name'] === 'M&M'));
 check('M&M added hidden, ready for later', count($all) === 7 && $mm && $mm[0]['is_available'] === 0
     && !in_array('M&M', array_column(public_menu_cookies(), 'name'), true));
 check('seeded flavors use Pasha photos', menu_cookies()[0]['image'] === 'images/chocolate-chunk.jpg');
+$variants = cookie_image_variants('images/mm.jpg');
+check('site photos carry a version so replaced photos show at once', preg_match('#^images/mm-160\.jpg\?v=\d+$#', $variants['sm'])
+    && preg_match('#^images/mm\.jpg\?v=\d+$#', $variants['img']) && cookie_image_variants('https://x.test/a.jpg')['sm'] === 'https://x.test/a.jpg');
 check('only the two specials still use sample photos', count(array_filter(menu_cookies(true), fn($c) => str_starts_with($c['image'], 'http'))) === 2);
 check('seeded prices', box_prices() === [4 => 1400, 6 => 2000, 12 => 3800, 24 => 7600, 36 => 11400]);
 check('9 pickup slots', count(pickup_slots()) === 9);
