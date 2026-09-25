@@ -278,6 +278,12 @@ admin_header('Settings', 'settings', $user);
 </section>
 
 <section class="card">
+  <h2>Customer data requests</h2>
+  <p class="muted">A customer asked what you store about them, or to delete it? Look them up by email address.</p>
+  <p><a class="btn btn-small" href="data-request.php">Find or delete a customer’s details</a></p>
+</section>
+
+<section class="card">
   <h2>Test your email</h2>
   <p class="muted">Sends a test message to <?= e(setting('notify_email')) ?> so you know order emails are working.</p>
   <form method="post"><?= csrf_field() ?><input type="hidden" name="action" value="test_email"><button class="btn" type="submit">Send test email</button></form>

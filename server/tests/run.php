@@ -306,6 +306,26 @@ check('CSV download: current orders', count(orders_csv_rows('orders')) === 2 && 
 check('CSV download: spreadsheet formulas neutralised', csv_cell('=HYPERLINK("http://x")') === "'=HYPERLINK(\"http://x\")"
     && csv_cell('+1 978 555 0100') === "'+1 978 555 0100" && csv_cell('@SUM(A1)') === "'@SUM(A1)" && csv_cell('Amina') === 'Amina');
 
+// Customer data requests (privacy notice: delete on request)
+$who = 'test@example.com';
+$r = customer_records('Test@Example.com ');
+check('data request: finds current and archived orders', count($r['orders']) === 1 && count($r['archived']) > 0);
+$done = forget_customer($who);
+check('data request: order still waiting for payment is left alone', $done['skipped'] === 1 && $done['orders'] === 0
+    && order_find((int) $first['id'])['email'] === $who);
+check('data request: archived orders lose the details', $done['archived'] > 0
+    && (int) db_value('SELECT COUNT(*) FROM archived_orders WHERE email = ?', [$who]) === 0
+    && (int) db_value("SELECT COUNT(*) FROM archived_orders WHERE customer_name = ? AND phone = '' AND total_cents > 0", [PB_FORGOTTEN_NAME]) === $done['archived']);
+send_customer_receipt(order_find((int) $first['id']));
+order_set_status((int) $first['id'], 'completed');
+$done = forget_customer($who);
+$f = order_find((int) $first['id']);
+check('data request: finished order keeps cookies and total, loses details', $done['orders'] === 1 && $f['email'] === '' && $f['phone'] === ''
+    && $f['notes'] === '' && $f['payer_ref'] === '' && $f['customer_name'] === PB_FORGOTTEN_NAME && (int) $f['total_cents'] === 2000
+    && count(order_items((int) $f['id'])) === 2 && (int) db_value('SELECT COUNT(*) FROM email_log WHERE order_id = ? OR recipient = ?', [$f['id'], $who]) === 0);
+$done = forget_customer('A@Example.com');
+check('data request: inquiries deleted', $done['enquiries'] === 1 && customer_records('a@example.com')['enquiries'] === []);
+
 $_SERVER['REMOTE_ADDR'] = '203.0.113.9';
 $_SERVER['HTTP_X_FORWARDED_FOR'] = '198.51.100.7';
 check('client IP: direct visitor', client_ip() === '203.0.113.9');

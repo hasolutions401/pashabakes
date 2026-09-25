@@ -334,6 +334,51 @@ function next_order_code(): string
     return 'PB' . (1000 + max(1, $next));
 }
 
+/* ——— Customer data requests ("please delete my details", see privacy.html) ——— */
+
+const PB_FORGOTTEN_NAME = 'Deleted customer';
+
+/** Everything stored for one email address: current orders, archived orders and inquiries. */
+function customer_records(string $email): array
+{
+    $email = mb_strtolower(trim($email));
+    return [
+        'orders' => db_all('SELECT id, code, status, pickup_date, total_cents FROM orders WHERE email = ? ORDER BY id', [$email]),
+        'archived' => db_all('SELECT id, code, status, pickup_date, total_cents FROM archived_orders WHERE email = ? ORDER BY id', [$email]),
+        'enquiries' => db_all('SELECT id, type, created_at FROM enquiries WHERE email = ? ORDER BY id', [$email]),
+    ];
+}
+
+/**
+ * Removes a customer's personal details: finished orders (picked up or cancelled) and archived
+ * orders keep only the cookies, amounts and dates for Pasha's records; inquiries and the email
+ * history are deleted. Orders still waiting for payment or pickup are left alone.
+ * Returns counts: ['orders' => n, 'archived' => n, 'enquiries' => n, 'skipped' => n].
+ */
+function forget_customer(string $email): array
+{
+    $email = mb_strtolower(trim($email));
+    if ($email === '') {
+        return ['orders' => 0, 'archived' => 0, 'enquiries' => 0, 'skipped' => 0];
+    }
+    return db_transaction(function (PDO $pdo) use ($email) {
+        $blank = "customer_name = ?, email = '', phone = '', notes = '', payer_ref = '', admin_note = ''";
+        $ids = array_map('intval', array_column(db_all("SELECT id FROM orders WHERE email = ? AND status IN ('completed', 'cancelled')", [$email]), 'id'));
+        $skipped = (int) db_value("SELECT COUNT(*) FROM orders WHERE email = ? AND status IN ('pending', 'paid')", [$email]);
+        foreach ($ids as $id) {
+            $pdo->prepare("UPDATE orders SET {$blank} WHERE id = ?")->execute([PB_FORGOTTEN_NAME, $id]);
+            $pdo->prepare('DELETE FROM email_log WHERE order_id = ?')->execute([$id]);
+        }
+        $pdo->prepare('DELETE FROM email_log WHERE recipient = ? AND (order_id IS NULL OR order_id NOT IN (SELECT id FROM orders WHERE status IN (\'pending\', \'paid\')))')
+            ->execute([$email]);
+        $archived = $pdo->prepare("UPDATE archived_orders SET {$blank} WHERE email = ?");
+        $archived->execute([PB_FORGOTTEN_NAME, $email]);
+        $enquiries = $pdo->prepare('DELETE FROM enquiries WHERE email = ?');
+        $enquiries->execute([$email]);
+        return ['orders' => count($ids), 'archived' => $archived->rowCount(), 'enquiries' => $enquiries->rowCount(), 'skipped' => $skipped];
+    });
+}
+
 /** Orders still waiting for payment or pickup (they block restarting the numbers). */
 function open_order_count(): int
 {

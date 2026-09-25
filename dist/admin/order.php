@@ -14,6 +14,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_check();
     $action = (string) ($_POST['action'] ?? '');
     $self = 'order.php?id=' . $id;
+    if ($order['email'] === '' && in_array($action, ['resend_confirmation', 'resend_receipt'], true)) {
+        flash('This customer’s details were deleted on request, so there is no address to email.', 'warning');
+        redirect($self);
+    }
 
     switch ($action) {
         case 'mark_paid':
@@ -168,8 +172,12 @@ admin_header('Order ' . $order['code'], 'orders', $user);
   <section class="card">
     <h2>Customer</h2>
     <p class="lead"><?= e($order['customer_name']) ?></p>
-    <p><a href="mailto:<?= e($order['email']) ?>"><?= e($order['email']) ?></a></p>
-    <p><a href="tel:<?= e(preg_replace('/[^\d+]/', '', $order['phone'])) ?>"><?= e($order['phone']) ?></a></p>
+    <?php if ($order['email'] === ''): ?>
+      <p class="muted">The customer’s details were deleted on request.</p>
+    <?php else: ?>
+      <p><a href="mailto:<?= e($order['email']) ?>"><?= e($order['email']) ?></a></p>
+      <p><a href="tel:<?= e(preg_replace('/[^\d+]/', '', $order['phone'])) ?>"><?= e($order['phone']) ?></a></p>
+    <?php endif; ?>
     <?php if ($order['notes'] !== ''): ?>
       <p class="note-box"><strong>Customer notes</strong><br><?= nl2br(e($order['notes'])) ?></p>
     <?php endif; ?>
@@ -197,7 +205,7 @@ admin_header('Order ' . $order['code'], 'orders', $user);
         <?php if ($mail && $mail['error'] !== ''): ?><li class="email-error"><?= e($mail['error']) ?><?= $st === 'sent' ? ' — set up the Gmail app password in Settings → Email sending.' : '' ?></li><?php endif; ?>
       <?php endforeach; ?>
     </ul>
-    <?php if (in_array($order['status'], ['paid', 'completed'], true)): ?>
+    <?php if (in_array($order['status'], ['paid', 'completed'], true) && $order['email'] !== ''): ?>
       <p class="muted">Customer didn’t get it? Ask them to check spam, check the email address above, then resend.</p>
       <?= $action('resend_confirmation', 'Resend confirmation', 'btn btn-small') ?>
     <?php endif; ?>
