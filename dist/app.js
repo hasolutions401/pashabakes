@@ -5,12 +5,12 @@
 
 // Keep in step with the static cards in index.html and menu.html (shown without JavaScript).
 const FALLBACK_COOKIES = [
-  {id:1,name:'Chocolate Chunk',type:'signature',desc:'Brown butter base with semi-sweet chocolate chips, dark chocolate chunks, topped with sea salt flakes.',img:'images/chocolate-chunk.jpg',imgSm:'images/chocolate-chunk-160.jpg'},
-  {id:2,name:'Biscoff',type:'signature',desc:'Brown butter base with Biscoff cookie pieces, white chocolate chips, drizzled with Biscoff spread.',img:'images/biscoff.jpg',imgSm:'images/biscoff-160.jpg'},
-  {id:3,name:'Chocolate Sea Salt Toffee',type:'signature',desc:'Rich brown butter cookie with toffee bits, semi-sweet chocolate chips, topped with sea salt flakes.',img:'images/chocolate-sea-salt-toffee.jpg',imgSm:'images/chocolate-sea-salt-toffee-160.jpg'},
-  {id:4,name:'Red Velvet',type:'signature',desc:'Red cookie base with cocoa powder, white chocolate chips and white chocolate drizzle.',img:'images/red-velvet.jpg',imgSm:'images/red-velvet-160.jpg'},
-  {id:5,name:'Pumpkin Chocolate Chip',type:'seasonal',desc:'Brown butter base with pumpkin purée, cinnamon, and chocolate chips.',img:'https://sallysbakingaddiction.com/wp-content/uploads/2013/09/chewy-pumpkin-chocolate-chip-cookies-3.jpg'},
-  {id:6,name:'Maple Pecan',type:'seasonal',desc:'Brown butter base with cinnamon, maple syrup, pecans.',img:'https://confessionsofabakingqueen.com/wp-content/uploads/2020/11/plate-of-maple-pecan-cookies-1-of-1-1024x1536-1.jpg'}
+  {id:1,name:'Chocolate Chunk',type:'signature',desc:'Brown butter base with semi-sweet chocolate chips, dark chocolate chunks, topped with sea salt flakes.',ingredients:'Flour, brown butter, brown sugar, sugar, eggs, semi-sweet chocolate chips, dark chocolate chunks, baking soda, salt, sea salt flakes',img:'images/chocolate-chunk.jpg',imgSm:'images/chocolate-chunk-160.jpg'},
+  {id:2,name:'Biscoff',type:'signature',desc:'Brown butter base with Biscoff cookie pieces, white chocolate chips, drizzled with Biscoff spread.',ingredients:'Flour, brown butter, brown sugar, sugar, eggs, Biscoff cookies, white chocolate chips, Biscoff spread, baking soda, salt',img:'images/biscoff.jpg',imgSm:'images/biscoff-160.jpg'},
+  {id:3,name:'Chocolate Sea Salt Toffee',type:'signature',desc:'Rich brown butter cookie with toffee bits, semi-sweet chocolate chips, topped with sea salt flakes.',ingredients:'Flour, brown butter, brown sugar, sugar, eggs, toffee bits, semi-sweet chocolate chips, baking soda, salt, sea salt flakes',img:'images/chocolate-sea-salt-toffee.jpg',imgSm:'images/chocolate-sea-salt-toffee-160.jpg'},
+  {id:4,name:'Red Velvet',type:'signature',desc:'Red cookie base with cocoa powder, white chocolate chips and white chocolate drizzle.',ingredients:'Flour, butter, sugar, brown sugar, eggs, cocoa powder, red food coloring, white chocolate chips, white chocolate drizzle, baking soda, salt',img:'images/red-velvet.jpg',imgSm:'images/red-velvet-160.jpg'},
+  {id:5,name:'Pumpkin Chocolate Chip',type:'seasonal',desc:'Brown butter base with pumpkin purée, cinnamon, and chocolate chips.',ingredients:'Flour, brown butter, brown sugar, sugar, pumpkin purée, cinnamon, chocolate chips, baking soda, salt',img:'https://sallysbakingaddiction.com/wp-content/uploads/2013/09/chewy-pumpkin-chocolate-chip-cookies-3.jpg'},
+  {id:6,name:'Maple Pecan',type:'seasonal',desc:'Brown butter base with cinnamon, maple syrup, pecans.',ingredients:'Flour, brown butter, brown sugar, maple syrup, pecans, cinnamon, eggs, baking soda, salt',img:'https://confessionsofabakingqueen.com/wp-content/uploads/2020/11/plate-of-maple-pecan-cookies-1-of-1-1024x1536-1.jpg'}
 ];
 
 const $ = s => document.querySelector(s);
@@ -133,6 +133,7 @@ function renderMenu() {
     list = [...sig, ...sea].length ? [...sig, ...sea] : cookies.slice(0, 3);
   }
   const month = seasonMonth();
+  const withIngredients = !grid.classList.contains('home-picks');
   grid.innerHTML = list.map(c => {
     const seasonal = c.type === 'seasonal';
     const own = ownPhoto(c.img);
@@ -144,6 +145,7 @@ function renderMenu() {
       </div>
       <h3>${esc(c.name)}</h3>
       <p>${esc(c.desc)}</p>
+      ${withIngredients && c.ingredients ? `<details class="ingredients"><summary>Ingredients</summary><p>${esc(c.ingredients)}</p></details>` : ''}
       <div class="cookie-bottom">
         <span>${esc(windowText(c) || (seasonal ? 'A seasonal favorite' : 'A forever favorite'))}</span>
         <a class="add-cookie" href="order.html?flavor=${c.id}" data-add="${c.id}" aria-label="Choose ${esc(c.name)} for your box">
@@ -785,7 +787,7 @@ function applySettings(data) {
   settings = data;
   if (Array.isArray(data.cookies) && data.cookies.length) {
     cookies = data.cookies.map(c => ({
-      id: Number(c.id), name: String(c.name), desc: String(c.desc || ''), type: c.type === 'seasonal' ? 'seasonal' : 'signature',
+      id: Number(c.id), name: String(c.name), desc: String(c.desc || ''), ingredients: String(c.ingredients || ''), type: c.type === 'seasonal' ? 'seasonal' : 'signature',
       img: String(c.img || ''), imgMd: String(c.imgMd || c.img || ''), imgSm: String(c.imgSm || c.img || ''),
       from: isoDate(c.from), until: isoDate(c.until)
     }));

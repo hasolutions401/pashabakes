@@ -6,7 +6,7 @@ declare(strict_types=1);
  * Tables are created and seeded automatically on first use.
  */
 
-const PB_SCHEMA_VERSION = 7;
+const PB_SCHEMA_VERSION = 8;
 
 function db(): PDO
 {
@@ -163,6 +163,7 @@ function migrate(PDO $pdo, string $driver): void
             sort_order INTEGER NOT NULL DEFAULT 0,
             available_from {$str(10)} NULL,
             available_until {$str(10)} NULL,
+            ingredients {$text} NULL,
             created_at {$str(19)} NOT NULL,
             updated_at {$str(19)} NOT NULL
         ){$engine}",
@@ -234,6 +235,12 @@ function migrate(PDO $pdo, string $driver): void
             // column already exists (fresh install)
         }
     }
+    // Version 8: each flavor has an ingredients list, shown on the menu.
+    try {
+        $pdo->exec("ALTER TABLE cookies ADD COLUMN ingredients {$text} NULL");
+    } catch (PDOException) {
+        // column already exists (fresh install)
+    }
     // Version 3: enquiries can mention an existing order number.
     try {
         $pdo->exec("ALTER TABLE enquiries ADD COLUMN order_ref {$str(20)} NOT NULL DEFAULT ''");
@@ -300,6 +307,13 @@ function migrate(PDO $pdo, string $driver): void
                     ((int) $pdo->query('SELECT COALESCE(MAX(sort_order), 0) FROM cookies')->fetchColumn()) + 10, $now, $now]);
         }
     }
+    // Version 8: starting ingredient lists (from the menu descriptions) for Pasha to check in Admin → Menu.
+    if ($version < 8) {
+        $fill = $pdo->prepare("UPDATE cookies SET ingredients = ? WHERE name = ? AND (ingredients IS NULL OR ingredients = '')");
+        foreach (default_ingredients() as $name => $list) {
+            $fill->execute([$list, $name]);
+        }
+    }
     $pdo->prepare('REPLACE INTO settings (name, value) VALUES (?, ?)')->execute(['schema_version', (string) PB_SCHEMA_VERSION]);
 }
 
@@ -350,6 +364,20 @@ function own_photo_swaps(): array
         'https://assets-eu-01.kc-usercontent.com/21d2ecef-fb9b-01b1-9022-cf60b52c2c77/d79e9c4f-6fbe-4c62-8ca7-fe295e3169b3/Biscoff-Cookies-WEB-RES-1.jpg?auto=format&lossless=1&q=85&w=900' => 'images/biscoff.jpg',
         'https://scientificallysweet.com/wp-content/uploads/2022/09/IMG_3198-salted-toffee-chocolate-chip-cookies-feature2.jpg' => 'images/chocolate-sea-salt-toffee.jpg',
         'https://sallysbakingaddiction.com/wp-content/uploads/2013/12/red-velvet-white-chocolate-chip-cookies-2.jpg' => 'images/red-velvet.jpg',
+    ];
+}
+
+/** Flavor name => ingredients, used to fill in the list once (Pasha edits them in admin). */
+function default_ingredients(): array
+{
+    return [
+        'Chocolate Chunk' => 'Flour, brown butter, brown sugar, sugar, eggs, semi-sweet chocolate chips, dark chocolate chunks, baking soda, salt, sea salt flakes',
+        'Biscoff' => 'Flour, brown butter, brown sugar, sugar, eggs, Biscoff cookies, white chocolate chips, Biscoff spread, baking soda, salt',
+        'Chocolate Sea Salt Toffee' => 'Flour, brown butter, brown sugar, sugar, eggs, toffee bits, semi-sweet chocolate chips, baking soda, salt, sea salt flakes',
+        'Red Velvet' => 'Flour, butter, sugar, brown sugar, eggs, cocoa powder, red food coloring, white chocolate chips, white chocolate drizzle, baking soda, salt',
+        'Pumpkin Chocolate Chip' => 'Flour, brown butter, brown sugar, sugar, pumpkin purée, cinnamon, chocolate chips, baking soda, salt',
+        'Maple Pecan' => 'Flour, brown butter, brown sugar, maple syrup, pecans, cinnamon, eggs, baking soda, salt',
+        'M&M' => 'Flour, butter, brown sugar, sugar, eggs, M&M’s candies, baking soda, salt',
     ];
 }
 

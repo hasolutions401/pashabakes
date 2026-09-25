@@ -5,13 +5,14 @@ declare(strict_types=1);
 
 function menu_cookies(bool $includeHidden = false): array
 {
-    $sql = 'SELECT id, name, description, type, image, is_available, sort_order, available_from, available_until FROM cookies'
+    $sql = 'SELECT id, name, description, type, image, is_available, sort_order, available_from, available_until, ingredients FROM cookies'
         . ($includeHidden ? '' : ' WHERE is_available = 1')
         . ' ORDER BY sort_order, id';
     return array_map(function (array $c) {
         $c['id'] = (int) $c['id'];
         $c['is_available'] = (int) $c['is_available'];
         $c['sort_order'] = (int) $c['sort_order'];
+        $c['ingredients'] = (string) ($c['ingredients'] ?? '');
         return $c;
     }, db_all($sql));
 }
@@ -89,6 +90,9 @@ function cookie_validate(array $in): array
     $data = [
         'name' => clean_text($in['name'] ?? '', 120),
         'description' => clean_text($in['description'] ?? '', 600),
+        // One per line or comma-separated; stored as a tidy comma list.
+        'ingredients' => implode(', ', array_filter(array_map(fn($i) => preg_replace('/\s+/u', ' ', trim($i)),
+            preg_split('/[,\n]+/', clean_text($in['ingredients'] ?? '', 1000))), 'strlen')),
         'type' => ($in['type'] ?? '') === 'seasonal' ? 'seasonal' : 'signature',
         'image' => clean_text($in['image'] ?? '', 500),
         'is_available' => !empty($in['is_available']) ? 1 : 0,
@@ -120,15 +124,15 @@ function cookie_save(?int $id, array $data): int
 {
     $now = now_str();
     if ($id) {
-        db_exec('UPDATE cookies SET name = ?, description = ?, type = ?, image = ?, is_available = ?, sort_order = ?, available_from = ?, available_until = ?, updated_at = ? WHERE id = ?', [
+        db_exec('UPDATE cookies SET name = ?, description = ?, type = ?, image = ?, is_available = ?, sort_order = ?, available_from = ?, available_until = ?, ingredients = ?, updated_at = ? WHERE id = ?', [
             $data['name'], $data['description'], $data['type'], $data['image'], $data['is_available'], $data['sort_order'],
-            $data['available_from'] ?? null, $data['available_until'] ?? null, $now, $id,
+            $data['available_from'] ?? null, $data['available_until'] ?? null, $data['ingredients'] ?? '', $now, $id,
         ]);
         return $id;
     }
-    db_exec('INSERT INTO cookies (name, description, type, image, is_available, sort_order, available_from, available_until, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
+    db_exec('INSERT INTO cookies (name, description, type, image, is_available, sort_order, available_from, available_until, ingredients, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
         $data['name'], $data['description'], $data['type'], $data['image'], $data['is_available'], $data['sort_order'],
-        $data['available_from'] ?? null, $data['available_until'] ?? null, $now, $now,
+        $data['available_from'] ?? null, $data['available_until'] ?? null, $data['ingredients'] ?? '', $now, $now,
     ]);
     return (int) db()->lastInsertId();
 }

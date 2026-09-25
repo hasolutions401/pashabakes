@@ -47,6 +47,8 @@ $all = menu_cookies(true);
 $mm = array_values(array_filter($all, fn($c) => $c['name'] === 'M&M'));
 check('M&M added hidden, ready for later', count($all) === 7 && $mm && $mm[0]['is_available'] === 0
     && !in_array('M&M', array_column(public_menu_cookies(), 'name'), true));
+check('seeded flavors have ingredients', str_contains(menu_cookies()[0]['ingredients'], 'dark chocolate chunks')
+    && str_contains(menu_cookies(true)[6]['ingredients'] ?? '', 'M&M'));
 check('seeded flavors use Pasha photos', menu_cookies()[0]['image'] === 'images/chocolate-chunk.jpg');
 $variants = cookie_image_variants('images/mm.jpg');
 check('site photos carry a version so replaced photos show at once', preg_match('#^images/mm-160\.jpg\?v=\d+$#', $variants['sm'])
@@ -92,6 +94,10 @@ settings_save(['max_days_ahead' => '90']);
 cookie_save($seasonal[0]['id'], ['available_from' => '2020-01-01', 'available_until' => '2020-01-31'] + $seasonal[0]);
 check('past specials hidden from the public menu', !in_array($seasonal[0]['id'], array_column(public_menu_cookies(), 'id'), true)
     && count(public_menu_cookies()) === 5);
+cookie_save($seasonal[0]['id'], $seasonal[0]);
+[$ci] = cookie_validate(['ingredients' => "  Flour,  pecans \nmaple   syrup,", 'name' => 'Maple Pecan']);
+cookie_save($seasonal[0]['id'], ['ingredients' => $ci['ingredients']] + $seasonal[0]);
+check('ingredients saved from admin', cookie_find($seasonal[0]['id'])['ingredients'] === 'Flour, pecans, maple syrup');
 cookie_save($seasonal[0]['id'], $seasonal[0]);
 check('window text', cookie_window_text($seasonal[0]) === $earliest->format('F') . ' pickups only');
 [, $ce] = cookie_validate(['name' => 'X', 'available_from' => '2026-10-31', 'available_until' => '2026-10-01']);
@@ -182,6 +188,8 @@ if ($driver === 'sqlite') {
         && (int) $old->query("SELECT value FROM settings WHERE name = 'schema_version'")->fetchColumn() === PB_SCHEMA_VERSION
         && $old->query("SELECT COUNT(*) FROM enquiries")->fetchColumn() !== false);
     $img = fn($n) => $old->query("SELECT image FROM cookies WHERE name = " . $old->quote($n))->fetchColumn();
+    check('upgrade: ingredients filled in', $old->query("SELECT ingredients FROM cookies WHERE name = 'Red Velvet'")->fetchColumn() !== ''
+        && $old->query("SELECT ingredients FROM cookies WHERE name = 'Old sig'")->fetchColumn() === null);
     check('upgrade: sample photo swapped, own upload kept', $img('Chocolate Chunk') === 'images/chocolate-chunk.jpg' && $img('Red Velvet') === 'uploads/cookie-abc123.jpg');
     check('upgrade: M&M added hidden', (int) $old->query("SELECT is_available FROM cookies WHERE name = 'M&M'")->fetchColumn() === 0);
     migrate($old, 'sqlite');

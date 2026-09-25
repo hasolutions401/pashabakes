@@ -10,7 +10,7 @@ if ($id && !$cookie) {
     redirect('menu.php');
 }
 
-$values = $cookie ?? ['name' => '', 'description' => '', 'type' => 'signature', 'image' => '', 'is_available' => 1,
+$values = $cookie ?? ['name' => '', 'description' => '', 'ingredients' => '', 'type' => 'signature', 'image' => '', 'is_available' => 1,
     'sort_order' => ((int) db_value('SELECT COALESCE(MAX(sort_order), 0) FROM cookies')) + 10,
     'available_from' => null, 'available_until' => null];
 [$monthFrom, $monthUntil] = seasonal_window_default(db());
@@ -52,6 +52,10 @@ admin_header($cookie ? 'Edit ' . $cookie['name'] : 'Add a flavor', 'menu', $user
 
     <label>Description
       <textarea name="description" rows="3" maxlength="600"><?= e($values['description']) ?></textarea>
+    </label>
+
+    <label>Ingredients <small>(shown on the menu under “Ingredients”; one per line or separated by commas)</small>
+      <textarea name="ingredients" rows="3" maxlength="1000" placeholder="Flour, brown butter, brown sugar, eggs, …"><?= e((string) ($values['ingredients'] ?? '')) ?></textarea>
     </label>
 
     <fieldset class="choice-row">
