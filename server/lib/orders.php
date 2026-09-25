@@ -30,17 +30,17 @@ function order_validate(array $in): array
     }
 
     $data = [
-        'client_token' => preg_replace('/[^A-Za-z0-9_-]/', '', (string) ($in['client_token'] ?? '')),
-        'customer_name' => clean_text($in['name'] ?? '', 120),
+        'client_token' => preg_replace('/[^A-Za-z0-9_-]/', '', clean_text($in['client_token'] ?? '', 100)),
+        'customer_name' => clean_line($in['name'] ?? '', 120),
         'email' => mb_strtolower(clean_text($in['email'] ?? '', 200)),
-        'phone' => clean_text($in['phone'] ?? '', 40),
-        'occasion' => clean_text($in['occasion'] ?? '', 60),
+        'phone' => clean_line($in['phone'] ?? '', 40),
+        'occasion' => clean_line($in['occasion'] ?? '', 60),
         'notes' => clean_text($in['notes'] ?? '', 1000),
-        'box_size' => (int) ($in['box_size'] ?? 0),
+        'box_size' => whole_number($in['box_size'] ?? null) ?? 0,
         'pickup_date' => clean_text($in['pickup_date'] ?? '', 10),
-        'pickup_slot' => clean_text($in['pickup_slot'] ?? '', 60),
-        'payment_method' => (string) ($in['payment_method'] ?? ''),
-        'payer_ref' => clean_text($in['payer_ref'] ?? '', 120),
+        'pickup_slot' => clean_line($in['pickup_slot'] ?? '', 60),
+        'payment_method' => clean_text($in['payment_method'] ?? '', 20),
+        'payer_ref' => clean_line($in['payer_ref'] ?? '', 120),
         'items' => [],
     ];
 
@@ -53,9 +53,14 @@ function order_validate(array $in): array
         $errors['box_size'] = 'Please choose a box size.';
     }
     $count = 0;
+    $byId = [];   // the same flavor listed twice counts once, with the quantities added up
     foreach ((array) ($in['items'] ?? []) as $item) {
-        $id = (int) ($item['id'] ?? 0);
-        $qty = (int) ($item['qty'] ?? 0);
+        $id = whole_number(is_array($item) ? ($item['id'] ?? null) : null) ?? 0;
+        $qty = is_array($item) ? whole_number($item['qty'] ?? null) : null;
+        if ($qty === null) {
+            $errors['items'] = 'Please check your flavor quantities.';
+            continue;
+        }
         if ($qty <= 0) {
             continue;
         }
@@ -63,12 +68,15 @@ function order_validate(array $in): array
             $errors['items'] = 'One of the flavors you picked is no longer available. Please review your box.';
             continue;
         }
+        $byId[$id] = ($byId[$id] ?? 0) + $qty;
+        $count += $qty;
+    }
+    foreach ($byId as $id => $qty) {
         if ($qty > PB_MAX_COOKIES) {
             $errors['items'] = 'Please check your flavor quantities.';
             continue;
         }
         $data['items'][] = ['cookie_id' => $id, 'cookie_name' => $cookies[$id]['name'], 'quantity' => $qty];
-        $count += $qty;
     }
     if (!isset($errors['items']) && !isset($errors['box_size']) && $count !== $data['box_size']) {
         $errors['items'] = $count < $data['box_size']

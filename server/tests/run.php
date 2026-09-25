@@ -99,6 +99,18 @@ check('window text', cookie_window_text($seasonal[0]) === $earliest->format('F')
 check('admin: first date must be before last', isset($ce['available']));
 [, $e] = order_validate($base(['occasion' => '<script>']));
 check('unknown occasion dropped', $e === []);
+[$d, $e] = order_validate($base(['phone' => 9785550123, 'name' => "Test\r\nPerson  Two"]));
+check('phone as a number accepted; line breaks in the name collapsed', $e === [] && $d['phone'] === '9785550123' && $d['customer_name'] === 'Test Person Two');
+[, $e] = order_validate($base(['name' => ['x'], 'email' => ['a@b.c'], 'pickup_date' => 20261020, 'payment_method' => ['venmo'], 'client_token' => ['x']]));
+check('lists and numbers in text fields give errors, not a crash', isset($e['name'], $e['email'], $e['pickup_date'], $e['payment_method'], $e['form']));
+[, $e] = order_validate($base(['box_size' => '6abc']));
+check('box size must be a whole number', isset($e['box_size']));
+[, $e] = order_validate($base(['items' => [['id' => 1, 'qty' => 2.9], ['id' => 6, 'qty' => 3.1]]]));
+check('flavor quantities must be whole numbers', isset($e['items']));
+[$d, $e] = order_validate($base(['items' => [['id' => 1, 'qty' => '2'], ['id' => 1, 'qty' => 1], ['id' => 6, 'qty' => 3]]]));
+check('same flavor twice is merged', $e === [] && count($d['items']) === 2 && $d['items'][0]['quantity'] === 3);
+[, $e] = order_validate($base(['items' => ['junk', 7, [['nested']]]]));
+check('junk items rejected', isset($e['items']));
 
 [$order, $created] = order_create($data);
 check('order saved', $created && $order['code'] === 'PB' . (1000 + (int) $order['id']));
@@ -173,6 +185,21 @@ check('enquiry emailed to Pasha', $ok);
 check('order question keeps order number, drops event fields', $e === [] && $q['order_ref'] === 'PB1005' && $q['event_date'] === '');
 [$q] = enquiry_validate(['name' => 'Sam', 'email' => 's@example.com', 'type' => 'Birthday', 'order_ref' => 'PB1', 'message' => 'Party next month']);
 check('event enquiry ignores order number', $q['order_ref'] === '');
+[$q] = enquiry_validate(['name' => 'Sam', 'email' => 's@example.com', 'type' => '<b>Free text</b>', 'message' => 'Hello there']);
+check('unknown inquiry topic filed as a general question', $q['type'] === 'General question');
+foreach (['Large order', 'Urgent order', 'Aqiqah', 'Change or cancel an order'] as $t) {
+    [$q] = enquiry_validate(['name' => 'Sam', 'email' => 's@example.com', 'type' => $t, 'message' => 'Hello there']);
+    if ($q['type'] !== $t) { check("inquiry topic kept: $t", false); }
+}
+$formTopics = [];
+foreach (['contact.html', 'celebrations.html'] as $pageFile) {
+    preg_match('#<select name="type" id="e-type">(.*?)</select>#s', (string) file_get_contents(public_dir() . '/' . $pageFile), $sel);
+    preg_match_all('#<option[^>]*>([^<]+)</option>#', $sel[1] ?? '', $opts);
+    $formTopics = array_merge($formTopics, $opts[1]);
+}
+check('every topic in the inquiry forms is accepted', count($formTopics) >= 20 && array_diff($formTopics, enquiry_types()) === []);
+[, $e] = enquiry_validate(['name' => ['x'], 'email' => 's@example.com', 'message' => ['y']]);
+check('inquiry: lists in text fields give errors, not a crash', isset($e['name'], $e['message']));
 settings_save(['payment_hours' => '24']);
 check('payment deadline text', str_contains(payment_hold_text(), 'within 24 hours'));
 check('overdue after deadline', payment_overdue(['status' => 'pending', 'created_at' => today()->modify('-2 days')->format('Y-m-d H:i:s')])

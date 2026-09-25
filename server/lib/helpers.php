@@ -53,13 +53,29 @@ function money(int $cents): string
     return '$' . ($cents % 100 === 0 ? number_format($cents / 100) : number_format($cents / 100, 2));
 }
 
-function clean_text(?string $value, int $max): string
+/** Text from a form or JSON field. Anything that isn't plain text or a number (e.g. a list) counts as empty. */
+function clean_text(mixed $value, int $max): string
 {
-    $value = (string) $value;
+    $value = is_scalar($value) ? (string) $value : '';
     // Strip control characters except newlines/tabs, normalise whitespace at the ends.
     $value = preg_replace('/[^\P{C}\n\t]/u', '', $value) ?? '';
     $value = trim($value);
     return mb_substr($value, 0, $max);
+}
+
+/** Like clean_text(), for one-line fields (name, phone…): line breaks and runs of spaces become one space. */
+function clean_line(mixed $value, int $max): string
+{
+    return mb_substr(trim(preg_replace('/\s+/u', ' ', clean_text($value, $max * 2)) ?? ''), 0, $max);
+}
+
+/** A whole number from a form or JSON field (5 or "5"), or null for anything else ("5abc", 2.5, lists…). */
+function whole_number(mixed $value): ?int
+{
+    if (is_int($value)) {
+        return $value;
+    }
+    return is_string($value) && preg_match('/^\s*-?\d{1,6}\s*$/', $value) ? (int) $value : null;
 }
 
 /**
