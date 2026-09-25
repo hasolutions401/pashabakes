@@ -84,7 +84,13 @@ function data_dir(string $sub = ''): string
     return $dir;
 }
 
-ini_set('error_log', data_dir('logs') . '/php-errors.log');
+// Keep the error log small: past ~2 MB it becomes php-errors.1.log (replacing the previous one).
+$pbErrorLog = data_dir('logs') . '/php-errors.log';
+if (@filesize($pbErrorLog) > 2_000_000) {
+    @rename($pbErrorLog, data_dir('logs') . '/php-errors.1.log');
+}
+ini_set('error_log', $pbErrorLog);
+unset($pbErrorLog);
 
 /** Stops with a clear, safe message. Details go to the error log only. */
 function fatal_setup_error(string $message): never

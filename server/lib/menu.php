@@ -163,31 +163,28 @@ function cookie_store_upload(array $file): string
         throw new RuntimeException('Please upload a JPG, PNG or WebP photo.');
     }
 
+    // Photos are always re-drawn as new JPEGs: that keeps pages fast and drops everything hidden in the
+    // original file (phone photos carry EXIF data such as the GPS location where they were taken).
+    if (!extension_loaded('gd') || !function_exists('imagecreatefromstring')) {
+        throw new RuntimeException('Photo uploads need the PHP “gd” extension on the server. Please ask Hamza to turn it on.');
+    }
+    $src = @imagecreatefromstring((string) file_get_contents($file['tmp_name']));
+    if (!$src) {
+        throw new RuntimeException('That photo could not be read. Please try another JPG, PNG or WebP photo.');
+    }
+
     $dir = public_dir() . '/uploads';
     if (!is_dir($dir) && !@mkdir($dir, 0775, true)) {
         throw new RuntimeException('The uploads folder is not writable.');
     }
     $name = 'cookie-' . bin2hex(random_bytes(6));
-
-    // Resize large photos to max 1400px wide and save as JPEG to keep pages fast.
-    if (extension_loaded('gd') && function_exists('imagecreatefromstring')) {
-        $src = @imagecreatefromstring((string) file_get_contents($file['tmp_name']));
-        if ($src) {
-            $src = cookie_photo_orient($src, $file['tmp_name']);
-            foreach (['' => 1400, '-800' => 800, '-160' => 160] as $suffix => $maxWidth) {
-                if (!cookie_photo_save($src, "{$dir}/{$name}{$suffix}.jpg", $maxWidth)) {
-                    throw new RuntimeException('The photo could not be saved.');
-                }
-            }
-            return "uploads/{$name}.jpg";
+    $src = cookie_photo_orient($src, $file['tmp_name']);
+    foreach (['' => 1400, '-800' => 800, '-160' => 160] as $suffix => $maxWidth) {
+        if (!cookie_photo_save($src, "{$dir}/{$name}{$suffix}.jpg", $maxWidth)) {
+            throw new RuntimeException('The photo could not be saved.');
         }
     }
-
-    $ext = $types[$info[2]];
-    if (!move_uploaded_file($file['tmp_name'], "{$dir}/{$name}.{$ext}")) {
-        throw new RuntimeException('The photo could not be saved.');
-    }
-    return "uploads/{$name}.{$ext}";
+    return "uploads/{$name}.jpg";
 }
 
 /** Writes a JPEG no wider than $maxWidth (never enlarged), on white for transparent PNGs. */

@@ -353,6 +353,14 @@ check('data request: finished order keeps cookies and total, loses details', $do
 $done = forget_customer('A@Example.com');
 check('data request: inquiries deleted', $done['enquiries'] === 1 && customer_records('a@example.com')['enquiries'] === []);
 
+$logFile = "$tmp/masked.log";
+$previousLog = ini_get('error_log');
+ini_set('error_log', $logFile);
+log_error('Email to some.one+tag@example.com failed: SMTP said <x@y.z>');
+ini_set('error_log', (string) $previousLog);
+$logged = (string) @file_get_contents($logFile);
+check('error log masks email addresses', str_contains($logged, '[email]') && !str_contains($logged, 'example.com') && !str_contains($logged, 'x@y.z'));
+
 $_SERVER['REMOTE_ADDR'] = '203.0.113.9';
 $_SERVER['HTTP_X_FORWARDED_FOR'] = '198.51.100.7';
 check('client IP: direct visitor', client_ip() === '203.0.113.9');

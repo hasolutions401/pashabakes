@@ -57,7 +57,7 @@ try {
 } catch (DayFullException $e) {
     json_response(['ok' => false, 'message' => 'Please check a few details.', 'errors' => ['pickup_date' => $e->getMessage()]], 409);
 } catch (Throwable $e) {
-    error_log('[pashabakess] Order save failed: ' . $e->getMessage());
+    log_error('Order save failed: ' . $e->getMessage());
     json_response(['ok' => false, 'message' => 'Sorry, we could not save your order. Nothing was placed. Please try again in a moment or email pashabakess@gmail.com.'], 500);
 }
 

@@ -7,6 +7,12 @@ function e(?string $value): string
     return htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 }
 
+/** Writes to the error log with email addresses masked (the log is not the place for customer details). */
+function log_error(string $message): void
+{
+    error_log('[pashabakess] ' . preg_replace('/[^\s<>"\'(),;:]+@[^\s<>"\'(),;:]+/', '[email]', $message));
+}
+
 function now_str(): string
 {
     return (new DateTimeImmutable('now', new DateTimeZone(PB_TZ)))->format('Y-m-d H:i:s');

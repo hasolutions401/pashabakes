@@ -63,7 +63,7 @@ if ($errors) {
 try {
     [$enquiry, $created] = enquiry_create($data);
 } catch (Throwable $e) {
-    error_log('[pashabakess] Enquiry save failed: ' . $e->getMessage());
+    log_error('Enquiry save failed: ' . $e->getMessage());
     enquiry_reply($isJson, false, 'Sorry, your message could not be sent. Please try again in a moment or email pashabakess@gmail.com.', [], 500);
 }
 

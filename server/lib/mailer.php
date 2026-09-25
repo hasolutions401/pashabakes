@@ -72,7 +72,7 @@ function send_email(string $to, string $subject, string $html, string $text, str
         } catch (Throwable $e) {
             // Fall back to the server's own mail below, so the email still goes out.
             $error = 'Gmail: ' . $e->getMessage();
-            error_log("[pashabakess] Gmail send '{$kind}' to {$to} failed: {$e->getMessage()}");
+            log_error("Gmail send '{$kind}'" . ($orderId ? " (order #{$orderId})" : '') . " failed: {$e->getMessage()}");
         }
         if ($ok) {
             return email_log_result($to, $kind, $orderId, true, '');
@@ -114,7 +114,7 @@ function send_email(string $to, string $subject, string $html, string $text, str
         }
     } catch (Throwable $e) {
         $error = trim($error . ' | ' . $e->getMessage(), ' |');
-        error_log("[pashabakess] Email '{$kind}' to {$to} failed: {$e->getMessage()}");
+        log_error("Email '{$kind}'" . ($orderId ? " (order #{$orderId})" : '') . " failed: {$e->getMessage()}");
     }
 
     // Sent, but not through Gmail: record why, so admin can show it may have gone to spam.
@@ -135,7 +135,7 @@ function email_log_result(string $to, string $kind, ?int $orderId, bool $ok, str
             $orderId, $kind, $to, $ok ? 'sent' : 'failed', mb_substr($error, 0, 500), now_str(),
         ]);
     } catch (Throwable $e) {
-        error_log('[pashabakess] Could not write email_log: ' . $e->getMessage());
+        log_error('Could not write email_log: ' . $e->getMessage());
     }
     return [$ok, $error];
 }
