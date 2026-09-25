@@ -361,6 +361,25 @@ check('data request: finished order keeps cookies and total, loses details', $do
 $done = forget_customer('A@Example.com');
 check('data request: inquiries deleted', $done['enquiries'] === 1 && customer_records('a@example.com')['enquiries'] === []);
 
+// Structured data (JSON-LD) must say exactly what the pages say.
+require_once PB_ROOT . '/tools/structured-data.php';
+$sdPrices = sd_default_prices();
+$sdStale = array_keys(array_filter(sd_build(public_dir(), $sdPrices), fn($html, $file) => $html !== file_get_contents($file), ARRAY_FILTER_USE_BOTH));
+check('structured data up to date (else run: php server/tools/structured-data.php)', $sdStale === []);
+$faqHtml = (string) file_get_contents(public_dir() . '/faq.html');
+preg_match('#<script type="application/ld\+json">(.*?)</script>#s', $faqHtml, $sdFaq);
+$sdFaqData = json_decode($sdFaq[1] ?? '', true);
+check('FAQ structured data: every visible question, same answers', is_array($sdFaqData) && count($sdFaqData['mainEntity']) === count(sd_faq_items($faqHtml))
+    && count($sdFaqData['mainEntity']) >= 16 && in_array('Do you deliver or ship?', array_column($sdFaqData['mainEntity'], 'name'), true));
+preg_match('#<script type="application/ld\+json">(.*?)</script>#s', (string) file_get_contents(public_dir() . '/index.html'), $sdBiz);
+$sdBizData = json_decode($sdBiz[1] ?? '', true);
+$sdOffers = array_column($sdBizData['@graph'][1]['hasOfferCatalog']['itemListElement'] ?? [], 'price');
+check('bakery structured data: box prices = the prices customers pay', $sdOffers === array_map(fn($c) => number_format($c / 100, 2, '.', ''), array_values(box_prices()))
+    && $sdPrices === box_prices() && ($sdBizData['@graph'][1]['priceRange'] ?? '') === '$14–$114');
+check('bakery structured data: no invented facts (no hours, street address, ratings)', !isset($sdBizData['@graph'][1]['openingHours'], $sdBizData['@graph'][1]['aggregateRating'],
+    $sdBizData['@graph'][1]['address']['streetAddress'], $sdBizData['@graph'][1]['telephone']));
+check('visible FAQ prices match the box prices', str_contains($faqHtml, 'A dozen (12 cookies) is ' . money(box_prices()[12]) . '.'));
+
 $logFile = "$tmp/masked.log";
 $previousLog = ini_get('error_log');
 ini_set('error_log', $logFile);

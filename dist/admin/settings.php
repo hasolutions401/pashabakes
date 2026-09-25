@@ -161,7 +161,8 @@ admin_header('Settings', 'settings', $user);
         </label>
       <?php endforeach; ?>
     </div>
-    <p class="muted">Remember to update prices written in the website text too (home page, menu, FAQs) if you change them.</p>
+    <p class="muted">Remember to update prices written in the website text too (home page, menu, FAQs) if you change them —
+      ask Hamza, so the search-engine information (Google, AI assistants) is updated at the same time.</p>
   </section>
 
   <section class="card">

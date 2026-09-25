@@ -99,9 +99,9 @@ Your SMTP server name is shown under **Emails → Addresses**; it looks like `sm
 ## Updating the site
 
 Updates go live automatically: each push to the `main` branch is tested and then pulled onto
-alwaysdata by GitHub Actions (`.github/workflows/deploy.yml`, needs the `ALWAYSDATA_SSH_PASSWORD` secret).
+alwaysdata by GitHub Actions (`.github/workflows/deploy.yml`, needs the `ALWAYSDATA_SSH_PASSWORD` secret in the GitHub **environment** `production` — Settings → Environments → production — which only `main` can use).
 The deploy then checks that the live site serves exactly the new files, and fails loudly if not.
-If you change the SSH password on alwaysdata, update that secret too. By hand: `cd ~/pashabakess && git checkout main && git pull`.
+If you change the SSH password on alwaysdata, update that environment secret too (there is deliberately no repository-wide copy). By hand: `cd ~/pashabakess && git checkout main && git pull`.
 
 **No other update mechanism may touch `~/pashabakess`.** An old scheduled task (alwaysdata → Advanced → Scheduled
 tasks, "Pashabakess: install/update from GitHub") reset the folder to the retired `checkout-backend` branch every

@@ -6,7 +6,7 @@
 #  3. Checks that the live site answers AND serves exactly the files of this commit
 #     (fails loudly if the site root points at another folder or the server copy was changed by hand).
 # Secrets/variables: repository Settings → Secrets and variables → Actions.
-#   alwaysdata: secret ALWAYSDATA_SSH_PASSWORD; optional variable ALWAYSDATA_SSH_FINGERPRINT (server key check)
+#   alwaysdata: secret ALWAYSDATA_SSH_PASSWORD in the "production" environment (main only); variable ALWAYSDATA_SSH_FINGERPRINT
 #   Hostinger:  secret HOSTINGER_SSH_PASSWORD, variables HOSTINGER_HOST, HOSTINGER_PORT, HOSTINGER_USER, HOSTINGER_DOMAIN,
 #               optional HOSTINGER_SSH_FINGERPRINT
 # Third-party actions are pinned to exact commits (the tag they had is in the comment).
