@@ -334,20 +334,95 @@ function next_order_code(): string
     return 'PB' . (1000 + max(1, $next));
 }
 
-/**
- * Starts order numbers again at PB1001. Only allowed when there are no orders at all,
- * so two orders can never share a number. Returns false if orders still exist.
- */
-function restart_order_numbers(): bool
+/** Orders still waiting for payment or pickup (they block restarting the numbers). */
+function open_order_count(): int
 {
-    if ((int) db_value('SELECT COUNT(*) FROM orders') > 0) {
-        return false;
+    return (int) db_value("SELECT COUNT(*) FROM orders WHERE status IN ('pending', 'paid')");
+}
+
+/**
+ * Starts order numbers again at PB1001. Every finished order (picked up or cancelled) is
+ * first moved to the archive, where it stays viewable and downloadable. Not allowed while
+ * any order still waits for payment or pickup, because its number could then be given
+ * out again. Returns an error message, or null on success.
+ */
+function restart_order_numbers(): ?string
+{
+    $open = open_order_count();
+    if ($open > 0) {
+        return "{$open} order" . ($open === 1 ? ' is' : 's are') . ' still waiting for payment or pickup. Restart the numbers once every order is picked up or cancelled.';
     }
+    db_transaction(function (PDO $pdo) {
+        $archive = $pdo->prepare('INSERT INTO archived_orders (code, status, customer_name, email, phone, occasion, notes, box_size, total_cents,
+                pickup_date, pickup_slot, payment_method, payer_ref, admin_note, items_text, created_at, paid_at, completed_at, cancelled_at, archived_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+        $now = now_str();
+        foreach ($pdo->query('SELECT * FROM orders ORDER BY id')->fetchAll() as $o) {
+            $archive->execute([$o['code'], $o['status'], $o['customer_name'], $o['email'], $o['phone'], $o['occasion'], $o['notes'],
+                $o['box_size'], $o['total_cents'], $o['pickup_date'], $o['pickup_slot'], $o['payment_method'], $o['payer_ref'],
+                $o['admin_note'], order_items_text((int) $o['id']), $o['created_at'], $o['paid_at'], $o['completed_at'], $o['cancelled_at'], $now]);
+        }
+        $pdo->exec('DELETE FROM order_items');
+        $pdo->exec('DELETE FROM email_log WHERE order_id IS NOT NULL');
+        $pdo->exec('DELETE FROM orders');
+        if (db_driver() === 'sqlite') {
+            $pdo->exec("DELETE FROM sqlite_sequence WHERE name IN ('orders', 'order_items')");
+        }
+    });
     if (db_driver() === 'mysql') {
+        // ALTER TABLE ends a MySQL transaction, so it runs after the move.
         db()->exec('ALTER TABLE orders AUTO_INCREMENT = 1');
         db()->exec('ALTER TABLE order_items AUTO_INCREMENT = 1');
-    } else {
-        db_exec("DELETE FROM sqlite_sequence WHERE name IN ('orders', 'order_items')");
     }
-    return true;
+    return null;
+}
+
+/** Archived orders (from earlier order-number runs), newest first, with an optional search. */
+function archived_order_list(string $search, int $page, int $perPage = 25): array
+{
+    $where = '';
+    $params = [];
+    if ($search !== '') {
+        $where = 'WHERE (code LIKE ? OR customer_name LIKE ? OR email LIKE ? OR phone LIKE ? OR payer_ref LIKE ?)';
+        $like = '%' . str_replace('%', '', $search) . '%';
+        $params = [$like, $like, $like, $like, $like];
+    }
+    $total = (int) db_value("SELECT COUNT(*) FROM archived_orders {$where}", $params);
+    $pages = max(1, (int) ceil($total / $perPage));
+    $page = max(1, min($page, $pages));
+    $offset = ($page - 1) * $perPage;
+    $rows = db_all("SELECT * FROM archived_orders {$where} ORDER BY id DESC LIMIT {$perPage} OFFSET {$offset}", $params);
+    return ['rows' => $rows, 'total' => $total, 'page' => $page, 'pages' => $pages];
+}
+
+/** One CSV cell. Text that a spreadsheet would run as a formula (= + - @) is prefixed with '. */
+function csv_cell($value): string
+{
+    $value = (string) $value;
+    return preg_match('/^[=+\-@\t\r]/', $value) ? "'" . $value : $value;
+}
+
+/** Rows for the CSV download of current orders ('orders') or archived orders ('archive'). */
+function orders_csv_rows(string $which): array
+{
+    $head = ['Order', 'Status', 'Placed', 'Name', 'Email', 'Phone', 'Box', 'Total', 'Pickup date', 'Pickup time', 'Payment app',
+        'Paying from', 'Occasion', 'Cookies', 'Customer notes', 'Private note', 'Paid', 'Picked up', 'Cancelled'];
+    if ($which === 'archive') {
+        $head[] = 'Archived';
+        $rows = db_all('SELECT * FROM archived_orders ORDER BY id');
+    } else {
+        $rows = db_all('SELECT * FROM orders ORDER BY id');
+    }
+    $out = [$head];
+    foreach ($rows as $o) {
+        $line = [$o['code'], status_label($o['status']), $o['created_at'], $o['customer_name'], $o['email'], $o['phone'], $o['box_size'],
+            number_format($o['total_cents'] / 100, 2, '.', ''), $o['pickup_date'], $o['pickup_slot'], payment_label($o['payment_method']),
+            $o['payer_ref'], $o['occasion'], $which === 'archive' ? $o['items_text'] : order_items_text((int) $o['id']), $o['notes'],
+            $o['admin_note'], $o['paid_at'], $o['completed_at'], $o['cancelled_at']];
+        if ($which === 'archive') {
+            $line[] = $o['archived_at'];
+        }
+        $out[] = array_map('csv_cell', $line);
+    }
+    return $out;
 }

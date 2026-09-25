@@ -10,9 +10,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_check();
 
     if (($_POST['action'] ?? '') === 'restart_numbering') {
-        restart_order_numbers()
-            ? flash('Order numbers restarted. The next order will be PB1001.')
-            : flash('Order numbers can only restart when there are no orders at all. Cancel and delete every order first.', 'warning');
+        $problem = restart_order_numbers();
+        $problem === null
+            ? flash('Order numbers restarted. The next order will be PB1001. Earlier orders are kept under Archived orders.')
+            : flash($problem, 'warning');
         redirect('settings.php');
     }
 
@@ -259,13 +260,21 @@ admin_header('Settings', 'settings', $user);
 
 <section class="card">
   <h2>Order numbers</h2>
-  <?php $orderCount = (int) db_value('SELECT COUNT(*) FROM orders'); ?>
-  <p class="muted">The next order will be <strong><?= e(next_order_code()) ?></strong>.
-    <?= $orderCount > 0 ? "To start again from PB1001, first cancel and delete all {$orderCount} order" . ($orderCount === 1 ? '' : 's') . ' (open each one → Cancel order → Delete permanently).' : '' ?></p>
-  <?php if ($orderCount === 0): ?>
+  <?php $orderCount = (int) db_value('SELECT COUNT(*) FROM orders'); $openCount = open_order_count(); $archivedCount = (int) db_value('SELECT COUNT(*) FROM archived_orders'); ?>
+  <p class="muted">The next order will be <strong><?= e(next_order_code()) ?></strong>.</p>
+  <?php if ($openCount > 0): ?>
+    <p class="muted">You can start again from PB1001 once every order is picked up or cancelled
+      (<?= $openCount ?> still waiting for payment or pickup). Your earlier orders are kept, not deleted.</p>
+  <?php else: ?>
+    <p class="muted">Starting again from PB1001 moves your <?= $orderCount ?> finished order<?= $orderCount === 1 ? '' : 's' ?> to
+      <strong>Archived orders</strong>, where you can still look them up and download them.</p>
     <form method="post"><?= csrf_field() ?><input type="hidden" name="action" value="restart_numbering">
-      <button class="btn" type="submit" data-confirm="Restart order numbers so the next order is PB1001?">Restart order numbers at PB1001</button></form>
+      <button class="btn" type="submit" data-confirm="Restart order numbers so the next order is PB1001? <?= $orderCount ?> finished order<?= $orderCount === 1 ? '' : 's' ?> will move to Archived orders (nothing is deleted).">Restart order numbers at PB1001</button></form>
   <?php endif; ?>
+  <p class="action-row">
+    <a class="btn btn-small" href="export.php?what=orders">Download current orders (CSV)</a>
+    <a class="btn btn-small" href="archive.php">Archived orders (<?= $archivedCount ?>)</a>
+  </p>
 </section>
 
 <section class="card">

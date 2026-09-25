@@ -100,6 +100,9 @@ admin_header('Orders', 'orders', $user);
     <?php endforeach; ?>
   </nav>
 
+  <?php $archivedCount = (int) db_value('SELECT COUNT(*) FROM archived_orders'); ?>
+  <p class="list-links"><a href="export.php?what=orders">Download orders (CSV)</a><?php if ($archivedCount > 0): ?> · <a href="archive.php">Archived orders (<?= $archivedCount ?>)</a><?php endif; ?></p>
+
   <?php if (!$list['rows']): ?>
     <p class="empty"><?= $search !== '' ? 'No orders match “' . e($search) . '”.' : 'No orders here yet.' ?></p>
   <?php else: ?>

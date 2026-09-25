@@ -25,7 +25,7 @@ putenv("PB_CONFIG=$config");
 require dirname(__DIR__) . '/bootstrap.php';
 
 if ($driver === 'mysql') {
-    foreach (['order_items', 'orders', 'cookies', 'settings', 'admin_users', 'email_log', 'rate_hits', 'enquiries'] as $t) {
+    foreach (['order_items', 'orders', 'archived_orders', 'cookies', 'settings', 'admin_users', 'email_log', 'rate_hits', 'enquiries'] as $t) {
         db()->exec("DROP TABLE IF EXISTS $t");
     }
     // Re-run migrations on the now-empty database.
@@ -280,17 +280,31 @@ settings_save(['max_cookies_per_day' => '0']);
 // Deleting orders and restarting the numbers
 $someId = (int) db_value("SELECT id FROM orders WHERE status <> 'cancelled' LIMIT 1");
 check('only cancelled orders can be deleted', !order_delete($someId) && order_find($someId) !== null);
-check('restart refused while orders exist', !restart_order_numbers());
-foreach (db_all('SELECT id FROM orders') as $row) {
-    order_set_status((int) $row['id'], 'cancelled');
-    order_delete((int) $row['id']);
+check('restart refused while orders wait for payment or pickup', open_order_count() > 0 && restart_order_numbers() !== null);
+$firstId = (int) db_value('SELECT MIN(id) FROM orders');
+order_set_status($firstId, 'cancelled');
+check('cancelled order deleted with its items and emails', order_delete($firstId) && order_find($firstId) === null
+    && (int) db_value('SELECT COUNT(*) FROM order_items WHERE order_id = ?', [$firstId]) === 0
+    && (int) db_value('SELECT COUNT(*) FROM email_log WHERE order_id = ?', [$firstId]) === 0);
+foreach (db_all("SELECT id FROM orders WHERE status IN ('pending', 'paid')") as $row) {
+    order_set_status((int) $row['id'], 'completed');
 }
-check('cancelled orders deleted with their items and emails', (int) db_value('SELECT COUNT(*) FROM orders') === 0
-    && (int) db_value('SELECT COUNT(*) FROM order_items') === 0 && (int) db_value('SELECT COUNT(*) FROM email_log WHERE order_id IS NOT NULL') === 0);
-check('restart numbering', restart_order_numbers() && next_order_code() === 'PB1001');
+$finished = (int) db_value('SELECT COUNT(*) FROM orders');
+$someCode = (string) db_value('SELECT code FROM orders ORDER BY id DESC LIMIT 1');
+check('restart numbering', restart_order_numbers() === null && next_order_code() === 'PB1001');
+check('finished orders kept in the archive, not deleted', (int) db_value('SELECT COUNT(*) FROM archived_orders') === $finished && $finished > 0
+    && (int) db_value('SELECT COUNT(*) FROM orders') === 0 && (int) db_value('SELECT COUNT(*) FROM order_items') === 0
+    && (int) db_value('SELECT COUNT(*) FROM email_log WHERE order_id IS NOT NULL') === 0);
+$found = archived_order_list($someCode, 1);
+check('archive is searchable and keeps the cookies', $found['total'] === 1 && str_contains($found['rows'][0]['items_text'], '×'));
 [$fresh] = order_validate($base(['client_token' => bin2hex(random_bytes(12))]));
 [$first] = order_create($fresh);
 check('next order is PB1001', $first['code'] === 'PB1001' && next_order_code() === 'PB1002');
+$csv = orders_csv_rows('archive');
+check('CSV download: header + one row per archived order', count($csv) === $finished + 1 && $csv[0][0] === 'Order' && end($csv[0]) === 'Archived');
+check('CSV download: current orders', count(orders_csv_rows('orders')) === 2 && orders_csv_rows('orders')[1][0] === 'PB1001');
+check('CSV download: spreadsheet formulas neutralised', csv_cell('=HYPERLINK("http://x")') === "'=HYPERLINK(\"http://x\")"
+    && csv_cell('+1 978 555 0100') === "'+1 978 555 0100" && csv_cell('@SUM(A1)') === "'@SUM(A1)" && csv_cell('Amina') === 'Amina');
 
 $_SERVER['REMOTE_ADDR'] = '203.0.113.9';
 $_SERVER['HTTP_X_FORWARDED_FOR'] = '198.51.100.7';

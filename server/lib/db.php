@@ -7,8 +7,8 @@ declare(strict_types=1);
  */
 
 // 8 was the ingredients list, since removed (live databases may keep an unused cookies.ingredients column).
-// 9: unpaid orders hold their pickup day for 24 hours.
-const PB_SCHEMA_VERSION = 9;
+// 9: unpaid orders hold their pickup day for 24 hours. 10: archived_orders (kept when numbers restart).
+const PB_SCHEMA_VERSION = 10;
 
 function db(): PDO
 {
@@ -280,6 +280,30 @@ function migrate_steps(PDO $pdo, string $driver, int $version): void
             order_ref {$str(20)} NOT NULL DEFAULT '',
             created_at {$str(19)} NOT NULL
         ){$engine}",
+        // Version 10: finished orders move here when Pasha restarts the order numbers.
+        "CREATE TABLE IF NOT EXISTS archived_orders (
+            id {$id},
+            code {$str(20)} NOT NULL,
+            status {$str(20)} NOT NULL,
+            customer_name {$str(120)} NOT NULL,
+            email {$str(200)} NOT NULL,
+            phone {$str(40)} NOT NULL,
+            occasion {$str(60)} NOT NULL,
+            notes {$text} NOT NULL,
+            box_size INTEGER NOT NULL,
+            total_cents INTEGER NOT NULL,
+            pickup_date {$str(10)} NOT NULL,
+            pickup_slot {$str(60)} NOT NULL,
+            payment_method {$str(20)} NOT NULL,
+            payer_ref {$str(120)} NOT NULL,
+            admin_note {$text} NOT NULL,
+            items_text {$text} NOT NULL,
+            created_at {$str(19)} NOT NULL,
+            paid_at {$str(19)} NULL,
+            completed_at {$str(19)} NULL,
+            cancelled_at {$str(19)} NULL,
+            archived_at {$str(19)} NOT NULL
+        ){$engine}",
     ];
     foreach ($statements as $sql) {
         $pdo->exec($sql);
@@ -314,6 +338,7 @@ function migrate_steps(PDO $pdo, string $driver, int $version): void
         ['idx_email_order', 'email_log', 'order_id'],
         ['idx_rate_bucket', 'rate_hits', 'bucket, created_at'],
         ['idx_enquiries_created', 'enquiries', 'created_at'],
+        ['idx_archived_code', 'archived_orders', 'code'],
     ];
     foreach ($indexes as [$name, $table, $cols]) {
         try {
