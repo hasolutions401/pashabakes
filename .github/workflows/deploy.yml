@@ -112,14 +112,26 @@ jobs:
               git clone --branch main https://github.com/hasolutions401/pashabakes.git "$BASE/repo"
             fi
             cd "$BASE/repo"
+            OLD=$(git rev-parse HEAD)
             git fetch origin main
             git checkout -q main
             git merge --ff-only origin/main
+            NEW=$(git rev-parse HEAD)
             mkdir -p "$BASE/server" "$BASE/public_html"
-            # Copy over the old files only — nothing on the server is deleted:
+            # Copy the new files over the old ones:
             # public_html/uploads (Pasha's photos), server/config.php and server/data (orders) stay as they are.
             cp -a "$BASE/repo/dist/." "$BASE/public_html/"
             cp -a "$BASE/repo/server/." "$BASE/server/"
+            # Remove only the files this update deleted from the repository (e.g. an old page or script),
+            # so they don't stay online. Nothing else on the server is ever deleted.
+            if [ "$OLD" != "$NEW" ]; then
+              git diff --no-renames --name-only --diff-filter=D "$OLD" "$NEW" -- dist server | while IFS= read -r f; do
+                case "$f" in
+                  dist/*) rm -f -- "$BASE/public_html/${f#dist/}"; echo "removed public_html/${f#dist/}" ;;
+                  server/*) rm -f -- "$BASE/server/${f#server/}"; echo "removed server/${f#server/}" ;;
+                esac
+              done
+            fi
             git log --oneline -1
       - name: Check the live site answers
         if: env.SSH_PASSWORD != ''

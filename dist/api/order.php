@@ -92,14 +92,15 @@ $json = json_encode($response, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 http_response_code(201);
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
-if (function_exists('fastcgi_finish_request')) {
+$early = can_finish_request_early();
+if ($early) {
     echo $json;
-    fastcgi_finish_request();
-    send_admin_alert($order);
-    send_customer_receipt($order);
+    finish_request_early();
 } else {
     ignore_user_abort(true);
-    send_admin_alert($order);
-    send_customer_receipt($order);
+}
+send_admin_alert($order);
+send_customer_receipt($order);
+if (!$early) {
     echo $json;
 }

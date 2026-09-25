@@ -13,7 +13,8 @@ Owner of the project: Hamza (developer). Client: Pasha (the baker). Customers ar
   `dist/uploads/` or `public_html/uploads/` (photos uploaded in admin).
 - `main` is the only branch. Every push to `main` runs `php server/tests/run.php` and, if it passes,
   deploys (`.github/workflows/deploy.yml`): to Hostinger once the `HOSTINGER_HOST` variable is set,
-  otherwise to alwaysdata. Deploys only add/overwrite files, never delete.
+  otherwise to alwaysdata. Deploys never touch config.php, data/ or uploads/; they only remove files deleted from the repo.
+  The deploy fails if the live site doesn't serve exactly the pushed files (index/order/app.js/style.css).
 - The public folder is found by `public_dir()` (`dist/` next to `server/`, or `public_html/` on Hostinger).
 - Website address in canonical links / sitemap / robots.txt: change with `php server/tools/set-domain.php https://NEW-DOMAIN`.
 

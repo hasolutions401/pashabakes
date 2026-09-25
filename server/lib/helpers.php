@@ -105,6 +105,25 @@ function json_response(array $data, int $status = 200): never
     exit;
 }
 
+/**
+ * True if the server can send the reply now and keep working afterwards (PHP-FPM on alwaysdata:
+ * fastcgi_finish_request; LiteSpeed on Hostinger: litespeed_finish_request).
+ */
+function can_finish_request_early(): bool
+{
+    return function_exists('fastcgi_finish_request') || function_exists('litespeed_finish_request');
+}
+
+/** Sends everything echoed so far to the visitor and closes the connection; the script keeps running. */
+function finish_request_early(): void
+{
+    if (function_exists('fastcgi_finish_request')) {
+        fastcgi_finish_request();
+    } elseif (function_exists('litespeed_finish_request')) {
+        litespeed_finish_request();
+    }
+}
+
 function redirect(string $url): never
 {
     header('Location: ' . $url, true, 303);
