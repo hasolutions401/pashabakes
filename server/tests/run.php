@@ -8,7 +8,8 @@
 declare(strict_types=1);
 $_SERVER['REQUEST_URI'] = '/cli-test';
 
-$tmp = sys_get_temp_dir() . '/pb-test-' . getmypid();
+// A fresh folder every run (process ids get reused, and an old test database must never be picked up).
+$tmp = sys_get_temp_dir() . '/pb-test-' . getmypid() . '-' . bin2hex(random_bytes(4));
 @mkdir($tmp);
 $driver = getenv('PB_TEST_DB') ?: 'sqlite';
 $db = ['driver' => 'sqlite', 'sqlite' => "$tmp/test.sqlite"];
