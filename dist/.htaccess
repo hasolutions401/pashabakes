@@ -6,6 +6,12 @@ DirectoryIndex index.html index.php
   Header always set X-Content-Type-Options "nosniff"
   Header always set Referrer-Policy "strict-origin-when-cross-origin"
   Header always set X-Frame-Options "SAMEORIGIN"
+  Header always set Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+  # Browsers remember to use HTTPS only (30 days). Raise to 31536000 (1 year) once the final domain is settled.
+  Header always set Strict-Transport-Security "max-age=2592000"
+  # What pages may load. img-src allows any https image because flavors can use photo links (Admin → Menu).
+  # If you add a new outside service (fonts, analytics, ads…), add its address here or the browser blocks it.
+  Header always set Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self'; form-action 'self'; frame-ancestors 'self'; base-uri 'self'; object-src 'none'; upgrade-insecure-requests"
 </IfModule>
 
 # Never serve hidden files (.git, .env, …)
