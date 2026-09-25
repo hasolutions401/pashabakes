@@ -8,6 +8,8 @@ declare(strict_types=1);
 
 const PB_STATUSES = ['pending', 'paid', 'completed', 'cancelled'];
 const PB_MAX_COOKIES = 36;
+/** Unpaid orders one email address can have waiting at once (stops fake orders filling pickup days). */
+const PB_MAX_UNPAID_PER_EMAIL = 3;
 
 /** Thrown when the pickup day filled up while the order was being placed. */
 class DayFullException extends RuntimeException
@@ -153,8 +155,9 @@ function order_create(array $data): array
             // Re-check the daily limit inside the transaction, so two customers can't both take the last spot.
             if (max_cookies_per_day() > 0) {
                 $lock = db_driver() === 'mysql' ? ' FOR UPDATE' : '';   // SQLite: BEGIN IMMEDIATE already serialises writers
-                $st = $pdo->prepare("SELECT COALESCE(SUM(box_size), 0) FROM orders WHERE pickup_date = ? AND status <> 'cancelled'{$lock}");
-                $st->execute([$data['pickup_date']]);
+                [$holding, $params] = holding_orders_sql();
+                $st = $pdo->prepare("SELECT COALESCE(SUM(box_size), 0) FROM orders WHERE pickup_date = ? AND {$holding}{$lock}");
+                $st->execute([$data['pickup_date'], ...$params]);
                 if ($problem = capacity_problem($data['pickup_date'], $data['box_size'], (int) $st->fetchColumn())) {
                     throw new DayFullException($problem);
                 }
@@ -193,6 +196,18 @@ function order_create(array $data): array
 function order_find(int $id): ?array
 {
     return db_one('SELECT * FROM orders WHERE id = ?', [$id]);
+}
+
+function order_token_exists(string $token): bool
+{
+    return (int) db_value('SELECT COUNT(*) FROM orders WHERE client_token = ?', [$token]) > 0;
+}
+
+/** Unpaid orders from this email address that still hold their pickup day. */
+function unpaid_orders_for_email(string $email): int
+{
+    [$holding, $params] = holding_orders_sql();
+    return (int) db_value("SELECT COUNT(*) FROM orders WHERE email = ? AND status = 'pending' AND {$holding}", [$email, ...$params]);
 }
 
 function order_items(int $orderId): array

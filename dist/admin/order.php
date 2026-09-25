@@ -17,9 +17,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     switch ($action) {
         case 'mark_paid':
+            // An overdue order stopped holding its day, so the day may have filled up meanwhile.
+            $overBy = payment_overdue($order) && max_cookies_per_day() > 0
+                ? booked_cookies($order['pickup_date']) + (int) $order['box_size'] - max_cookies_per_day() : 0;
             if (!order_mark_paid($id)) {
                 flash('This order is no longer waiting for payment.', 'warning');
                 break;
+            }
+            if ($overBy > 0) {
+                flash('Heads up: ' . pretty_date($order['pickup_date']) . " is now {$overBy} cookies over your daily limit, because other orders took this unpaid order’s place.", 'warning');
             }
             [$ok] = send_customer_confirmation(order_find($id));
             $ok
@@ -108,7 +114,8 @@ admin_header('Order ' . $order['code'], 'orders', $user);
 <section class="card actions-card">
   <?php if ($order['status'] === 'pending'): ?>
     <div class="verify">
-      <?php if (payment_overdue($order)): ?><p class="verify-title">⚠ Payment overdue — placed more than <?= payment_hours() ?> hours ago. You can cancel it to free the date.</p><?php endif; ?>
+      <?php if (payment_overdue($order)): ?><p class="verify-title">⚠ Payment overdue — placed more than <?= payment_hours() ?> hours ago. It no longer holds its pickup day, so other customers can book that day.
+        You can still mark it as paid if the money arrives<?php if (max_cookies_per_day() > 0): ?> (<?= e(short_date($order['pickup_date'])) ?> has <?= max(0, max_cookies_per_day() - booked_cookies($order['pickup_date'])) ?> of <?= max_cookies_per_day() ?> cookies free)<?php endif; ?>, or cancel it.</p><?php endif; ?>
       <p class="verify-title">Check <?= e(payment_label($order['payment_method'])) ?></p>
       <p>Look for <strong><?= money((int) $order['total_cents']) ?></strong> with <strong><?= e($order['code']) ?></strong> in the payment note<?= $order['payer_ref'] !== '' ? ' (the customer said they’ll pay from <strong>' . e($order['payer_ref']) . '</strong>)' : '' ?>. When you see it, mark the order as paid — the customer gets their confirmation email with the pickup address automatically.</p>
       <p class="verify-hint">Can’t fill this order (for example, the date is fully booked)? Email the customer before cancelling. If they already paid, refund them in full.</p>

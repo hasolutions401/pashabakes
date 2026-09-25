@@ -177,7 +177,7 @@ admin_header('Settings', 'settings', $user);
       <input type="number" name="max_cookies_per_day" value="<?= e($form['max_cookies_per_day'] ?? '0') ?>" min="0" max="9999" step="1" inputmode="numeric"><?= $err('max_cookies_per_day') ?>
     </label>
     <p class="muted">When a day’s orders reach this number, customers can’t choose that day any more (or only a smaller box).
-      Unpaid orders hold their place until you cancel them; cancelled orders free it up.</p>
+      Unpaid orders hold their place until the payment time below runs out; cancelled orders free it up at once.</p>
     <label>Pickup times <small>(one per line, shown in the order form)</small>
       <textarea name="pickup_slots" rows="6"><?= e($form['pickup_slots'] ?? '') ?></textarea><?= $err('pickup_slots') ?>
     </label>
@@ -204,11 +204,12 @@ admin_header('Settings', 'settings', $user);
 
   <section class="card">
     <h2>Payments</h2>
-    <label>Ask customers to pay within (hours) <small>(0 = don’t mention a deadline)</small>
-      <input type="number" name="payment_hours" value="<?= e($form['payment_hours'] ?? '0') ?>" min="0" max="168" step="1" inputmode="numeric"><?= $err('payment_hours') ?>
+    <label>Ask customers to pay within (hours) <small>(0 = no deadline: unpaid orders hold their day until you cancel them)</small>
+      <input type="number" name="payment_hours" value="<?= e($form['payment_hours'] ?? '24') ?>" min="0" max="168" step="1" inputmode="numeric"><?= $err('payment_hours') ?>
     </label>
     <p class="muted">Shown on the payment screen and in the “how to pay” email. Orders still unpaid after this are marked
-      <strong>Overdue</strong> in your order list, so you can cancel them and free the date.</p>
+      <strong>Overdue</strong> in your order list and <strong>no longer hold their pickup day</strong>, so other customers can book it.
+      You can still mark an overdue order as paid if the money arrives. If you change this, update the FAQ text (“held for 24 hours”) too.</p>
     <div class="two-col">
       <label>Venmo username
         <span class="money-input"><span>@</span><input name="venmo_handle" value="<?= e($form['venmo_handle'] ?? '') ?>" autocapitalize="none"></span><?= $err('venmo_handle') ?>

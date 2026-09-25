@@ -6,9 +6,9 @@ declare(strict_types=1);
  * Tables are created and seeded automatically on first use.
  */
 
-// 8 was the ingredients list, since removed. Live databases are already at 8 (and may keep an
-// unused cookies.ingredients column), so the next database change must be version 9.
-const PB_SCHEMA_VERSION = 8;
+// 8 was the ingredients list, since removed (live databases may keep an unused cookies.ingredients column).
+// 9: unpaid orders hold their pickup day for 24 hours.
+const PB_SCHEMA_VERSION = 9;
 
 function db(): PDO
 {
@@ -350,6 +350,10 @@ function migrate_steps(PDO $pdo, string $driver, int $version): void
     // Version 5: Pasha's daily limit is 5 dozen (60 cookies), unless a limit was already set in Settings.
     if ($version >= 1 && $version < 5) {
         $pdo->prepare("UPDATE settings SET value = '60' WHERE name = 'max_cookies_per_day' AND value IN ('', '0')")->execute();
+    }
+    // Version 9: unpaid orders hold their pickup day for 24 hours (agreed Sept 2026), unless a deadline was already set.
+    if ($version >= 1 && $version < 9) {
+        $pdo->prepare("UPDATE settings SET value = '24' WHERE name = 'payment_hours' AND value IN ('', '0')")->execute();
     }
     if ($version < 3) {
         if ((int) $pdo->query("SELECT COUNT(*) FROM cookies WHERE name LIKE 'M&M%' OR name LIKE 'M & M%'")->fetchColumn() === 0) {

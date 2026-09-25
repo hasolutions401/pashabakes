@@ -22,7 +22,7 @@ Owner of the project: Hamza (developer). Client: Pasha (the baker). Customers ar
 - Database changes go through a new `PB_SCHEMA_VERSION` step in `server/lib/db.php` (runs on the first
   request after deploy); never assume a fresh database.
 - Pasha's confirmed policies (order page, FAQ, `refund_policy_text()` in `server/lib/emails.php` must match):
-  pay right after ordering; max 60 cookies per pickup day; cancel/reschedule by email ≥ 2 calendar days before
+  pay right after ordering; an unpaid order holds its pickup day for 24 hours (`payment_hours`); max 60 cookies per pickup day; cancel/reschedule by email ≥ 2 calendar days before
   pickup → full refund within 3–5 business days; less notice → no refund; not picked up within 2 days → no
   refund; full refund if Pasha cancels.
 - Pasha's own photos: originals in `photos/`, web copies in `dist/images/`. Pumpkin Chocolate Chip and Maple

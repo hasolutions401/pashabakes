@@ -42,8 +42,14 @@ if ($errors) {
     json_response(['ok' => false, 'message' => 'Please check a few details.', 'errors' => $errors], 422);
 }
 
-if (!rate_allowed('order_created', 30, 3600)) {
-    json_response(['ok' => false, 'message' => 'You’ve placed several orders in a short time. Please email pashabakess@gmail.com if you need more.'], 429);
+// A retry of an order that was already saved (same form submission) always gets its order back.
+if (!order_token_exists($data['client_token'])) {
+    if (!rate_allowed('order_created', 6, 3600) || !rate_allowed('order_created_day', 12, 86400)) {
+        json_response(['ok' => false, 'message' => 'You’ve placed several orders in a short time. Please email pashabakess@gmail.com if you need more.'], 429);
+    }
+    if (unpaid_orders_for_email($data['email']) >= PB_MAX_UNPAID_PER_EMAIL) {
+        json_response(['ok' => false, 'message' => 'You already have ' . PB_MAX_UNPAID_PER_EMAIL . ' orders waiting for payment. Please pay for those first, or email pashabakess@gmail.com and Pasha will help you.'], 429);
+    }
 }
 
 try {
@@ -79,6 +85,7 @@ if (!$created) {
 }
 
 rate_hit('order_created');
+rate_hit('order_created_day');
 
 // Reply to the customer right away, then send the emails.
 $json = json_encode($response, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);

@@ -54,6 +54,7 @@ check('site photos carry a version so replaced photos show at once', preg_match(
 check('only the two specials still use sample photos', count(array_filter(menu_cookies(true), fn($c) => str_starts_with($c['image'], 'http'))) === 2);
 check('seeded prices', box_prices() === [4 => 1400, 6 => 2000, 12 => 3800, 24 => 7600, 36 => 11400]);
 check('9 pickup slots', count(pickup_slots()) === 9);
+check('unpaid orders hold their day for 24 hours by default', payment_hours() === 24);
 
 $base = fn(array $over = []) => array_merge([
     'client_token' => bin2hex(random_bytes(12)), 'name' => 'Test Person', 'email' => 'Test@Example.com', 'phone' => '(978) 555-0123',
@@ -139,6 +140,8 @@ $newReceipts = array_values(array_diff(glob($mailDir . '/*-receipt-*.html') ?: [
 $receipt = $newReceipts ? (string) file_get_contents($newReceipts[0]) : '';
 check('receipt has payment instructions with order number', str_contains($receipt, '$Pashabakess') && str_contains($receipt, 'Write this in the payment note')
     && str_contains($receipt, '>' . $order['code'] . '</span>') && str_contains($receipt, 'images/chocolate-chunk-160.jpg'));
+check('receipt leaves out the free-text payer name', !str_contains($receipt, '$tester') && !str_contains(email_order_text(order_find((int) $order['id']), true), '$tester'));
+check('Pasha’s alert keeps the payer name', str_contains(email_order_text(order_find((int) $order['id'])), '$tester'));
 
 // Enquiries
 [$q, $e] = enquiry_validate(['name' => 'Amina', 'email' => 'A@Example.com', 'type' => 'General question', 'date' => '2031-01-01', 'quantity' => '48 cookies', 'message' => 'Do you do nut-free?']);
@@ -160,7 +163,7 @@ check('payment deadline text', str_contains(payment_hold_text(), 'within 24 hour
 check('overdue after deadline', payment_overdue(['status' => 'pending', 'created_at' => today()->modify('-2 days')->format('Y-m-d H:i:s')])
     && !payment_overdue(['status' => 'paid', 'created_at' => today()->modify('-2 days')->format('Y-m-d H:i:s')]));
 settings_save(['payment_hours' => '0']);
-check('no deadline by default: pay right away', str_contains(payment_hold_text(), 'right away'));
+check('no deadline when set to 0: pay right away', str_contains(payment_hold_text(), 'right away'));
 enquiry_set_status((int) $row['id'], 'done');
 check('enquiry marked answered', enquiry_new_count() === 0 && enquiry_list('done', 1)['total'] === 1);
 
@@ -193,6 +196,18 @@ if ($driver === 'sqlite') {
     check('upgrade: M&M added hidden', (int) $old->query("SELECT is_available FROM cookies WHERE name = 'M&M'")->fetchColumn() === 0);
     migrate($old, 'sqlite');
     check('upgrade runs once (no second M&M)', (int) $old->query("SELECT COUNT(*) FROM cookies WHERE name = 'M&M'")->fetchColumn() === 1);
+    check('v1 upgrade: 24-hour hold', $old->query("SELECT value FROM settings WHERE name = 'payment_hours'")->fetchColumn() === '24');
+
+    // Version 8 → 9: a "no deadline" setting becomes 24 hours; a deadline Pasha chose herself is kept.
+    foreach (['0' => '24', '48' => '48'] as $was => $expect) {
+        $v8 = new PDO("sqlite:$tmp/v8-$was.sqlite", null, null, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC]);
+        $v8->exec("CREATE TABLE settings (name TEXT PRIMARY KEY, value TEXT NOT NULL)");
+        $v8->exec("INSERT INTO settings VALUES ('schema_version', '8'), ('lead_days', '7'), ('payment_hours', '$was')");
+        migrate($v8, 'sqlite');
+        check("v8 upgrade: payment hours $was → $expect", $v8->query("SELECT value FROM settings WHERE name = 'payment_hours'")->fetchColumn() === $expect
+            && (int) $v8->query("SELECT value FROM settings WHERE name = 'schema_version'")->fetchColumn() === PB_SCHEMA_VERSION);
+        $v8 = null;
+    }
 }
 
 // Daily cookie limit
@@ -219,6 +234,25 @@ check('menu shows 0 left that day', days_remaining()[$day] === 0);
 order_set_status((int) db_value('SELECT id FROM orders WHERE client_token = ?', [$d2['client_token']]), 'cancelled');
 [, $e] = order_validate($dayOrder(4, [['id' => 1, 'qty' => 4]]));
 check('cancelling frees the space', $e === [] && days_remaining()[$day] === 4);
+// Unpaid orders hold their day only until the payment deadline.
+settings_save(['payment_hours' => '24']);
+$d1Id = (int) db_value('SELECT id FROM orders WHERE client_token = ?', [$d1['client_token']]);
+check('unpaid order within 24 hours holds its day', booked_cookies($day) === 12);
+$hoursAgo = fn(int $h) => (new DateTimeImmutable('now', new DateTimeZone(PB_TZ)))->modify("-{$h} hours")->format('Y-m-d H:i:s');
+db_exec('UPDATE orders SET created_at = ? WHERE id = ?', [$hoursAgo(25), $d1Id]);
+[$d4, $e] = order_validate($dayOrder(12, [['id' => 1, 'qty' => 12]]));
+check('unpaid order past 24 hours frees its day', booked_cookies($day) === 0 && !isset(days_remaining()[$day]) && $e === []);
+[, $created] = order_create($d4);
+check('someone else can book the freed day', $created && booked_cookies($day) === 12);
+check('overdue order can still be marked paid', order_mark_paid($d1Id) && booked_cookies($day) === 24);
+check('paid orders always hold their day', payment_overdue(order_find($d1Id)) === false);
+$mail = 'cap-test@example.com';
+foreach ([1, 2, 3] as $i) {
+    order_create(['client_token' => bin2hex(random_bytes(12)), 'email' => $mail, 'pickup_date' => earliest_pickup_date()->modify("+{$i} weeks")->format('Y-m-d')] + $d4);
+}
+check('unpaid orders counted per email', unpaid_orders_for_email($mail) === 3);
+db_exec('UPDATE orders SET created_at = ? WHERE email = ? AND id = (SELECT MIN(id) FROM orders WHERE email = ?)', [$hoursAgo(30), $mail, $mail]);
+check('overdue orders no longer count toward the per-email cap', unpaid_orders_for_email($mail) === 2);
 settings_save(['max_cookies_per_day' => '0']);
 
 // Deleting orders and restarting the numbers
