@@ -19,7 +19,7 @@ if ($driver === 'mysql') {
 }
 $config = "$tmp/config.php";
 file_put_contents($config, '<?php return ' . var_export([
-    'site_url' => 'http://localhost', 'data_dir' => "$tmp/data", 'setup_key' => 'test-key-123456',
+    'site_url' => 'http://localhost', 'data_dir' => "$tmp/data", 'setup_key' => 'test-key-123456',   // gitleaks:allow — throwaway key for the test database only
     'db' => $db, 'mail' => ['transport' => 'log', 'from_email' => 'test@example.com'],
 ], true) . ';');
 putenv("PB_CONFIG=$config");
