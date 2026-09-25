@@ -469,7 +469,10 @@ function fieldMessage(el) {
   if (el.type === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(value)) return 'Please enter a valid email address, like name@example.com.';
   if (el.type === 'tel' && value.replace(/\D/g, '').length < 10) return 'Please enter a phone number with area code.';
   if (el.id === 'pickup-date') {
-    if (value < minimumDate()) return `Orders need one week’s notice. The earliest pickup date is ${prettyDate(minimumDate())}. For anything sooner, please email pashabakess@gmail.com.`;
+    if (value < minimumDate()) {
+      const lead = settings?.leadDays ?? 7;
+      return `Orders need ${lead === 7 ? 'one week’s' : `${lead} days’`} notice. The earliest pickup date is ${prettyDate(minimumDate())}. For anything sooner, please email pashabakess@gmail.com.`;
+    }
     if (value > maximumDate()) return `Please choose a date before ${prettyDate(maximumDate())}.`;
     if (settings?.unavailableDates?.includes(value)) return 'Pasha isn’t available for pickups on that date. Please choose another day.';
     const left = settings?.maxCookiesPerDay ? settings.dayRemaining?.[value] : undefined;
@@ -873,13 +876,13 @@ if ($('#order-form')) {
   if (pricesCents[size]) {
     box = size;
     params.delete('box');
-    history.replaceState(null, '', location.pathname + (params.size ? '?' + params.toString() : '') + location.hash);
+    history.replaceState(null, '', location.pathname + (params.toString() ? '?' + params.toString() : '') + location.hash);
   }
   if (chosen > 0) {
     if (total() < box) qty[chosen] = (qty[chosen] || 0) + 1;
     else boxFeedback('Your box is full. Choose a bigger box or change flavors.', false);
     params.delete('flavor');
-    history.replaceState(null, '', location.pathname + (params.size ? '?' + params.toString() : '') + location.hash);
+    history.replaceState(null, '', location.pathname + (params.toString() ? '?' + params.toString() : '') + location.hash);
   }
 }
 
