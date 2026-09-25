@@ -65,7 +65,7 @@ address everywhere: `grep -rl pashabakess.alwaysdata.net dist | xargs sed -i 's#
 - **Venmo:** payments go to the personal profile @Palosha-Rashid, which shows Pasha's full name. Venmo expects
   sales to use a business profile; confirm with Pasha.
 - Confirm the monthly specials and any larger-order pricing each month.
-- Original client-supplied logo is included unchanged as `dist/pashabakess-logo.jpg`, used in the header, footer, and favicon.
+- Original client-supplied logo is kept unchanged as `photos/pashabakess-logo.jpg` (not public); the site uses the smaller copies `dist/logo-192.*`, `favicon-64.png` and `apple-touch-icon.png`.
 - Product labels and home-bakery approval are in progress per the client; no completed approval or certification is claimed on the site.
 - The client previously asked for cookie photographs only (no portrait) in the About section; a baking photo of
   Pasha would suit "Meet Pasha" better if she changes her mind.

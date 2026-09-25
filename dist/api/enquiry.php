@@ -63,7 +63,7 @@ if ($errors) {
 try {
     [$enquiry, $created] = enquiry_create($data);
 } catch (Throwable $e) {
-    error_log('[pashabakess] Enquiry save failed: ' . $e->getMessage());
+    log_error('Enquiry save failed: ' . $e->getMessage());
     enquiry_reply($isJson, false, 'Sorry, your message could not be sent. Please try again in a moment or email pashabakess@gmail.com.', [], 500);
 }
 
@@ -73,16 +73,14 @@ if (!$created) {
 }
 
 // Reply to the customer first, then email Pasha (the enquiry is already saved in admin).
-if (function_exists('fastcgi_finish_request')) {
-    if ($isJson) {
-        http_response_code(201);
-        header('Content-Type: application/json; charset=utf-8');
-        header('Cache-Control: no-store');
-        echo json_encode(['ok' => true, 'message' => $thanks], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-        fastcgi_finish_request();
-        send_enquiry_alert($enquiry);
-        exit;
-    }
+if ($isJson && can_finish_request_early()) {
+    http_response_code(201);
+    header('Content-Type: application/json; charset=utf-8');
+    header('Cache-Control: no-store');
+    echo json_encode(['ok' => true, 'message' => $thanks], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    finish_request_early();
+    send_enquiry_alert($enquiry);
+    exit;
 }
 ignore_user_abort(true);
 send_enquiry_alert($enquiry);

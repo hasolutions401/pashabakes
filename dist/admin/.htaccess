@@ -2,3 +2,10 @@
 <Files "_init.php">
   Require all denied
 </Files>
+
+# Admin pages: never framed, no referrer to other sites, stricter content policy (no outside fonts).
+<IfModule mod_headers.c>
+  Header always set X-Frame-Options "DENY"
+  Header always set Referrer-Policy "same-origin"
+  Header always set Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'self'; object-src 'none'"
+</IfModule>

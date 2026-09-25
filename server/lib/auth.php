@@ -43,10 +43,13 @@ function current_admin(): ?array
     if (!$id) {
         return null;
     }
-    $user = db_one('SELECT id, username FROM admin_users WHERE id = ?', [(int) $id]);
-    if (!$user) {
+    $user = db_one('SELECT id, username, session_version FROM admin_users WHERE id = ?', [(int) $id]);
+    // Sessions from before a password change are no longer valid (sessions older than this check count as version 1).
+    if (!$user || (int) ($_SESSION['session_version'] ?? 1) !== (int) $user['session_version']) {
         $_SESSION = [];
+        return null;
     }
+    unset($user['session_version']);
     return $user;
 }
 
@@ -62,6 +65,16 @@ function require_admin(): array
         redirect('login.php' . ($back !== '' ? '?next=' . rawurlencode($back) : ''));
     }
     return $user;
+}
+
+/**
+ * Where to go after logging in: a page in this site's /admin/ folder, else index.php.
+ * Every path segment must be non-empty, so "//other-site/admin/x.php" (a link to another
+ * website) is refused, as are backslashes and full URLs.
+ */
+function safe_admin_next(string $next): string
+{
+    return preg_match('#^/(?:[A-Za-z0-9_.-]+/)*admin/[A-Za-z0-9_-]+\.php(?:\?[A-Za-z0-9=&_%-]*)?$#', $next) ? $next : 'index.php';
 }
 
 /** Returns an error message, or null on success. */
@@ -82,6 +95,7 @@ function admin_login(string $username, string $password): ?string
     admin_session_start();
     session_regenerate_id(true);
     $_SESSION['admin_id'] = (int) $user['id'];
+    $_SESSION['session_version'] = (int) ($user['session_version'] ?? 1);
     $_SESSION['csrf'] = bin2hex(random_bytes(32));
     return null;
 }
@@ -101,9 +115,14 @@ function admin_create(string $username, string $password): void
     ]);
 }
 
+/** Sets a new password and logs out every other device (this session stays logged in, with a new session id). */
 function admin_set_password(int $id, string $password): void
 {
-    db_exec('UPDATE admin_users SET password_hash = ? WHERE id = ?', [password_hash($password, PASSWORD_DEFAULT), $id]);
+    db_exec('UPDATE admin_users SET password_hash = ?, session_version = session_version + 1 WHERE id = ?', [password_hash($password, PASSWORD_DEFAULT), $id]);
+    if (session_status() === PHP_SESSION_ACTIVE && (int) ($_SESSION['admin_id'] ?? 0) === $id) {
+        session_regenerate_id(true);
+        $_SESSION['session_version'] = (int) db_value('SELECT session_version FROM admin_users WHERE id = ?', [$id]);
+    }
 }
 
 function password_problem(string $password, string $confirm): ?string

@@ -45,6 +45,11 @@ small { color: var(--muted); font-weight: 400; }
 .flash-success { background: var(--green-bg); color: var(--green); }
 .flash-warning { background: var(--amber-bg); color: var(--amber); }
 .flash-error { background: #fde4e6; color: var(--red); }
+.flash a { color: inherit; }
+.mail-problems { margin: 6px 0 0; padding-left: 20px; font-weight: 400; }
+.list-links { margin: 0 0 10px; font-size: 14px; }
+.archived-row p { margin: 4px 0; }
+.plain-list { padding-left: 20px; line-height: 1.9; }
 
 /* Buttons */
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: var(--tap); padding: 0 16px; border-radius: 10px;

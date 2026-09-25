@@ -10,15 +10,23 @@ const PB_GENERAL_ENQUIRY = 'General question';
 /** Topics about an order already placed: they ask for the order number instead of event details. */
 const PB_ORDER_ENQUIRIES = ['Existing order', 'Payment question', 'Change or cancel an order', 'Pickup question'];
 
+/** Topics offered in the Contact and Celebrations forms (keep in step with their "type" menus). */
+function enquiry_types(): array
+{
+    return [PB_GENERAL_ENQUIRY, ...PB_ORDER_ENQUIRIES, 'Urgent order', 'Large order', ...occasions()];
+}
+
 /** Returns [clean data, errors keyed by field]. */
 function enquiry_validate(array $in): array
 {
+    $type = clean_line($in['type'] ?? '', 60);
     $data = [
-        'name' => clean_text($in['name'] ?? '', 120),
+        'name' => clean_line($in['name'] ?? '', 120),
         'email' => mb_strtolower(clean_text($in['email'] ?? '', 200)),
-        'type' => clean_text($in['type'] ?? '', 60) ?: PB_GENERAL_ENQUIRY,
+        // Only the topics offered in the form; anything else is filed as a general question.
+        'type' => in_array($type, enquiry_types(), true) ? $type : PB_GENERAL_ENQUIRY,
         'event_date' => clean_text($in['date'] ?? '', 10),
-        'quantity' => clean_text($in['quantity'] ?? '', 80),
+        'quantity' => clean_line($in['quantity'] ?? '', 80),
         'message' => clean_text($in['message'] ?? '', 1800),
         'order_ref' => strtoupper(preg_replace('/[^A-Za-z0-9]/', '', clean_text($in['order_ref'] ?? '', 40))),
     ];

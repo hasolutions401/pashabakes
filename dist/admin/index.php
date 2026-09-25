@@ -35,6 +35,24 @@ admin_header('Orders', 'orders', $user);
   <div class="flash flash-warning">Online ordering is currently <strong>paused</strong>. Turn it back on in <a href="settings.php">Settings</a>.</div>
 <?php endif; ?>
 
+<?php $mailProblems = recent_email_problems(7); $kindLabel = ['admin_alert' => 'new-order alert to you', 'receipt' => 'receipt to customer', 'confirmation' => 'confirmation to customer', 'enquiry' => 'inquiry alert to you']; ?>
+<?php if ($mailProblems['failed']): ?>
+  <div class="flash flash-error" role="alert">
+    <strong><?= count($mailProblems['failed']) ?> email<?= count($mailProblems['failed']) === 1 ? '' : 's' ?> could not be sent in the last 7 days.</strong>
+    Open each one to resend it, and check <a href="settings.php">Settings → Email sending</a>.
+    <ul class="mail-problems">
+      <?php foreach (array_slice($mailProblems['failed'], 0, 8) as $p): ?>
+        <li><?php if ($p['order_id']): ?><a href="order.php?id=<?= (int) $p['order_id'] ?>"><?= e($p['code']) ?></a><?php else: ?><a href="enquiries.php">Inquiry</a><?php endif; ?>
+          · <?= e($kindLabel[$p['kind']] ?? $p['kind']) ?> · <?= e(pretty_datetime($p['created_at'])) ?></li>
+      <?php endforeach; ?>
+    </ul>
+  </div>
+<?php endif; ?>
+<?php if ($mailProblems['no_gmail']): ?>
+  <div class="flash flash-warning"><?= count($mailProblems['no_gmail']) ?> email<?= count($mailProblems['no_gmail']) === 1 ? '' : 's' ?> in the last 7 days went out without Gmail, so they may be in customers’ spam folders.
+    Check <a href="settings.php">Settings → Email sending</a>.</div>
+<?php endif; ?>
+
 <section class="stats" aria-label="Summary">
   <a class="stat stat-pending" href="?status=pending"><strong><?= $counts['pending'] ?></strong><span>Payment pending</span></a>
   <a class="stat" href="?status=paid"><strong><?= $counts['paid'] ?></strong><span>Paid · to bake</span></a>
@@ -81,6 +99,9 @@ admin_header('Orders', 'orders', $user);
       </a>
     <?php endforeach; ?>
   </nav>
+
+  <?php $archivedCount = (int) db_value('SELECT COUNT(*) FROM archived_orders'); ?>
+  <p class="list-links"><a href="export.php?what=orders">Download orders (CSV)</a><?php if ($archivedCount > 0): ?> · <a href="archive.php">Archived orders (<?= $archivedCount ?>)</a><?php endif; ?></p>
 
   <?php if (!$list['rows']): ?>
     <p class="empty"><?= $search !== '' ? 'No orders match “' . e($search) . '”.' : 'No orders here yet.' ?></p>

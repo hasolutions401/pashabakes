@@ -2,7 +2,7 @@
 
 Everything in the code is already prepared: the website finds its folders on Hostinger by itself, and the
 GitHub auto-deploy has a Hostinger route that switches on as soon as the details below are added.
-Nothing on the server is ever deleted by a deploy — photos, orders and settings stay.
+A deploy never touches photos, orders or settings — it only removes files that were deleted from the repository.
 
 **Time needed:** about 45 minutes. Keep alwaysdata running until the last step.
 
@@ -26,8 +26,10 @@ so they have to be copied once from the old server.
 1. **Plan:** Premium or Business *Web Hosting* (both include SSH and PHP).
 2. **Add the website:** hPanel → Websites → Add website → use your domain (e.g. `pashabakess.com`).
    Skip any website builder / WordPress offer ("Create an empty website").
+   **Test before switching the address:** if the domain still points at alwaysdata (or anywhere else), don't change its
+   DNS yet — test everything on Hostinger's temporary/preview address first. Switching DNS is the very last step.
 3. **PHP:** Websites → Manage → Advanced → **PHP Configuration** → PHP **8.2 or newer**.
-   Under *PHP extensions*, make sure `pdo_sqlite`, `gd` and `mbstring` are ticked.
+   Under *PHP extensions*, make sure `pdo_sqlite`, `gd` (needed for photo uploads) and `mbstring` are ticked (`exif` too if offered).
 4. **SSH:** Advanced → **SSH Access** → Enable. Write down the **IP**, **Port** (usually `65002`) and
    **Username** (looks like `u123456789`). Set an SSH password there if asked.
 5. **HTTPS:** Security → **SSL** → install the free SSL certificate, then turn on **Force HTTPS**.
@@ -41,6 +43,8 @@ so they have to be copied once from the old server.
      - `HOSTINGER_PORT` = the port from step 4 (e.g. `65002`)
      - `HOSTINGER_USER` = the username from step 4 (e.g. `u123456789`)
      - `HOSTINGER_DOMAIN` = your domain exactly as in hPanel (e.g. `pashabakess.com`)
+     - optional, recommended: `HOSTINGER_SSH_FINGERPRINT` = the server's SSH key fingerprint (`SHA256:…`), so the deploy
+       refuses to log in anywhere else. Get it with `ssh-keyscan -p PORT IP | ssh-keygen -lf -`.
 7. GitHub → **Actions → Deploy website → Run workflow**. This copies the website and ordering system to
    Hostinger. The last check ("live site answers") fails this first time because `config.php` isn't
    there yet — that's expected. From now on every push to `main` deploys to Hostinger (alwaysdata stops
@@ -72,7 +76,12 @@ so they have to be copied once from the old server.
    ```
    Check the output: `site_url` shows the new domain, `transport` is `mail`, and the `sqlite` line uses
    `__DIR__ . '/data/pashabakess.sqlite'` (if it shows a `/home/pashabakess/…` path instead, change it to that).
-   Emails keep going out through Pasha's Gmail (the app password is stored with the orders, so it moved too).
+   Emails keep going out through Pasha's Gmail (the app password moved with the orders). Safer: add it to `config.php`
+   as `'gmail_app_password' => '…'` inside the `mail` section (see `config.sample.php`), then remove the saved one in
+   Admin → Settings → Email sending, so it isn't inside every copy of the database.
+   **Then delete the move package** — it contains every customer's details and the passwords:
+   on Hostinger `cd ~/domains/pashabakess.com && rm -rf move pashabakess-move.tar.gz`, and on alwaysdata
+   `rm -f ~/pashabakess-move.tar.gz`.
 10. GitHub → **Actions → Deploy website → Run workflow** again. Now every step should be ✓.
 
 ## Part D — Check, switch the address, retire alwaysdata

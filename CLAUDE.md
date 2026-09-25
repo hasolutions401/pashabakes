@@ -4,7 +4,9 @@ Pashabakess — cookie bakery website with online ordering and an admin portal (
 Owner of the project: Hamza (developer). Client: Pasha (the baker). Customers are in Massachusetts (US English).
 
 ## Hosting — read before touching deployment
-- Live now: **alwaysdata** (`https://pashabakess.alwaysdata.net`, files in `~/pashabakess`).
+- Live now: **alwaysdata** (`https://pashabakess.alwaysdata.net`, files in `~/pashabakess`, site root `~/pashabakess/dist`, PHP 8.4).
+  The only thing allowed to update `~/pashabakess` is the GitHub deploy. The old alwaysdata scheduled task
+  "Pashabakess: install/update from GitHub" (reset to `checkout-backend` every 10 min) must stay paused/deleted.
 - **Planned move to Hostinger.** Everything is prepared; the steps are in `HOSTINGER.md`.
 - **Never delete** deployment or hosting files (`.github/workflows/deploy.yml`, `DEPLOY-ALWAYSDATA.md`,
   `HOSTINGER.md`, `server/tools/`, any `.htaccess`) without asking Hamza first.
@@ -13,7 +15,8 @@ Owner of the project: Hamza (developer). Client: Pasha (the baker). Customers ar
   `dist/uploads/` or `public_html/uploads/` (photos uploaded in admin).
 - `main` is the only branch. Every push to `main` runs `php server/tests/run.php` and, if it passes,
   deploys (`.github/workflows/deploy.yml`): to Hostinger once the `HOSTINGER_HOST` variable is set,
-  otherwise to alwaysdata. Deploys only add/overwrite files, never delete.
+  otherwise to alwaysdata. Deploys never touch config.php, data/ or uploads/; they only remove files deleted from the repo.
+  The deploy fails if the live site doesn't serve exactly the pushed files (index/order/app.js/style.css).
 - The public folder is found by `public_dir()` (`dist/` next to `server/`, or `public_html/` on Hostinger).
 - Website address in canonical links / sitemap / robots.txt: change with `php server/tools/set-domain.php https://NEW-DOMAIN`.
 
@@ -22,9 +25,11 @@ Owner of the project: Hamza (developer). Client: Pasha (the baker). Customers ar
 - Database changes go through a new `PB_SCHEMA_VERSION` step in `server/lib/db.php` (runs on the first
   request after deploy); never assume a fresh database.
 - Pasha's confirmed policies (order page, FAQ, `refund_policy_text()` in `server/lib/emails.php` must match):
-  pay right after ordering; max 60 cookies per pickup day; cancel/reschedule by email ≥ 2 calendar days before
+  pay right after ordering; an unpaid order holds its pickup day for 24 hours (`payment_hours`); max 60 cookies per pickup day; cancel/reschedule by email ≥ 2 calendar days before
   pickup → full refund within 3–5 business days; less notice → no refund; not picked up within 2 days → no
   refund; full refund if Pasha cancels.
 - Pasha's own photos: originals in `photos/`, web copies in `dist/images/`. Pumpkin Chocolate Chip and Maple
   Pecan still use sample photos from recipe sites (credited on the menu) until Pasha sends hers.
-- After editing `dist/app.js` or `dist/style.css`, bump their `?v=` number in every HTML page.
+- After editing `dist/app.js` or `dist/style.css`, bump their `?v=` number in every HTML page (browsers keep CSS/JS
+  for 30 days, see `dist/.htaccess`). Same for `admin.css`/`admin.js` in `server/views/admin.php`. When replacing an
+  image in `dist/images/` under the same name, add or bump a `?v=` on its links (images are cached for 7 days).

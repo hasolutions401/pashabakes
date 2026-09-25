@@ -10,9 +10,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_check();
 
     if (($_POST['action'] ?? '') === 'restart_numbering') {
-        restart_order_numbers()
-            ? flash('Order numbers restarted. The next order will be PB1001.')
-            : flash('Order numbers can only restart when there are no orders at all. Cancel and delete every order first.', 'warning');
+        $problem = restart_order_numbers();
+        $problem === null
+            ? flash('Order numbers restarted. The next order will be PB1001. Earlier orders are kept under Archived orders.')
+            : flash($problem, 'warning');
         redirect('settings.php');
     }
 
@@ -20,7 +21,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $to = setting('notify_email');
         [$ok, $err] = send_test_email($to);
         if ($ok && $err === '') {
-            flash("Test email sent to {$to}" . (setting('gmail_app_password') !== '' ? ' through Gmail' : '') . '. Check your inbox.');
+            flash("Test email sent to {$to}" . (gmail_app_password() !== '' ? ' through Gmail' : '') . '. Check your inbox.');
         } elseif ($ok) {
             flash("Test email sent to {$to}, but NOT through Gmail (it may go to spam). Gmail said: {$err} — check the Gmail address and app password below.", 'warning');
         } else {
@@ -177,7 +178,7 @@ admin_header('Settings', 'settings', $user);
       <input type="number" name="max_cookies_per_day" value="<?= e($form['max_cookies_per_day'] ?? '0') ?>" min="0" max="9999" step="1" inputmode="numeric"><?= $err('max_cookies_per_day') ?>
     </label>
     <p class="muted">When a day’s orders reach this number, customers can’t choose that day any more (or only a smaller box).
-      Unpaid orders hold their place until you cancel them; cancelled orders free it up.</p>
+      Unpaid orders hold their place until the payment time below runs out; cancelled orders free it up at once.</p>
     <label>Pickup times <small>(one per line, shown in the order form)</small>
       <textarea name="pickup_slots" rows="6"><?= e($form['pickup_slots'] ?? '') ?></textarea><?= $err('pickup_slots') ?>
     </label>
@@ -204,11 +205,12 @@ admin_header('Settings', 'settings', $user);
 
   <section class="card">
     <h2>Payments</h2>
-    <label>Ask customers to pay within (hours) <small>(0 = don’t mention a deadline)</small>
-      <input type="number" name="payment_hours" value="<?= e($form['payment_hours'] ?? '0') ?>" min="0" max="168" step="1" inputmode="numeric"><?= $err('payment_hours') ?>
+    <label>Ask customers to pay within (hours) <small>(0 = no deadline: unpaid orders hold their day until you cancel them)</small>
+      <input type="number" name="payment_hours" value="<?= e($form['payment_hours'] ?? '24') ?>" min="0" max="168" step="1" inputmode="numeric"><?= $err('payment_hours') ?>
     </label>
     <p class="muted">Shown on the payment screen and in the “how to pay” email. Orders still unpaid after this are marked
-      <strong>Overdue</strong> in your order list, so you can cancel them and free the date.</p>
+      <strong>Overdue</strong> in your order list and <strong>no longer hold their pickup day</strong>, so other customers can book it.
+      You can still mark an overdue order as paid if the money arrives. If you change this, update the FAQ text (“held for 24 hours”) too.</p>
     <div class="two-col">
       <label>Venmo username
         <span class="money-input"><span>@</span><input name="venmo_handle" value="<?= e($form['venmo_handle'] ?? '') ?>" autocapitalize="none"></span><?= $err('venmo_handle') ?>
@@ -222,15 +224,19 @@ admin_header('Settings', 'settings', $user);
   <section class="card">
     <h2>Email sending</h2>
     <p class="muted">For emails to reach customers’ inboxes (not spam), they’re sent through Pasha’s own Gmail. This needs a Gmail <strong>app password</strong> — see the steps below.</p>
-    <?php $hasApp = setting('gmail_app_password') !== ''; ?>
-    <p class="flash <?= $hasApp ? 'flash-success' : 'flash-warning' ?>"><?= $hasApp ? '✓ Gmail app password saved — emails are sent through Gmail.' : 'Not connected yet — emails are sent by the server and may go to spam.' ?></p>
+    <?php $source = gmail_password_source(); $hasApp = $source !== ''; $inServer = in_array($source, ['env', 'config'], true); ?>
+    <p class="flash <?= $hasApp ? 'flash-success' : 'flash-warning' ?>"><?= $hasApp ? '✓ Gmail app password set up — emails are sent through Gmail.' : 'Not connected yet — emails are sent by the server and may go to spam.' ?></p>
     <label>Gmail address
       <input type="email" name="gmail_address" value="<?= e($form['gmail_address'] ?? setting('gmail_address')) ?>" autocapitalize="none"><?= $err('gmail_address') ?>
     </label>
-    <label>Gmail app password <small>(leave empty to keep the saved one)</small>
-      <input type="password" name="gmail_app_password" value="" autocomplete="new-password" placeholder="<?= $hasApp ? '•••• •••• •••• ••••  (saved)' : 'abcd efgh ijkl mnop' ?>"><?= $err('gmail_app_password') ?>
-    </label>
-    <?php if ($hasApp): ?><label class="choice"><input type="checkbox" name="gmail_remove" value="1"> Remove the saved app password</label><?php endif; ?>
+    <?php if ($inServer): ?>
+      <p class="muted">The app password is kept in the server configuration (not with the orders). To change it, ask Hamza.</p>
+    <?php else: ?>
+      <label>Gmail app password <small>(leave empty to keep the saved one)</small>
+        <input type="password" name="gmail_app_password" value="" autocomplete="new-password" placeholder="<?= $hasApp ? '•••• •••• •••• ••••  (saved)' : 'abcd efgh ijkl mnop' ?>"><?= $err('gmail_app_password') ?>
+      </label>
+      <?php if ($hasApp): ?><label class="choice"><input type="checkbox" name="gmail_remove" value="1"> Remove the saved app password</label><?php endif; ?>
+    <?php endif; ?>
     <details>
       <summary>How to get a Gmail app password (2 minutes)</summary>
       <ol>
@@ -254,13 +260,27 @@ admin_header('Settings', 'settings', $user);
 
 <section class="card">
   <h2>Order numbers</h2>
-  <?php $orderCount = (int) db_value('SELECT COUNT(*) FROM orders'); ?>
-  <p class="muted">The next order will be <strong><?= e(next_order_code()) ?></strong>.
-    <?= $orderCount > 0 ? "To start again from PB1001, first cancel and delete all {$orderCount} order" . ($orderCount === 1 ? '' : 's') . ' (open each one → Cancel order → Delete permanently).' : '' ?></p>
-  <?php if ($orderCount === 0): ?>
+  <?php $orderCount = (int) db_value('SELECT COUNT(*) FROM orders'); $openCount = open_order_count(); $archivedCount = (int) db_value('SELECT COUNT(*) FROM archived_orders'); ?>
+  <p class="muted">The next order will be <strong><?= e(next_order_code()) ?></strong>.</p>
+  <?php if ($openCount > 0): ?>
+    <p class="muted">You can start again from PB1001 once every order is picked up or cancelled
+      (<?= $openCount ?> still waiting for payment or pickup). Your earlier orders are kept, not deleted.</p>
+  <?php else: ?>
+    <p class="muted">Starting again from PB1001 moves your <?= $orderCount ?> finished order<?= $orderCount === 1 ? '' : 's' ?> to
+      <strong>Archived orders</strong>, where you can still look them up and download them.</p>
     <form method="post"><?= csrf_field() ?><input type="hidden" name="action" value="restart_numbering">
-      <button class="btn" type="submit" data-confirm="Restart order numbers so the next order is PB1001?">Restart order numbers at PB1001</button></form>
+      <button class="btn" type="submit" data-confirm="Restart order numbers so the next order is PB1001? <?= $orderCount ?> finished order<?= $orderCount === 1 ? '' : 's' ?> will move to Archived orders (nothing is deleted).">Restart order numbers at PB1001</button></form>
   <?php endif; ?>
+  <p class="action-row">
+    <a class="btn btn-small" href="export.php?what=orders">Download current orders (CSV)</a>
+    <a class="btn btn-small" href="archive.php">Archived orders (<?= $archivedCount ?>)</a>
+  </p>
+</section>
+
+<section class="card">
+  <h2>Customer data requests</h2>
+  <p class="muted">A customer asked what you store about them, or to delete it? Look them up by email address.</p>
+  <p><a class="btn btn-small" href="data-request.php">Find or delete a customer’s details</a></p>
 </section>
 
 <section class="card">

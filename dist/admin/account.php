@@ -13,7 +13,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = $problem;
     } else {
         admin_set_password((int) $user['id'], (string) $_POST['password']);
-        flash('Password changed.');
+        flash('Password changed. Any other phone or computer that was logged in has been logged out.');
         redirect('account.php');
     }
 }

@@ -172,7 +172,11 @@ function email_calendar_url(array $order, string $address): string
     ]);
 }
 
-function email_order_text(array $order): string
+/**
+ * Plain-text order summary. Customer emails leave out the free-text "paying from" name:
+ * anyone can type anything there, and it must not be mailed out under Pasha's name.
+ */
+function email_order_text(array $order, bool $forCustomer = false): string
 {
     $lines = [];
     foreach (order_items((int) $order['id']) as $it) {
@@ -181,7 +185,13 @@ function email_order_text(array $order): string
     return "Order {$order['code']}\n" . implode("\n", $lines)
         . "\n{$order['box_size']} cookies — " . money((int) $order['total_cents'])
         . "\nPickup: " . pretty_date($order['pickup_date']) . ', ' . $order['pickup_slot'] . ' (Eastern)'
-        . "\nPayment: " . payer_text($order);
+        . "\nPayment: " . ($forCustomer ? payment_label($order['payment_method']) : payer_text($order));
+}
+
+/** First name for a greeting (short, so a long "name" can't turn the email heading into a message). */
+function email_first_name(array $order): string
+{
+    return mb_substr(explode(' ', trim($order['customer_name']))[0], 0, 30);
 }
 
 function send_admin_alert(array $order): array
@@ -215,7 +225,7 @@ function send_admin_alert(array $order): array
 /** Sent as soon as the order is saved: the order number and how to pay for it. */
 function send_customer_receipt(array $order): array
 {
-    $first = explode(' ', trim($order['customer_name']))[0];
+    $first = email_first_name($order);
     $app = payment_label($order['payment_method']);
     $handle = payment_handle($order['payment_method']);
     $url = payment_url($order['payment_method']);
@@ -238,7 +248,7 @@ function send_customer_receipt(array $order): array
             ['Date', '<strong>' . e(pretty_date($order['pickup_date'])) . '</strong>'],
             ['Time', e($order['pickup_slot']) . ' (Eastern)'],
             ['Where', 'Pickup only in ' . e(setting('pickup_area')) . '. The exact address comes in your confirmation email.'],
-            ['Order', '<strong>' . e($order['code']) . '</strong> · ' . e(payer_text($order))],
+            ['Order', '<strong>' . e($order['code']) . '</strong> · ' . e(payment_label($order['payment_method']))],
         ])
         . '<p style="margin:24px 0 0;font:13px/1.6 ' . EM_SANS . ';color:' . EM_MUTED . '">' . e(refund_policy_text()) . '</p>'
         . '<p style="margin:10px 0 0;font:13px/1.6 ' . EM_SANS . ';color:' . EM_MUTED . '">Questions or changes? Just reply to this email.</p>';
@@ -251,14 +261,14 @@ function send_customer_receipt(array $order): array
     $text = "Thank you, {$first}! Your order {$order['code']} is saved.\n\n"
         . "How to pay:\n1. Send {$amount} to {$handle} on {$app} ({$url}).\n2. Write {$order['code']} in the payment note.\n\n"
         . "Pasha confirms your order, and emails you the pickup address, once your payment arrives.\n" . payment_hold_text() . "\n\n"
-        . email_order_text($order)
+        . email_order_text($order, true)
         . "\n\n" . refund_policy_text() . "\nQuestions? Reply to this email.";
     return send_email($order['email'], "Order {$order['code']} saved — how to pay", $html, $text, 'receipt', (int) $order['id']);
 }
 
 function send_customer_confirmation(array $order): array
 {
-    $first = explode(' ', trim($order['customer_name']))[0];
+    $first = email_first_name($order);
     $address = trim(setting('pickup_address'));
     $calendar = email_calendar_url($order, $address);
     $maps = $address !== '' ? 'https://www.google.com/maps/search/?api=1&query=' . rawurlencode(str_replace("\n", ', ', $address)) : '';
@@ -290,7 +300,7 @@ function send_customer_confirmation(array $order): array
     ]);
     $text = "Your order is confirmed, {$first}!\n\nPayment received — your cookies are scheduled for baking.\n\n"
         . ($address !== '' ? "Pickup address:\n{$address}\n\n" : '')
-        . email_order_text($order)
+        . email_order_text($order, true)
         . "\n\n" . refund_policy_text();
     return send_email($order['email'], "Order {$order['code']} confirmed — see you on " . short_date($order['pickup_date']), $html, $text, 'confirmation', (int) $order['id']);
 }

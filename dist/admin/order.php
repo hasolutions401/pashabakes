@@ -14,12 +14,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_check();
     $action = (string) ($_POST['action'] ?? '');
     $self = 'order.php?id=' . $id;
+    if ($order['email'] === '' && in_array($action, ['resend_confirmation', 'resend_receipt'], true)) {
+        flash('This customer’s details were deleted on request, so there is no address to email.', 'warning');
+        redirect($self);
+    }
 
     switch ($action) {
         case 'mark_paid':
+            // An overdue order stopped holding its day, so the day may have filled up meanwhile.
+            $overBy = payment_overdue($order) && max_cookies_per_day() > 0
+                ? booked_cookies($order['pickup_date']) + (int) $order['box_size'] - max_cookies_per_day() : 0;
             if (!order_mark_paid($id)) {
                 flash('This order is no longer waiting for payment.', 'warning');
                 break;
+            }
+            if ($overBy > 0) {
+                flash('Heads up: ' . pretty_date($order['pickup_date']) . " is now {$overBy} cookies over your daily limit, because other orders took this unpaid order’s place.", 'warning');
             }
             [$ok] = send_customer_confirmation(order_find($id));
             $ok
@@ -39,7 +49,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         case 'back_to_pending':
             order_set_status($id, 'pending');
-            flash('Moved back to “Payment pending”.');
+            flash($order['status'] === 'cancelled' ? 'Order restored to “Payment pending”.' : 'Moved back to “Payment pending”.');
+            // A restored order takes its place again, and the day may have been booked up meanwhile.
+            $overBy = max_cookies_per_day() > 0 ? booked_cookies($order['pickup_date']) - max_cookies_per_day() : 0;
+            if ($order['status'] === 'cancelled' && $overBy > 0) {
+                flash('Heads up: ' . pretty_date($order['pickup_date']) . " is now {$overBy} cookies over your daily limit.", 'warning');
+            }
             break;
 
         case 'back_to_paid':
@@ -108,7 +123,8 @@ admin_header('Order ' . $order['code'], 'orders', $user);
 <section class="card actions-card">
   <?php if ($order['status'] === 'pending'): ?>
     <div class="verify">
-      <?php if (payment_overdue($order)): ?><p class="verify-title">⚠ Payment overdue — placed more than <?= payment_hours() ?> hours ago. You can cancel it to free the date.</p><?php endif; ?>
+      <?php if (payment_overdue($order)): ?><p class="verify-title">⚠ Payment overdue — placed more than <?= payment_hours() ?> hours ago. It no longer holds its pickup day, so other customers can book that day.
+        You can still mark it as paid if the money arrives<?php if (max_cookies_per_day() > 0): ?> (<?= e(short_date($order['pickup_date'])) ?> has <?= max(0, max_cookies_per_day() - booked_cookies($order['pickup_date'])) ?> of <?= max_cookies_per_day() ?> cookies free)<?php endif; ?>, or cancel it.</p><?php endif; ?>
       <p class="verify-title">Check <?= e(payment_label($order['payment_method'])) ?></p>
       <p>Look for <strong><?= money((int) $order['total_cents']) ?></strong> with <strong><?= e($order['code']) ?></strong> in the payment note<?= $order['payer_ref'] !== '' ? ' (the customer said they’ll pay from <strong>' . e($order['payer_ref']) . '</strong>)' : '' ?>. When you see it, mark the order as paid — the customer gets their confirmation email with the pickup address automatically.</p>
       <p class="verify-hint">Can’t fill this order (for example, the date is fully booked)? Email the customer before cancelling. If they already paid, refund them in full.</p>
@@ -161,8 +177,12 @@ admin_header('Order ' . $order['code'], 'orders', $user);
   <section class="card">
     <h2>Customer</h2>
     <p class="lead"><?= e($order['customer_name']) ?></p>
-    <p><a href="mailto:<?= e($order['email']) ?>"><?= e($order['email']) ?></a></p>
-    <p><a href="tel:<?= e(preg_replace('/[^\d+]/', '', $order['phone'])) ?>"><?= e($order['phone']) ?></a></p>
+    <?php if ($order['email'] === ''): ?>
+      <p class="muted">The customer’s details were deleted on request.</p>
+    <?php else: ?>
+      <p><a href="mailto:<?= e($order['email']) ?>"><?= e($order['email']) ?></a></p>
+      <p><a href="tel:<?= e(preg_replace('/[^\d+]/', '', $order['phone'])) ?>"><?= e($order['phone']) ?></a></p>
+    <?php endif; ?>
     <?php if ($order['notes'] !== ''): ?>
       <p class="note-box"><strong>Customer notes</strong><br><?= nl2br(e($order['notes'])) ?></p>
     <?php endif; ?>
@@ -190,7 +210,7 @@ admin_header('Order ' . $order['code'], 'orders', $user);
         <?php if ($mail && $mail['error'] !== ''): ?><li class="email-error"><?= e($mail['error']) ?><?= $st === 'sent' ? ' — set up the Gmail app password in Settings → Email sending.' : '' ?></li><?php endif; ?>
       <?php endforeach; ?>
     </ul>
-    <?php if (in_array($order['status'], ['paid', 'completed'], true)): ?>
+    <?php if (in_array($order['status'], ['paid', 'completed'], true) && $order['email'] !== ''): ?>
       <p class="muted">Customer didn’t get it? Ask them to check spam, check the email address above, then resend.</p>
       <?= $action('resend_confirmation', 'Resend confirmation', 'btn btn-small') ?>
     <?php endif; ?>

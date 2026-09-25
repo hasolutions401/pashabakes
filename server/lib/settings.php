@@ -15,7 +15,7 @@ function default_settings(): array
         'lead_days'         => '7',
         'max_days_ahead'    => '90',
         'max_cookies_per_day' => '60',  // 5 dozen a day (Pasha); 0 = no daily limit
-        'payment_hours'     => '0',   // 0 = no payment deadline shown
+        'payment_hours'     => '24',  // unpaid orders hold their pickup day this long; 0 = no deadline (held until cancelled)
         'pickup_slots'      => implode("\n", [
             '10:00 AM – 11:00 AM', '11:00 AM – 12:00 PM', '12:00 PM – 1:00 PM', '1:00 PM – 2:00 PM',
             '2:00 PM – 3:00 PM', '3:00 PM – 4:00 PM', '4:00 PM – 5:00 PM', '5:00 PM – 6:00 PM', '6:00 PM – 7:00 PM',
@@ -139,10 +139,25 @@ function max_cookies_per_day(): int
     return max(0, (int) setting('max_cookies_per_day'));
 }
 
-/** Cookies already ordered for a pickup day. Cancelled orders don't count; unpaid ones hold their place. */
+/**
+ * SQL condition (and its parameters) for orders that take up room on their pickup day:
+ * not cancelled, and — when a payment deadline is set — not unpaid past that deadline.
+ */
+function holding_orders_sql(): array
+{
+    $h = payment_hours();
+    if ($h === 0) {
+        return ["status <> 'cancelled'", []];
+    }
+    $cutoff = (new DateTimeImmutable('now', new DateTimeZone(PB_TZ)))->modify("-{$h} hours")->format('Y-m-d H:i:s');
+    return ["status <> 'cancelled' AND NOT (status = 'pending' AND created_at < ?)", [$cutoff]];
+}
+
+/** Cookies already ordered for a pickup day. Cancelled orders don't count; unpaid ones hold their place until the payment deadline. */
 function booked_cookies(string $ymd): int
 {
-    return (int) db_value("SELECT COALESCE(SUM(box_size), 0) FROM orders WHERE pickup_date = ? AND status <> 'cancelled'", [$ymd]);
+    [$holding, $params] = holding_orders_sql();
+    return (int) db_value("SELECT COALESCE(SUM(box_size), 0) FROM orders WHERE pickup_date = ? AND {$holding}", [$ymd, ...$params]);
 }
 
 /** Cookies still available per pickup day, for days that already have orders (empty when there's no limit). */
@@ -152,8 +167,9 @@ function days_remaining(): array
     if ($max === 0) {
         return [];
     }
-    $rows = db_all("SELECT pickup_date, SUM(box_size) AS n FROM orders WHERE status <> 'cancelled' AND pickup_date >= ? GROUP BY pickup_date",
-        [earliest_pickup_date()->format('Y-m-d')]);
+    [$holding, $params] = holding_orders_sql();
+    $rows = db_all("SELECT pickup_date, SUM(box_size) AS n FROM orders WHERE {$holding} AND pickup_date >= ? GROUP BY pickup_date",
+        [...$params, earliest_pickup_date()->format('Y-m-d')]);
     $out = [];
     foreach ($rows as $r) {
         $out[$r['pickup_date']] = max(0, $max - (int) $r['n']);

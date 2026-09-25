@@ -6,9 +6,10 @@ declare(strict_types=1);
  * Tables are created and seeded automatically on first use.
  */
 
-// 8 was the ingredients list, since removed. Live databases are already at 8 (and may keep an
-// unused cookies.ingredients column), so the next database change must be version 9.
-const PB_SCHEMA_VERSION = 8;
+// 8 was the ingredients list, since removed (live databases may keep an unused cookies.ingredients column).
+// 9: unpaid orders hold their pickup day for 24 hours. 10: archived_orders (kept when numbers restart).
+// 11: admin_users.session_version (changing the password logs out other devices).
+const PB_SCHEMA_VERSION = 11;
 
 function db(): PDO
 {
@@ -125,24 +126,81 @@ function db_exec(string $sql, array $params = []): int
     return $st->rowCount();
 }
 
+function schema_version(PDO $pdo): int
+{
+    try {
+        return (int) $pdo->query("SELECT value FROM settings WHERE name = 'schema_version'")->fetchColumn();
+    } catch (PDOException) {
+        return 0;   // settings table does not exist yet
+    }
+}
+
 function migrate(PDO $pdo, string $driver): void
+{
+    // Fast path: already migrated.
+    if (schema_version($pdo) >= PB_SCHEMA_VERSION) {
+        return;
+    }
+    // One request migrates at a time; the others wait, then see the new version.
+    $lock = @fopen(data_dir() . '/migrate.lock', 'c');
+    if ($lock) {
+        flock($lock, LOCK_EX);
+    }
+    try {
+        $version = schema_version($pdo);
+        if ($version >= PB_SCHEMA_VERSION) {
+            return;
+        }
+        if ($version >= 1 && $driver === 'sqlite') {
+            backup_sqlite($pdo, "v{$version}-before-v" . PB_SCHEMA_VERSION);
+        }
+        migrate_steps($pdo, $driver, $version);
+    } finally {
+        if ($lock) {
+            flock($lock, LOCK_UN);
+            fclose($lock);
+        }
+    }
+}
+
+/**
+ * Consistent copy of the SQLite database in server/data/backups/ (never web-accessible),
+ * taken before the schema changes. Keeps the newest $keep copies. Returns the file, or null.
+ */
+function backup_sqlite(PDO $pdo, string $label, int $keep = 5): ?string
+{
+    $dir = data_dir('backups');
+    $file = $dir . '/pashabakess-' . preg_replace('/[^a-z0-9-]/i', '', $label) . '-' . date('Ymd-His') . '.sqlite';
+    try {
+        $pdo->exec('VACUUM INTO ' . $pdo->quote($file));
+    } catch (PDOException $e) {
+        // Older SQLite without VACUUM INTO: plain file copy (the migration lock is held).
+        $main = null;
+        foreach ($pdo->query('PRAGMA database_list')->fetchAll() as $db) {
+            if ($db['name'] === 'main') {
+                $main = $db['file'];
+            }
+        }
+        if (!$main || !@copy($main, $file)) {
+            error_log('[pashabakess] Backup before database upgrade failed: ' . $e->getMessage());
+            return null;
+        }
+    }
+    $copies = glob($dir . '/pashabakess-*.sqlite') ?: [];
+    usort($copies, fn($a, $b) => [filemtime($a), $a] <=> [filemtime($b), $b]);
+    foreach (array_slice($copies, 0, max(0, count($copies) - $keep)) as $old) {
+        @unlink($old);
+    }
+    return $file;
+}
+
+function migrate_steps(PDO $pdo, string $driver, int $version): void
 {
     $mysql = $driver === 'mysql';
     $id = $mysql ? 'INT AUTO_INCREMENT PRIMARY KEY' : 'INTEGER PRIMARY KEY AUTOINCREMENT';
     $text = $mysql ? 'TEXT' : 'TEXT';
     $str = fn(int $n) => $mysql ? "VARCHAR($n)" : 'TEXT';
     $engine = $mysql ? ' ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci' : '';
-
-    // Fast path: already migrated.
-    $version = 0;
-    try {
-        $version = (int) $pdo->query("SELECT value FROM settings WHERE name = 'schema_version'")->fetchColumn();
-        if ($version >= PB_SCHEMA_VERSION) {
-            return;
-        }
-    } catch (PDOException) {
-        // settings table does not exist yet
-    }
 
     $statements = [
         "CREATE TABLE IF NOT EXISTS settings (
@@ -153,7 +211,8 @@ function migrate(PDO $pdo, string $driver): void
             id {$id},
             username {$str(64)} NOT NULL UNIQUE,
             password_hash {$str(255)} NOT NULL,
-            created_at {$str(19)} NOT NULL
+            created_at {$str(19)} NOT NULL,
+            session_version INTEGER NOT NULL DEFAULT 1
         ){$engine}",
         "CREATE TABLE IF NOT EXISTS cookies (
             id {$id},
@@ -223,6 +282,30 @@ function migrate(PDO $pdo, string $driver): void
             order_ref {$str(20)} NOT NULL DEFAULT '',
             created_at {$str(19)} NOT NULL
         ){$engine}",
+        // Version 10: finished orders move here when Pasha restarts the order numbers.
+        "CREATE TABLE IF NOT EXISTS archived_orders (
+            id {$id},
+            code {$str(20)} NOT NULL,
+            status {$str(20)} NOT NULL,
+            customer_name {$str(120)} NOT NULL,
+            email {$str(200)} NOT NULL,
+            phone {$str(40)} NOT NULL,
+            occasion {$str(60)} NOT NULL,
+            notes {$text} NOT NULL,
+            box_size INTEGER NOT NULL,
+            total_cents INTEGER NOT NULL,
+            pickup_date {$str(10)} NOT NULL,
+            pickup_slot {$str(60)} NOT NULL,
+            payment_method {$str(20)} NOT NULL,
+            payer_ref {$str(120)} NOT NULL,
+            admin_note {$text} NOT NULL,
+            items_text {$text} NOT NULL,
+            created_at {$str(19)} NOT NULL,
+            paid_at {$str(19)} NULL,
+            completed_at {$str(19)} NULL,
+            cancelled_at {$str(19)} NULL,
+            archived_at {$str(19)} NOT NULL
+        ){$engine}",
     ];
     foreach ($statements as $sql) {
         $pdo->exec($sql);
@@ -242,6 +325,12 @@ function migrate(PDO $pdo, string $driver): void
     } catch (PDOException) {
         // column already exists
     }
+    // Version 11: a password change logs out the admin's other devices.
+    try {
+        $pdo->exec('ALTER TABLE admin_users ADD COLUMN session_version INTEGER NOT NULL DEFAULT 1');
+    } catch (PDOException) {
+        // column already exists
+    }
     if ($version === 1) {
         // Existing monthly specials become available for the month customers can next order for.
         [$from, $until] = seasonal_window_default($pdo);
@@ -257,6 +346,7 @@ function migrate(PDO $pdo, string $driver): void
         ['idx_email_order', 'email_log', 'order_id'],
         ['idx_rate_bucket', 'rate_hits', 'bucket, created_at'],
         ['idx_enquiries_created', 'enquiries', 'created_at'],
+        ['idx_archived_code', 'archived_orders', 'code'],
     ];
     foreach ($indexes as [$name, $table, $cols]) {
         try {
@@ -293,6 +383,10 @@ function migrate(PDO $pdo, string $driver): void
     // Version 5: Pasha's daily limit is 5 dozen (60 cookies), unless a limit was already set in Settings.
     if ($version >= 1 && $version < 5) {
         $pdo->prepare("UPDATE settings SET value = '60' WHERE name = 'max_cookies_per_day' AND value IN ('', '0')")->execute();
+    }
+    // Version 9: unpaid orders hold their pickup day for 24 hours (agreed Sept 2026), unless a deadline was already set.
+    if ($version >= 1 && $version < 9) {
+        $pdo->prepare("UPDATE settings SET value = '24' WHERE name = 'payment_hours' AND value IN ('', '0')")->execute();
     }
     if ($version < 3) {
         if ((int) $pdo->query("SELECT COUNT(*) FROM cookies WHERE name LIKE 'M&M%' OR name LIKE 'M & M%'")->fetchColumn() === 0) {
