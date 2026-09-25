@@ -849,18 +849,6 @@ dialog p { font-size: 15px; }
 }
 .halal-note .icon { width: 22px; height: 22px; color: #2f6b3f; margin-top: 1px; }
 .halal-note + .photo-disclosure { margin-top: 18px; }
-.ingredients-note { max-width: 720px; margin: 14px 0 0; font-size: 14px; line-height: 1.6; color: var(--muted); }
-
-/* ——— Ingredients on each menu card ——— */
-.cookie-card .ingredients { margin: -6px 0 16px; }
-.cookie-card .ingredients summary {
-  display: inline-flex; align-items: center; gap: 6px; min-height: 36px; cursor: pointer; list-style: none;
-  font-size: 14px; font-weight: 600; color: var(--rose); text-decoration: underline; text-underline-offset: 3px;
-}
-.cookie-card .ingredients summary::-webkit-details-marker { display: none; }
-.cookie-card .ingredients summary::after { content: "+"; display: inline-block; font-size: 16px; line-height: 1; }
-.cookie-card .ingredients[open] summary::after { content: "–"; }
-.cookie-card .ingredients p { font-size: 14px; line-height: 1.6; margin: 4px 0 0; padding: 10px 12px; border-radius: var(--radius-sm); background: var(--cream-deep); color: var(--brown); }
 
 
 /* ——— One-step checkout ——— */

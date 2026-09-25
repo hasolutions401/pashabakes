@@ -12,7 +12,6 @@ $cookies = array_map(function (array $c) {
         'id' => $c['id'],
         'name' => $c['name'],
         'desc' => $c['description'],
-        'ingredients' => $c['ingredients'],
         'type' => $c['type'],
         'img' => $img['img'],
         'imgMd' => $img['md'],
