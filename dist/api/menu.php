@@ -46,4 +46,6 @@ json_response([
     'pickupArea' => setting('pickup_area'),
     'venmo' => ['handle' => setting('venmo_handle'), 'url' => venmo_url()],
     'cashapp' => ['handle' => setting('cashapp_handle'), 'url' => cashapp_url()],
+    // Ads measurement: null = switched off (no cookie banner, no pixel). See META-ADS.md.
+    'tracking' => meta_enabled() ? ['metaPixelId' => meta_pixel_id()] : null,
 ]);

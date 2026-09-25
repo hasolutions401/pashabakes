@@ -43,6 +43,11 @@ function order_validate(array $in): array
         'payer_ref' => clean_line($in['payer_ref'] ?? '', 120),
         'items' => [],
     ];
+    // Ads measurement: only kept when it is switched on and the customer clicked "Allow" in the banner.
+    $consent = meta_enabled() && in_array($in['ad_consent'] ?? false, [true, 1, '1'], true);
+    $data['ad_consent'] = $consent ? 1 : 0;
+    $data['fbp'] = $consent ? meta_clean_browser_id($in['fbp'] ?? '') : '';
+    $data['fbc'] = $consent ? meta_clean_browser_id($in['fbc'] ?? '') : '';
 
     if (strlen($data['client_token']) < 16 || strlen($data['client_token']) > 64) {
         $errors['form'] = 'Something went wrong with the form. Please refresh the page and try again.';
@@ -171,12 +176,13 @@ function order_create(array $data): array
                 }
             }
             $pdo->prepare('INSERT INTO orders (client_token, status, customer_name, email, phone, occasion, notes, box_size, total_cents,
-                    pickup_date, pickup_slot, payment_method, payer_ref, admin_note, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+                    pickup_date, pickup_slot, payment_method, payer_ref, admin_note, created_at, ad_consent, fbp, fbc)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
                 ->execute([
                     $data['client_token'], 'pending', $data['customer_name'], $data['email'], $data['phone'], $data['occasion'],
                     $data['notes'], $data['box_size'], $data['total_cents'], $data['pickup_date'], $data['pickup_slot'],
                     $data['payment_method'], $data['payer_ref'], '', now_str(),
+                    $data['ad_consent'] ?? 0, $data['fbp'] ?? '', $data['fbc'] ?? '',
                 ]);
             $id = (int) $pdo->lastInsertId();
             $code = 'PB' . (1000 + $id);
@@ -374,7 +380,7 @@ function forget_customer(string $email): array
         $ids = array_map('intval', array_column(db_all("SELECT id FROM orders WHERE email = ? AND status IN ('completed', 'cancelled')", [$email]), 'id'));
         $skipped = (int) db_value("SELECT COUNT(*) FROM orders WHERE email = ? AND status IN ('pending', 'paid')", [$email]);
         foreach ($ids as $id) {
-            $pdo->prepare("UPDATE orders SET {$blank} WHERE id = ?")->execute([PB_FORGOTTEN_NAME, $id]);
+            $pdo->prepare("UPDATE orders SET {$blank}, ad_consent = 0, fbp = '', fbc = '' WHERE id = ?")->execute([PB_FORGOTTEN_NAME, $id]);
             $pdo->prepare('DELETE FROM email_log WHERE order_id = ?')->execute([$id]);
         }
         $pdo->prepare('DELETE FROM email_log WHERE recipient = ? AND (order_id IS NULL OR order_id NOT IN (SELECT id FROM orders WHERE status IN (\'pending\', \'paid\')))')

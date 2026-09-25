@@ -101,6 +101,8 @@ if ($early) {
 }
 send_admin_alert($order);
 send_customer_receipt($order);
+// Ads measurement (off unless configured; only for customers who allowed it). Same id as the browser event.
+meta_send_order_event('Lead', $order, (string) $order['code'], true);
 if (!$early) {
     echo $json;
 }

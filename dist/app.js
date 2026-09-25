@@ -313,6 +313,7 @@ document.addEventListener('click', e => {
     if (next < 0 || (delta > 0 && total() >= box)) return;
     qty[id] = next;
     update();
+    if (delta > 0) metaTrackOnce('AddToCart', {content_type: 'product', currency: 'USD'});
     if (step.disabled) step.closest('.stepper').querySelector('.step:not(:disabled)')?.focus();
     return;
   }
@@ -323,6 +324,7 @@ document.addEventListener('click', e => {
     if (total() < box) {
       qty[id] = (qty[id] || 0) + 1;
       update();
+      metaTrackOnce('AddToCart', {content_type: 'product', currency: 'USD'});
       boxFeedback(`${cookieById(id)?.name || 'Cookie'} added · ${total()} of ${box} cookies`);
     } else {
       boxFeedback('Your box is full. Choose a bigger box or change flavors.', false);
@@ -659,8 +661,12 @@ $('#order-form')?.addEventListener('submit', async e => {
     items: cookies.filter(c => qty[c.id] > 0).map(c => ({id: c.id, qty: qty[c.id]})),
     pickup_date: d.get('date'), pickup_slot: d.get('time'),
     payment_method: d.get('payment'), payer_ref: d.get('payer_ref') || '', agree: !!d.get('agree'),
-    expected_total_cents: pricesCents[box]
+    expected_total_cents: pricesCents[box],
+    // Only when the visitor allowed ads measurement: lets the paid order be matched to the ad.
+    ad_consent: adsAllowed(), fbp: adsAllowed() ? cookieValue('_fbp') : '', fbc: adsAllowed() ? cookieValue('_fbc') : ''
   };
+  const value = (pricesCents[box] || 0) / 100;
+  metaTrackOnce('InitiateCheckout', {currency: 'USD', value, num_items: box});
 
   setSubmitting(true);
   try {
@@ -672,6 +678,8 @@ $('#order-form')?.addEventListener('submit', async e => {
       store.remove(DRAFT_KEY);
       store.remove('pashabakess-box');
       store.set(LAST_ORDER_KEY, {order: data.order, savedAt: Date.now()});
+      // Same event id as the server's Conversions API event, so Meta counts the order once.
+      metaTrack('Lead', {currency: 'USD', value, content_category: 'cookie box'}, data.order.code);
       showSuccess(data.order);
       window.scrollTo({top: $('#order-success').getBoundingClientRect().top + window.scrollY - 120, behavior: 'smooth'});
       $('#order-success').focus({preventScroll: true});
@@ -783,9 +791,84 @@ function setupEnquiry(form) {
 }
 $$('.enquiry-form').forEach(setupEnquiry);
 
+/* ——— Ads measurement (Meta Pixel) ———
+   Only when switched on in the server config (api/menu.php sends a pixel id) AND the visitor clicks
+   "Allow" in the cookie banner. Otherwise nothing is loaded and no banner is shown. See META-ADS.md. */
+const CONSENT_KEY = 'pb-ads-consent';
+const consentChoice = {
+  get() { try { return localStorage.getItem(CONSENT_KEY); } catch { return null; } },
+  set(value) { try { localStorage.setItem(CONSENT_KEY, value); } catch {} }
+};
+const adsAllowed = () => !!settings?.tracking?.metaPixelId && consentChoice.get() === 'granted';
+const trackedOnce = new Set();
+function metaTrack(event, params = {}, eventID) {
+  if (!adsAllowed() || !window.fbq) return;
+  window.fbq('track', event, params, eventID ? {eventID} : undefined);
+}
+function metaTrackOnce(event, params) {
+  if (trackedOnce.has(event)) return;
+  trackedOnce.add(event);
+  metaTrack(event, params);
+}
+function cookieValue(name) {
+  const m = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`));
+  return m ? decodeURIComponent(m[1]) : '';
+}
+function loadMetaPixel(id) {
+  if (window.fbq) return;
+  // Meta's standard loader, written out here because the site allows no inline scripts.
+  const fbq = window.fbq = function () { fbq.callMethod ? fbq.callMethod.apply(fbq, arguments) : fbq.queue.push(arguments); };
+  if (!window._fbq) window._fbq = fbq;
+  fbq.push = fbq; fbq.loaded = true; fbq.version = '2.0'; fbq.queue = [];
+  const script = document.createElement('script');
+  script.async = true;
+  script.src = 'https://connect.facebook.net/en_US/fbevents.js';
+  document.head.append(script);
+  fbq('init', id);
+  fbq('track', 'PageView');
+  if (['menu', 'order'].includes($('#main')?.dataset.page)) metaTrackOnce('ViewContent', {content_category: 'cookie box', currency: 'USD'});
+}
+function showConsentBanner() {
+  if ($('#consent-banner')) return;
+  const bar = document.createElement('div');
+  bar.id = 'consent-banner';
+  bar.className = 'consent-banner';
+  bar.setAttribute('role', 'region');
+  bar.setAttribute('aria-label', 'Cookie choice');
+  bar.innerHTML = '<p>We’d like to use Meta (Facebook and Instagram) cookies to see which of our ads bring you here. Nothing is shared unless you allow it. <a href="privacy.html#advertising">Privacy notice</a></p>'
+    + '<div class="consent-actions"><button type="button" class="button small" data-consent="granted">Allow</button>'
+    + '<button type="button" class="button small ghost" data-consent="denied">No thanks</button></div>';
+  bar.addEventListener('click', e => {
+    const choice = e.target.closest('[data-consent]')?.dataset.consent;
+    if (!choice) return;
+    consentChoice.set(choice);
+    bar.remove();
+    if (choice === 'granted') loadMetaPixel(settings.tracking.metaPixelId);
+    else if (window.fbq) window.fbq('consent', 'revoke');
+  });
+  document.body.append(bar);
+}
+function setupAdsMeasurement() {
+  const id = settings?.tracking?.metaPixelId;
+  if (!id) return;
+  const footerNav = $('.footer-nav');
+  if (footerNav && !footerNav.querySelector('[data-cookie-settings]')) {
+    const link = document.createElement('a');
+    link.href = '#';
+    link.dataset.cookieSettings = '';
+    link.textContent = 'Cookie settings';
+    link.addEventListener('click', e => { e.preventDefault(); showConsentBanner(); });
+    footerNav.append(link);
+  }
+  const choice = consentChoice.get();
+  if (choice === 'granted') loadMetaPixel(id);
+  else if (choice !== 'denied') showConsentBanner();
+}
+
 /* ——— Live menu from the server ——— */
 function applySettings(data) {
   settings = data;
+  setupAdsMeasurement();
   if (Array.isArray(data.cookies) && data.cookies.length) {
     cookies = data.cookies.map(c => ({
       id: Number(c.id), name: String(c.name), desc: String(c.desc || ''), type: c.type === 'seasonal' ? 'seasonal' : 'signature',

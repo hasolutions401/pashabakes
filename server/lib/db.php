@@ -9,7 +9,8 @@ declare(strict_types=1);
 // 8 was the ingredients list, since removed (live databases may keep an unused cookies.ingredients column).
 // 9: unpaid orders hold their pickup day for 24 hours. 10: archived_orders (kept when numbers restart).
 // 11: admin_users.session_version (changing the password logs out other devices).
-const PB_SCHEMA_VERSION = 11;
+// 12: orders.ad_consent / fbp / fbc (Meta ads measurement, only with the customer's consent).
+const PB_SCHEMA_VERSION = 12;
 
 function db(): PDO
 {
@@ -247,7 +248,10 @@ function migrate_steps(PDO $pdo, string $driver, int $version): void
             created_at {$str(19)} NOT NULL,
             paid_at {$str(19)} NULL,
             completed_at {$str(19)} NULL,
-            cancelled_at {$str(19)} NULL
+            cancelled_at {$str(19)} NULL,
+            ad_consent INTEGER NOT NULL DEFAULT 0,
+            fbp {$str(255)} NOT NULL DEFAULT '',
+            fbc {$str(255)} NOT NULL DEFAULT ''
         ){$engine}",
         "CREATE TABLE IF NOT EXISTS order_items (
             id {$id},
@@ -324,6 +328,14 @@ function migrate_steps(PDO $pdo, string $driver, int $version): void
         $pdo->exec("ALTER TABLE enquiries ADD COLUMN order_ref {$str(20)} NOT NULL DEFAULT ''");
     } catch (PDOException) {
         // column already exists
+    }
+    // Version 12: ads-measurement consent and Meta browser ids per order (only filled when the customer allowed it).
+    foreach (['ad_consent INTEGER NOT NULL DEFAULT 0', "fbp {$str(255)} NOT NULL DEFAULT ''", "fbc {$str(255)} NOT NULL DEFAULT ''"] as $col) {
+        try {
+            $pdo->exec("ALTER TABLE orders ADD COLUMN {$col}");
+        } catch (PDOException) {
+            // column already exists
+        }
     }
     // Version 11: a password change logs out the admin's other devices.
     try {
