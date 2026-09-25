@@ -14,8 +14,8 @@ upload the files, create one config file, and set up the admin login.
 2. **Web → Sites → Add a site**
    - **Type:** PHP
    - **Addresses:** your address, e.g. `pashabakess.alwaysdata.net` (or your own domain later)
-   - **Root directory:** `/www/pashabakess/dist`  ← important: point it at the **dist** folder
-   - **PHP version:** 8.2 or newer
+   - **Root directory:** `pashabakess/dist/` (i.e. `~/pashabakess/dist`)  ← important: point it at the **dist** folder
+   - **PHP version:** 8.2 or newer (the live site runs 8.4; the automatic tests run on 8.2 and 8.4)
 3. In the site’s **SSL** tab, turn on **Force HTTPS**.
 4. Save.
 
@@ -24,7 +24,7 @@ upload the files, create one config file, and set up the admin login.
 Upload the whole project folder so that on the server you have:
 
 ```
-/home/ACCOUNT/www/pashabakess/
+/home/ACCOUNT/pashabakess/
     dist/        ← the website (public)
     server/      ← ordering system (private, not public)
 ```
@@ -32,12 +32,12 @@ Upload the whole project folder so that on the server you have:
 Choose one way:
 
 - **SFTP/FTP (easiest):** use FileZilla with the details from alwaysdata → *Remote access → SSH / FTP*.
-  Upload the `dist` and `server` folders into `www/pashabakess/`.
+  Upload the `dist` and `server` folders into `pashabakess/`.
 - **Git over SSH:**
   ```bash
-  cd ~/www && git clone https://github.com/hasolutions401/pashabakes.git pashabakess
+  cd ~ && git clone https://github.com/hasolutions401/pashabakes.git pashabakess
   ```
-  To update later: `cd ~/www/pashabakess && git pull`
+  Later updates happen automatically (see *Updating the site*).
 
 ## 3. Create an email address for sending orders
 
@@ -100,14 +100,27 @@ Your SMTP server name is shown under **Emails → Addresses**; it looks like `sm
 
 Updates go live automatically: each push to the `main` branch is tested and then pulled onto
 alwaysdata by GitHub Actions (`.github/workflows/deploy.yml`, needs the `ALWAYSDATA_SSH_PASSWORD` secret).
-If you change the SSH password on alwaysdata, update that secret too. By hand: `cd ~/pashabakess && git checkout main && git pull`. The database upgrades itself on the first visit after an update —
+The deploy then checks that the live site serves exactly the new files, and fails loudly if not.
+If you change the SSH password on alwaysdata, update that secret too. By hand: `cd ~/pashabakess && git checkout main && git pull`.
+
+**No other update mechanism may touch `~/pashabakess`.** An old scheduled task (alwaysdata → Advanced → Scheduled
+tasks, "Pashabakess: install/update from GitHub") reset the folder to the retired `checkout-backend` branch every
+10 minutes, silently undoing every deploy from `main`. It must stay paused or deleted.
+
+The database upgrades itself on the first visit after an update (a copy of the database is saved first in
+`server/data/backups/`, newest five kept) —
 for example, the September 2026 update added enquiries and gave the existing monthly specials the pickup
 dates of the month customers can next order for. Check **Admin → Menu** afterwards.
 
 ## Backups
 
-All orders live in `server/data/pashabakess.sqlite` (or your MariaDB database). Download that file
-now and then (e.g. monthly) via SFTP. alwaysdata also keeps automatic daily backups.
+All orders live in `server/data/pashabakess.sqlite` (or your MariaDB database).
+- alwaysdata keeps automatic daily backups: admin.alwaysdata.com → **Backup recovery**. A restore puts the *whole
+  account* back to that day (orders placed since then would be lost), so it's the last resort.
+- Before every database upgrade the site saves a copy in `server/data/backups/` (newest five kept) — use these to
+  recover just the database after a bad update.
+- Now and then (e.g. monthly) download `server/data/pashabakess.sqlite` via SFTP and keep it somewhere private; it
+  contains customers' names, emails and phone numbers.
 
 ## Troubleshooting
 
@@ -117,8 +130,10 @@ now and then (e.g. monthly) via SFTP. alwaysdata also keeps automatic daily back
 | Test email fails | Check the `mail` section of `config.php` (address, password, SMTP host). |
 | Emails land in spam | Mark as “Not spam” in Gmail once; consider a custom domain with SPF/DKIM (alwaysdata → Emails). |
 | Website loads but ordering says “temporarily unavailable” | The site’s root directory must be `.../dist`, and `server/` must sit next to it. |
-| Errors | See `server/data/logs/php-errors.log`. |
+| Errors | See `server/data/logs/php-errors.log` (older lines in `php-errors.1.log`). |
+| Site shows an older version a few minutes after a deploy | Something else is updating `~/pashabakess` — check Scheduled tasks (see *Updating the site*). |
 
 ## Self-test
 
-Via SSH: `php server/tests/run.php` — runs 41 checks on a throwaway database.
+Via SSH: `php server/tests/run.php` — runs all backend checks (100+) on a throwaway database in a temporary
+folder; it never touches the real orders or `server/data/`.

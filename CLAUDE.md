@@ -4,7 +4,9 @@ Pashabakess — cookie bakery website with online ordering and an admin portal (
 Owner of the project: Hamza (developer). Client: Pasha (the baker). Customers are in Massachusetts (US English).
 
 ## Hosting — read before touching deployment
-- Live now: **alwaysdata** (`https://pashabakess.alwaysdata.net`, files in `~/pashabakess`).
+- Live now: **alwaysdata** (`https://pashabakess.alwaysdata.net`, files in `~/pashabakess`, site root `~/pashabakess/dist`, PHP 8.4).
+  The only thing allowed to update `~/pashabakess` is the GitHub deploy. The old alwaysdata scheduled task
+  "Pashabakess: install/update from GitHub" (reset to `checkout-backend` every 10 min) must stay paused/deleted.
 - **Planned move to Hostinger.** Everything is prepared; the steps are in `HOSTINGER.md`.
 - **Never delete** deployment or hosting files (`.github/workflows/deploy.yml`, `DEPLOY-ALWAYSDATA.md`,
   `HOSTINGER.md`, `server/tools/`, any `.htaccess`) without asking Hamza first.
