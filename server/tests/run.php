@@ -137,6 +137,17 @@ check('after login: other websites refused', array_unique(array_map('safe_admin_
 
 [$ok] = send_customer_confirmation(order_find((int) $order['id']));
 check('confirmation email written', $ok && email_statuses((int) $order['id'])['confirmation'] === 'sent');
+check('dashboard: no email problems', recent_email_problems()['failed'] === [] && recent_email_problems()['no_gmail'] === []);
+email_log_result('test@example.com', 'confirmation', (int) $order['id'], false, 'SMTP down');
+email_log_result('pasha@example.com', 'enquiry', null, false, 'SMTP down');
+$problems = recent_email_problems();
+check('dashboard: failed emails listed', count($problems['failed']) === 2 && $problems['failed'][0]['code'] === $order['code']);
+email_log_result('test@example.com', 'confirmation', (int) $order['id'], true, SPAM_RISK_NOTE . ' (test)');
+$problems = recent_email_problems();
+check('dashboard: resent email no longer failed, but flagged as sent without Gmail', count($problems['failed']) === 1
+    && $problems['failed'][0]['kind'] === 'enquiry' && count($problems['no_gmail']) === 1);
+send_customer_confirmation(order_find((int) $order['id']));
+db_exec("DELETE FROM email_log WHERE kind = 'enquiry'");
 $mailDir = data_dir('mail');
 $before = glob($mailDir . '/*-receipt-*.html') ?: [];
 send_customer_receipt(order_find((int) $order['id']));
