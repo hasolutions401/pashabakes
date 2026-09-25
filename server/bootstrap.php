@@ -26,6 +26,7 @@ require_once PB_ROOT . '/lib/enquiries.php';
 require_once PB_ROOT . '/lib/ratelimit.php';
 require_once PB_ROOT . '/lib/mailer.php';
 require_once PB_ROOT . '/lib/emails.php';
+require_once PB_ROOT . '/lib/meta.php';
 require_once PB_ROOT . '/lib/auth.php';
 
 function config(?string $key = null)

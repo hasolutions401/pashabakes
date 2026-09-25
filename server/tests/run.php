@@ -361,6 +361,68 @@ check('data request: finished order keeps cookies and total, loses details', $do
 $done = forget_customer('A@Example.com');
 check('data request: inquiries deleted', $done['enquiries'] === 1 && customer_records('a@example.com')['enquiries'] === []);
 
+// Structured data (JSON-LD) must say exactly what the pages say.
+require_once PB_ROOT . '/tools/structured-data.php';
+$sdPrices = sd_default_prices();
+$sdStale = array_keys(array_filter(sd_build(public_dir(), $sdPrices), fn($html, $file) => $html !== sd_read($file), ARRAY_FILTER_USE_BOTH));
+check('structured data up to date (else run: php server/tools/structured-data.php)', $sdStale === []);
+$faqHtml = (string) file_get_contents(public_dir() . '/faq.html');
+preg_match('#<script type="application/ld\+json">(.*?)</script>#s', $faqHtml, $sdFaq);
+$sdFaqData = json_decode($sdFaq[1] ?? '', true);
+check('FAQ structured data: every visible question, same answers', is_array($sdFaqData) && count($sdFaqData['mainEntity']) === count(sd_faq_items($faqHtml))
+    && count($sdFaqData['mainEntity']) >= 16 && in_array('Do you deliver or ship?', array_column($sdFaqData['mainEntity'], 'name'), true));
+preg_match('#<script type="application/ld\+json">(.*?)</script>#s', (string) file_get_contents(public_dir() . '/index.html'), $sdBiz);
+$sdBizData = json_decode($sdBiz[1] ?? '', true);
+$sdOffers = array_column($sdBizData['@graph'][1]['hasOfferCatalog']['itemListElement'] ?? [], 'price');
+check('bakery structured data: box prices = the prices customers pay', $sdOffers === array_map(fn($c) => number_format($c / 100, 2, '.', ''), array_values(box_prices()))
+    && $sdPrices === box_prices() && ($sdBizData['@graph'][1]['priceRange'] ?? '') === '$14–$114');
+check('bakery structured data: no invented facts (no hours, street address, ratings)', !isset($sdBizData['@graph'][1]['openingHours'], $sdBizData['@graph'][1]['aggregateRating'],
+    $sdBizData['@graph'][1]['address']['streetAddress'], $sdBizData['@graph'][1]['telephone']));
+check('visible FAQ prices match the box prices', str_contains($faqHtml, 'A dozen (12 cookies) is ' . money(box_prices()[12]) . '.'));
+
+// Meta ads measurement: switched off unless configured; when on, only for customers who allowed it.
+check('ads measurement is off by default', !meta_enabled() && !meta_capi_enabled());
+[$offData] = order_validate($base(['client_token' => bin2hex(random_bytes(12)), 'ad_consent' => true, 'fbp' => 'fb.1.1712345678901.AbC123']));
+check('while off, consent and browser ids are never stored', $offData['ad_consent'] === 0 && $offData['fbp'] === '' && $offData['fbc'] === '');
+check('while off, nothing is sent', meta_send_order_event('Lead', ['ad_consent' => 1] + order_find((int) $first['id']), 'X') === false);
+$metaConfig = "$tmp/config-meta.php";
+file_put_contents($metaConfig, '<?php return ' . var_export([
+    'site_url' => 'https://example.test', 'setup_key' => 'meta-test-key-000', 'data_dir' => "$tmp/meta-data",   // gitleaks:allow — test only
+    'db' => ['driver' => 'sqlite', 'sqlite' => "$tmp/meta.sqlite"], 'mail' => ['transport' => 'log', 'from_email' => 'test@example.com'],
+    'meta' => ['pixel_id' => '1234567890', 'transport' => 'log'],
+], true) . ';');
+file_put_contents("$tmp/meta-child.php", '<?php
+$_SERVER["REQUEST_URI"] = "/cli-meta-test"; $_SERVER["REMOTE_ADDR"] = "203.0.113.5"; $_SERVER["HTTP_USER_AGENT"] = "TestBrowser/1.0";
+require ' . var_export(PB_ROOT . '/bootstrap.php', true) . ';
+$in = fn(array $o) => array_merge(["name" => "Meta Tester", "email" => " Meta.Tester@Example.com ", "phone" => "(978) 555-0100", "occasion" => "", "notes" => "SECRET NOTE",
+    "box_size" => 6, "items" => [["id" => 1, "qty" => 6]], "pickup_date" => earliest_pickup_date()->modify("+1 day")->format("Y-m-d"),
+    "pickup_slot" => pickup_slots()[0], "payment_method" => "venmo", "payer_ref" => "@secretpayer", "agree" => true], $o);
+[$yes, $e1] = order_validate($in(["client_token" => bin2hex(random_bytes(12)), "ad_consent" => true, "fbp" => "fb.1.1712345678901.AbC123", "fbc" => "javascript:alert(1)"]));
+[$no, $e2] = order_validate($in(["client_token" => bin2hex(random_bytes(12)), "ad_consent" => false, "fbp" => "fb.1.1712345678901.XyZ"]));
+[$a] = order_create($yes); [$b] = order_create($no);
+meta_send_order_event("Lead", $a, $a["code"], true); meta_send_order_event("Lead", $b, $b["code"], true);
+order_mark_paid((int) $a["id"]); meta_send_order_event("Purchase", order_find((int) $a["id"]), $a["code"] . "-paid");
+$events = array_map(fn($l) => json_decode($l, true)["data"][0], array_filter(explode("\n", (string) @file_get_contents(data_dir("meta") . "/events.jsonl"))));
+order_set_status((int) $a["id"], "completed"); forget_customer("meta.tester@example.com");
+echo json_encode(["enabled" => meta_enabled(), "errors" => $e1 + $e2, "stored" => [$a["ad_consent"], $a["fbp"], $a["fbc"], $b["ad_consent"], $b["fbp"]],
+    "codes" => [$a["code"], $b["code"]], "events" => $events, "raw" => (string) @file_get_contents(data_dir("meta") . "/events.jsonl"),
+    "afterForget" => db_one("SELECT fbp, ad_consent FROM orders WHERE id = ?", [(int) $a["id"]])]);
+');
+putenv("PB_CONFIG=$metaConfig");
+exec(escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg("$tmp/meta-child.php"), $metaOut, $metaRc);
+putenv("PB_CONFIG=$config");
+$m = json_decode(implode("\n", $metaOut), true) ?: [];
+check('ads on: consenting order keeps its Meta ids (bad ones dropped)', ($m['enabled'] ?? false) && ($m['errors'] ?? ['x']) === []
+    && ($m['stored'] ?? []) === [1, 'fb.1.1712345678901.AbC123', '', 0, '']);
+$ev = $m['events'] ?? [];
+check('ads on: Lead + Purchase sent only for the consenting customer, with matching ids', count($ev) === 2
+    && $ev[0]['event_name'] === 'Lead' && $ev[0]['event_id'] === $m['codes'][0] && $ev[1]['event_name'] === 'Purchase' && $ev[1]['event_id'] === $m['codes'][0] . '-paid');
+check('ads on: email/phone hashed as Meta requires; value and currency set', ($ev[0]['user_data']['em'][0] ?? '') === hash('sha256', 'meta.tester@example.com')
+    && ($ev[0]['user_data']['ph'][0] ?? '') === hash('sha256', '19785550100') && ($ev[0]['custom_data']['value'] ?? 0) == 20 && ($ev[0]['custom_data']['currency'] ?? '') === 'USD'
+    && ($ev[0]['user_data']['client_ip_address'] ?? '') === '203.0.113.5' && !isset($ev[1]['user_data']['client_ip_address']));
+check('ads on: no name, email, notes or payer text ever leaves the site', ($m['raw'] ?? '') !== '' && !preg_match('/Meta Tester|example\.com|SECRET NOTE|secretpayer|Tester/i', $m['raw']));
+check('deleting a customer also clears their Meta ids', ($m['afterForget'] ?? null) === ['fbp' => '', 'ad_consent' => 0]);
+
 $logFile = "$tmp/masked.log";
 $previousLog = ini_get('error_log');
 ini_set('error_log', $logFile);

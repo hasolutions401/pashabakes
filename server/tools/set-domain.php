@@ -32,3 +32,4 @@ foreach ([...glob("$dist/*.html"), "$dist/sitemap.xml", "$dist/robots.txt"] as $
     }
 }
 echo "Switched $old → $new in $changed files.\n";
+echo "Next: php server/tools/structured-data.php (refreshes the search-engine data), then commit and push.\n";

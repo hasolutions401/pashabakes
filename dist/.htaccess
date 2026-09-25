@@ -2,6 +2,10 @@
 Options -Indexes
 DirectoryIndex index.html index.php
 
+<IfModule mod_mime.c>
+  AddType font/woff2 .woff2
+</IfModule>
+
 <IfModule mod_headers.c>
   Header always set X-Content-Type-Options "nosniff"
   Header always set Referrer-Policy "strict-origin-when-cross-origin"
@@ -11,7 +15,7 @@ DirectoryIndex index.html index.php
   Header always set Strict-Transport-Security "max-age=2592000"
   # What pages may load. img-src allows any https image because flavors can use photo links (Admin → Menu).
   # If you add a new outside service (fonts, analytics, ads…), add its address here or the browser blocks it.
-  Header always set Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self'; form-action 'self'; frame-ancestors 'self'; base-uri 'self'; object-src 'none'; upgrade-insecure-requests"
+  Header always set Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; form-action 'self'; frame-ancestors 'self'; base-uri 'self'; object-src 'none'; upgrade-insecure-requests"
 </IfModule>
 
 # Browser caching. Pages always check for a newer version; CSS/JS links carry ?v=N (bump it after every
@@ -20,7 +24,7 @@ DirectoryIndex index.html index.php
   <FilesMatch "\.(html|xml|txt)$">
     Header set Cache-Control "no-cache"
   </FilesMatch>
-  <FilesMatch "\.(css|js)$">
+  <FilesMatch "\.(css|js|woff2)$">
     Header set Cache-Control "public, max-age=2592000"
   </FilesMatch>
   <FilesMatch "\.(jpe?g|png|webp|gif|svg|ico)$">

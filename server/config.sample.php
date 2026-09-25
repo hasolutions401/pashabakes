@@ -50,4 +50,12 @@ return [
         // PB_GMAIL_APP_PASSWORD environment variable — keeps it out of database copies and backups.
         'gmail_app_password' => '',
     ],
+
+    // Meta (Facebook/Instagram) ads measurement. EMPTY = SWITCHED OFF: no cookie banner, no pixel, nothing sent.
+    // Turn on only after the privacy notice and banner text are approved — steps in META-ADS.md.
+    'meta' => [
+        'pixel_id'        => '',   // Meta Events Manager → Data sources → your pixel → ID (digits)
+        'capi_token'      => '',   // Conversions API access token (secret — never commit it)
+        'test_event_code' => '',   // only while testing in Events Manager → Test events; then empty again
+    ],
 ];

@@ -3,6 +3,24 @@
    Tokens → base → layout (header, sections) → components → responsive.
    ========================================================================== */
 
+/* Fonts are served from this site (SIL Open Font License — fonts/LICENSE-OFL.txt), Latin subset.
+   Variable fonts: one file covers every weight used. The two upright files are preloaded in each page. */
+@font-face {
+  font-family: 'DM Sans'; font-style: normal; font-weight: 400 700; font-display: swap;
+  src: url('fonts/dm-sans-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Playfair Display'; font-style: normal; font-weight: 500 700; font-display: swap;
+  src: url('fonts/playfair-display-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Playfair Display'; font-style: italic; font-weight: 500 600; font-display: swap;
+  src: url('fonts/playfair-display-italic-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
 :root {
   /* Brand colors (unchanged) */
   --cream: #fcf7ee;
@@ -1034,3 +1052,16 @@ a.price:hover { background: rgb(255 255 255 / .55); }
   .celebrate-gallery img { height: 300px; }
   .price-line { margin-top: 0; }
 }
+
+/* ——— Cookie choice for ads measurement (only shown when Meta ads measurement is switched on) ——— */
+.consent-banner {
+  position: fixed; left: 16px; right: 16px; bottom: max(16px, env(safe-area-inset-bottom)); z-index: 70;
+  max-width: 760px; margin: 0 auto; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px;
+  padding: 16px 20px; border-radius: var(--radius-lg); background: var(--brown); color: #fff7ed; box-shadow: var(--shadow-lg);
+}
+.consent-banner p { flex: 1 1 320px; margin: 0; font-size: 15px; line-height: 1.5; }
+.consent-banner a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
+.consent-actions { display: flex; gap: 10px; }
+.consent-banner .button { background: #fff7ed; color: var(--brown); }
+.consent-banner .button.ghost { background: transparent; color: #fff7ed; border-color: #fff7ed; }
+.consent-banner :focus-visible { outline-color: var(--pink); }

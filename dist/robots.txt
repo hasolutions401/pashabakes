@@ -1,4 +1,7 @@
 # Pashabakess — https://pashabakess.alwaysdata.net/
+# Every search engine and AI assistant is welcome (Googlebot, Bingbot, OAI-SearchBot, ChatGPT-User, GPTBot,
+# PerplexityBot, Claude-SearchBot, Claude-User, ClaudeBot, Google-Extended, Applebot-Extended, CCBot …):
+# the rules below apply to all of them. Only the admin portal and the ordering API are off limits.
 User-agent: *
 Disallow: /admin/
 Disallow: /api/
