@@ -28,4 +28,6 @@ Owner of the project: Hamza (developer). Client: Pasha (the baker). Customers ar
   refund; full refund if Pasha cancels.
 - Pasha's own photos: originals in `photos/`, web copies in `dist/images/`. Pumpkin Chocolate Chip and Maple
   Pecan still use sample photos from recipe sites (credited on the menu) until Pasha sends hers.
-- After editing `dist/app.js` or `dist/style.css`, bump their `?v=` number in every HTML page.
+- After editing `dist/app.js` or `dist/style.css`, bump their `?v=` number in every HTML page (browsers keep CSS/JS
+  for 30 days, see `dist/.htaccess`). Same for `admin.css`/`admin.js` in `server/views/admin.php`. When replacing an
+  image in `dist/images/` under the same name, add or bump a `?v=` on its links (images are cached for 7 days).

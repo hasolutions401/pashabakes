@@ -14,6 +14,20 @@ DirectoryIndex index.html index.php
   Header always set Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self'; form-action 'self'; frame-ancestors 'self'; base-uri 'self'; object-src 'none'; upgrade-insecure-requests"
 </IfModule>
 
+# Browser caching. Pages always check for a newer version; CSS/JS links carry ?v=N (bump it after every
+# change, see CLAUDE.md) so they can be kept for 30 days; images for 7 days (add ?v= when replacing one).
+<IfModule mod_headers.c>
+  <FilesMatch "\.(html|xml|txt)$">
+    Header set Cache-Control "no-cache"
+  </FilesMatch>
+  <FilesMatch "\.(css|js)$">
+    Header set Cache-Control "public, max-age=2592000"
+  </FilesMatch>
+  <FilesMatch "\.(jpe?g|png|webp|gif|svg|ico)$">
+    Header set Cache-Control "public, max-age=604800"
+  </FilesMatch>
+</IfModule>
+
 # Never serve hidden files (.git, .env, …)
 <FilesMatch "^\.">
   Require all denied
