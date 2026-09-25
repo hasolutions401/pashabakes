@@ -148,11 +148,17 @@ function sd_replace_block(string $html, string $json): string
 }
 
 /** The pages as they should be: [path => html]. $prices: box size => cents. */
+/** A page with Unix line endings (a Windows checkout has CRLF; Git stores LF either way). */
+function sd_read(string $file): string
+{
+    return str_replace("\r\n", "\n", (string) file_get_contents($file));
+}
+
 function sd_build(string $dist, array $prices): array
 {
     $base = sd_site_url($dist);
-    $index = (string) file_get_contents("$dist/index.html");
-    $faq = (string) file_get_contents("$dist/faq.html");
+    $index = sd_read("$dist/index.html");
+    $faq = sd_read("$dist/faq.html");
     return [
         "$dist/index.html" => sd_replace_block($index, sd_business_json($index, $base, $prices)),
         "$dist/faq.html" => sd_replace_block($faq, sd_faq_json($faq, $base)),
@@ -173,7 +179,7 @@ function sd_default_prices(): array
 if (PHP_SAPI === 'cli' && realpath($_SERVER['argv'][0] ?? '') === realpath(__FILE__)) {
     $dist = dirname(__DIR__, 2) . '/dist';
     foreach (sd_build($dist, sd_default_prices()) as $file => $html) {
-        $changed = $html !== file_get_contents($file);
+        $changed = $html !== sd_read($file);
         if ($changed) {
             file_put_contents($file, $html);
         }

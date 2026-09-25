@@ -364,7 +364,7 @@ check('data request: inquiries deleted', $done['enquiries'] === 1 && customer_re
 // Structured data (JSON-LD) must say exactly what the pages say.
 require_once PB_ROOT . '/tools/structured-data.php';
 $sdPrices = sd_default_prices();
-$sdStale = array_keys(array_filter(sd_build(public_dir(), $sdPrices), fn($html, $file) => $html !== file_get_contents($file), ARRAY_FILTER_USE_BOTH));
+$sdStale = array_keys(array_filter(sd_build(public_dir(), $sdPrices), fn($html, $file) => $html !== sd_read($file), ARRAY_FILTER_USE_BOTH));
 check('structured data up to date (else run: php server/tools/structured-data.php)', $sdStale === []);
 $faqHtml = (string) file_get_contents(public_dir() . '/faq.html');
 preg_match('#<script type="application/ld\+json">(.*?)</script>#s', $faqHtml, $sdFaq);
