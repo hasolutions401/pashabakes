@@ -3,11 +3,14 @@
 #  2. Deploys to ONE host:
 #     - Hostinger, once the repository variable HOSTINGER_HOST is set (see HOSTINGER.md), otherwise
 #     - alwaysdata: logs in over SSH and runs `git pull` in ~/pashabakess.
-#  3. Checks that the live menu API answers.
+#  3. Checks that the live site answers AND serves exactly the files of this commit
+#     (fails loudly if the site root points at another folder or the server copy was changed by hand).
 # Secrets/variables: repository Settings → Secrets and variables → Actions.
-#   alwaysdata: secret ALWAYSDATA_SSH_PASSWORD
-#   Hostinger:  secret HOSTINGER_SSH_PASSWORD, variables HOSTINGER_HOST, HOSTINGER_PORT, HOSTINGER_USER, HOSTINGER_DOMAIN
-# Can also be started by hand: Actions → "Deploy website" → Run workflow.
+#   alwaysdata: secret ALWAYSDATA_SSH_PASSWORD; optional variable ALWAYSDATA_SSH_FINGERPRINT (server key check)
+#   Hostinger:  secret HOSTINGER_SSH_PASSWORD, variables HOSTINGER_HOST, HOSTINGER_PORT, HOSTINGER_USER, HOSTINGER_DOMAIN,
+#               optional HOSTINGER_SSH_FINGERPRINT
+# Third-party actions are pinned to exact commits (the tag they had is in the comment).
+# Can also be started by hand: Actions → "Deploy website" → Run workflow (always deploys main).
 name: Deploy website
 
 on:
@@ -26,8 +29,8 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-      - uses: shivammathur/setup-php@v2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
         with:
           php-version: '8.2'
           extensions: pdo_sqlite, gd, mbstring
@@ -37,21 +40,26 @@ jobs:
 
   deploy:
     needs: test
-    if: vars.HOSTINGER_HOST == ''
+    if: vars.HOSTINGER_HOST == '' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    environment: production
     env:
       SSH_PASSWORD: ${{ secrets.ALWAYSDATA_SSH_PASSWORD }}
+      SITE: https://pashabakess.alwaysdata.net
     steps:
       - name: Password not set yet
         if: env.SSH_PASSWORD == ''
         run: echo "::warning::Not deployed — add the ALWAYSDATA_SSH_PASSWORD secret (Settings → Secrets and variables → Actions)."
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        if: env.SSH_PASSWORD != ''
       - name: Update the live site
         if: env.SSH_PASSWORD != ''
-        uses: appleboy/ssh-action@v1
+        uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2 # v1
         with:
           host: ssh-pashabakess.alwaysdata.net
           username: pashabakess
           password: ${{ secrets.ALWAYSDATA_SSH_PASSWORD }}
+          fingerprint: ${{ vars.ALWAYSDATA_SSH_FINGERPRINT }}
           script: |
             set -e
             cd ~/pashabakess
@@ -59,17 +67,26 @@ jobs:
             git checkout main
             git merge --ff-only origin/main
             git log --oneline -1
-      - name: Check the live site answers
+            git status --short --untracked-files=no
+      - name: Check the live site answers and serves this commit
         if: env.SSH_PASSWORD != ''
         run: |
           sleep 5
-          curl -fsS https://pashabakess.alwaysdata.net/api/menu.php | grep -q '"ok":true'
-          echo "Live site OK: https://pashabakess.alwaysdata.net/"
+          curl -fsS "$SITE/api/menu.php" | grep -q '"ok":true'
+          for f in index.html order.html app.js style.css; do
+            curl -fsS "$SITE/$f?deploy=$GITHUB_SHA" -o "$RUNNER_TEMP/live-$f"
+            if ! cmp -s "$RUNNER_TEMP/live-$f" "dist/$f"; then
+              echo "::error::The live $f is not the one in this commit. The site may be serving another folder (check the site's root directory in alwaysdata) or the server copy was changed by hand."
+              exit 1
+            fi
+          done
+          echo "Live site OK and up to date: $SITE/"
 
   deploy-hostinger:
     needs: test
-    if: vars.HOSTINGER_HOST != ''
+    if: vars.HOSTINGER_HOST != '' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    environment: production
     env:
       SSH_PASSWORD: ${{ secrets.HOSTINGER_SSH_PASSWORD }}
       DOMAIN: ${{ vars.HOSTINGER_DOMAIN }}
@@ -79,12 +96,13 @@ jobs:
         run: echo "::warning::Not deployed — add the HOSTINGER_SSH_PASSWORD secret (see HOSTINGER.md)."
       - name: Update the live site on Hostinger
         if: env.SSH_PASSWORD != ''
-        uses: appleboy/ssh-action@v1
+        uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2 # v1
         with:
           host: ${{ vars.HOSTINGER_HOST }}
           port: ${{ vars.HOSTINGER_PORT || 65002 }}
           username: ${{ vars.HOSTINGER_USER }}
           password: ${{ secrets.HOSTINGER_SSH_PASSWORD }}
+          fingerprint: ${{ vars.HOSTINGER_SSH_FINGERPRINT }}
           envs: DOMAIN
           script: |
             set -e
