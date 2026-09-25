@@ -130,6 +130,10 @@ check('cookie deleted', cookie_find($id) === null);
 admin_create('Pasha', 'secret-pass-1');
 check('admin created (username lower-cased)', db_value('SELECT username FROM admin_users') === 'pasha');
 check('password hashed', password_verify('secret-pass-1', (string) db_value('SELECT password_hash FROM admin_users')));
+check('after login: admin pages allowed', safe_admin_next('/admin/order.php?id=12') === '/admin/order.php?id=12'
+    && safe_admin_next('/admin/') === 'index.php' && safe_admin_next('/sub/admin/index.php?status=paid&q=PB10') === '/sub/admin/index.php?status=paid&q=PB10');
+check('after login: other websites refused', array_unique(array_map('safe_admin_next', ['//evil.example/admin/index.php', '/\\evil.example/admin/x.php',
+    'https://evil.example/admin/index.php', '///evil.example/admin/index.php', '/admin/x.php?next=//evil', "/admin/index.php\r\nX: y", '/%2F%2Fevil/admin/x.php'])) === ['index.php']);
 
 [$ok] = send_customer_confirmation(order_find((int) $order['id']));
 check('confirmation email written', $ok && email_statuses((int) $order['id'])['confirmation'] === 'sent');

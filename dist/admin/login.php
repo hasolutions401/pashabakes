@@ -8,11 +8,8 @@ if (current_admin()) {
     redirect('index.php');
 }
 
-// Only allow returning to pages inside /admin/.
-$next = (string) ($_GET['next'] ?? $_POST['next'] ?? '');
-if (!preg_match('#^/[A-Za-z0-9/_.-]*admin/[A-Za-z0-9_.-]*\.php(\?[A-Za-z0-9=&_%-]*)?$#', $next)) {
-    $next = 'index.php';
-}
+// Only allow returning to pages inside /admin/ on this site.
+$next = safe_admin_next((string) ($_GET['next'] ?? $_POST['next'] ?? ''));
 
 $error = null;
 $username = '';

@@ -64,6 +64,16 @@ function require_admin(): array
     return $user;
 }
 
+/**
+ * Where to go after logging in: a page in this site's /admin/ folder, else index.php.
+ * Every path segment must be non-empty, so "//other-site/admin/x.php" (a link to another
+ * website) is refused, as are backslashes and full URLs.
+ */
+function safe_admin_next(string $next): string
+{
+    return preg_match('#^/(?:[A-Za-z0-9_.-]+/)*admin/[A-Za-z0-9_-]+\.php(?:\?[A-Za-z0-9=&_%-]*)?$#', $next) ? $next : 'index.php';
+}
+
 /** Returns an error message, or null on success. */
 function admin_login(string $username, string $password): ?string
 {
