@@ -44,11 +44,14 @@ if ($errors) {
 
 // A retry of an order that was already saved (same form submission) always gets its order back.
 if (!order_token_exists($data['client_token'])) {
-    if (!rate_allowed('order_created', 6, 3600) || !rate_allowed('order_created_day', 12, 86400)) {
+    if (!rate_allowed('order_created', 4, 3600) || !rate_allowed('order_created_day', 8, 86400)) {
         json_response(['ok' => false, 'message' => 'You’ve placed several orders in a short time. Please email pashabakess@gmail.com if you need more.'], 429);
     }
-    if (unpaid_orders_for_email($data['email']) >= PB_MAX_UNPAID_PER_EMAIL) {
-        json_response(['ok' => false, 'message' => 'You already have ' . PB_MAX_UNPAID_PER_EMAIL . ' orders waiting for payment. Please pay for those first, or email pashabakess@gmail.com and Pasha will help you.'], 429);
+    // One unpaid order at a time per customer: pay for it before placing another.
+    if (unpaid_orders_for_customer($data['email'], $data['phone']) >= PB_MAX_UNPAID_PER_CUSTOMER) {
+        json_response(['ok' => false, 'message' => 'There’s already an order waiting for payment with this email address or phone number. '
+            . 'Please send the payment for that order first (the order number and payment details are in your email) — then you can place another order. '
+            . 'Need to change or cancel it? Email pashabakess@gmail.com and Pasha will help you.'], 429);
     }
 }
 

@@ -8,8 +8,12 @@ declare(strict_types=1);
 
 const PB_STATUSES = ['pending', 'paid', 'completed', 'cancelled'];
 const PB_MAX_COOKIES = 36;
-/** Unpaid orders one email address can have waiting at once (stops fake orders filling pickup days). */
-const PB_MAX_UNPAID_PER_EMAIL = 3;
+/**
+ * Unpaid orders one customer (same email address or phone number) can have waiting at once.
+ * They pay for it (or Pasha cancels it, or the payment time runs out) before ordering again,
+ * so fake orders can't fill up pickup days.
+ */
+const PB_MAX_UNPAID_PER_CUSTOMER = 1;
 
 /** Thrown when the pickup day filled up while the order was being placed. */
 class DayFullException extends RuntimeException
@@ -23,7 +27,6 @@ class DayFullException extends RuntimeException
 function order_validate(array $in): array
 {
     $errors = [];
-    $prices = box_prices();
     $cookies = [];
     foreach (menu_cookies() as $c) {
         $cookies[$c['id']] = $c;
@@ -54,8 +57,11 @@ function order_validate(array $in): array
     }
 
     // Box & flavors
-    if (!isset($prices[$data['box_size']])) {
-        $errors['box_size'] = 'Please choose a box size.';
+    $price = box_price($data['box_size']);
+    if ($price === 0) {
+        $errors['box_size'] = cookie_price() > 0
+            ? sprintf('Please choose a box size, or enter an amount from %d to %d cookies.', PB_CUSTOM_MIN, PB_MAX_COOKIES)
+            : 'Please choose a box size.';
     }
     $count = 0;
     $byId = [];   // the same flavor listed twice counts once, with the quantities added up
@@ -115,7 +121,7 @@ function order_validate(array $in): array
         $errors['pickup_date'] = 'That date is too far ahead. Please choose a date before ' . latest_pickup_date()->format('F j, Y') . '.';
     } elseif (in_array($data['pickup_date'], unavailable_dates(), true)) {
         $errors['pickup_date'] = 'Pasha isn’t available for pickups on that date. Please choose another day.';
-    } elseif (isset($prices[$data['box_size']]) && ($full = capacity_problem($data['pickup_date'], $data['box_size']))) {
+    } elseif ($price > 0 && ($full = capacity_problem($data['pickup_date'], $data['box_size']))) {
         $errors['pickup_date'] = $full;
     }
     if (!in_array($data['pickup_slot'], pickup_slots(), true)) {
@@ -143,7 +149,7 @@ function order_validate(array $in): array
     }
 
     // Price check: the total the customer saw must match the current price.
-    $data['total_cents'] = $prices[$data['box_size']] ?? 0;
+    $data['total_cents'] = $price;
     if (!isset($errors['box_size']) && isset($in['expected_total_cents']) && (int) $in['expected_total_cents'] !== $data['total_cents']) {
         $errors['box_size'] = 'Prices were just updated. The total for your box is now ' . money($data['total_cents']) . '. Please review your order.';
     }
@@ -220,8 +226,22 @@ function order_token_exists(string $token): bool
 /** Unpaid orders from this email address that still hold their pickup day. */
 function unpaid_orders_for_email(string $email): int
 {
+    return unpaid_orders_for_customer($email, '');
+}
+
+/** Unpaid orders still holding their day with this email address or phone number (compared by its last 10 digits). */
+function unpaid_orders_for_customer(string $email, string $phone): int
+{
     [$holding, $params] = holding_orders_sql();
-    return (int) db_value("SELECT COUNT(*) FROM orders WHERE email = ? AND status = 'pending' AND {$holding}", [$email, ...$params]);
+    $digits = substr(preg_replace('/\D/', '', $phone), -10);
+    $n = 0;
+    foreach (db_all("SELECT email, phone FROM orders WHERE status = 'pending' AND {$holding}", $params) as $o) {
+        if (($email !== '' && $o['email'] === $email)
+            || (strlen($digits) === 10 && substr(preg_replace('/\D/', '', (string) $o['phone']), -10) === $digits)) {
+            $n++;
+        }
+    }
+    return $n;
 }
 
 function order_items(int $orderId): array

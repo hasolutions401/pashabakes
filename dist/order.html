@@ -21,8 +21,8 @@
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <link rel="preload" href="fonts/playfair-display-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="fonts/dm-sans-latin.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="style.css?v=22">
-  <script src="app.js?v=19" defer></script>
+  <link rel="stylesheet" href="style.css?v=25">
+  <script src="app.js?v=21" defer></script>
 </head>
 <body>
 <!-- Icon sprite: one consistent stroke-icon set used across the site -->
@@ -46,13 +46,13 @@
 <a class="skip-link" href="#main">Skip to content</a>
 
 <div class="announcement">
-  <span>HANDMADE IN TYNGSBORO, MA</span>
+  <span>Handmade in Tyngsboro, MA</span>
   <svg class="icon sparkle announce-extra" aria-hidden="true"><use href="#i-sparkle"/></svg>
-  <span class="announce-extra">100% HALAL INGREDIENTS</span>
+  <span class="announce-extra">100% halal ingredients</span>
   <svg class="icon sparkle" aria-hidden="true"><use href="#i-sparkle"/></svg>
-  <span class="announce-extra">FRESHLY BAKED, JUST FOR YOU</span>
+  <span class="announce-extra">Freshly baked, just for you</span>
   <svg class="icon sparkle announce-extra" aria-hidden="true"><use href="#i-sparkle"/></svg>
-  <span class="announce-extra">ONE WEEK’S NOTICE, PLEASE</span>
+  <span class="announce-extra">One week’s notice, please</span>
 </div>
 
 <header class="site-header" id="site-header">
@@ -62,7 +62,7 @@
         <source srcset="logo-192.webp" type="image/webp">
         <img class="brand-logo" src="logo-192.jpg" alt="" width="72" height="72" decoding="async">
       </picture>
-      <span class="wordmark">Pashabakess<span>HANDMADE • HOME BAKED • HEARTFELT</span></span>
+      <span class="wordmark">Pashabakess<span>Handmade • Home baked • Heartfelt</span></span>
     </a>
     <nav id="navigation" class="site-nav" aria-label="Main">
       <a href="index.html">Home</a>
@@ -86,7 +86,7 @@
 <section class="section order-section" id="order" aria-labelledby="order-title">
     <div class="order-intro">
       <div>
-        <p class="eyebrow">ORDER ONLINE</p>
+        <p class="eyebrow">Order online</p>
         <h1 id="order-title">Build your <em>cookie box.</em></h1>
         <p class="order-lede">Choose your pickup, pick your cookies and place your order. Then pay with Venmo or Cash App using your order number. Please allow one week’s notice.</p>
       </div>
@@ -151,8 +151,15 @@
               <label class="size-option"><input type="radio" name="box" value="12"><span class="size-name">Dozen</span><span class="size-price" data-price-for="12">$38</span></label>
               <label class="size-option"><input type="radio" name="box" value="24"><span class="size-name">2 dozen</span><span class="size-price" data-price-for="24">$76</span></label>
               <label class="size-option"><input type="radio" name="box" value="36"><span class="size-name">3 dozen</span><span class="size-price" data-price-for="36">$114</span></label>
+              <label class="size-option size-custom" data-custom-only hidden><input type="radio" name="box" value="custom" aria-controls="custom-amount-field"><span class="size-name">Other amount</span><span class="size-price"><span data-cookie-price>$3.50</span> <small>each</small></span></label>
             </div>
           </fieldset>
+          <div class="field custom-amount" id="custom-amount-field" hidden>
+            <label for="custom-amount">How many cookies?</label>
+            <input id="custom-amount" type="number" name="custom_amount" min="4" max="36" step="1" inputmode="numeric" placeholder="e.g. 30" aria-describedby="custom-amount-hint custom-amount-error" disabled data-error="Please enter how many cookies you’d like.">
+            <p class="field-hint" id="custom-amount-hint">Any number from <span data-custom-min>4</span> to <span data-custom-max>36</span>, at <span data-cookie-price>$3.50</span> per cookie.<span data-custom-tip> The boxes above cost less per cookie.</span></p>
+            <p class="field-error" id="custom-amount-error" hidden></p>
+          </div>
           <p class="field-error" id="box-sizes-error" hidden></p>
 
           <div class="selection-status">
@@ -163,7 +170,7 @@
           <p class="field-hint flavor-dates-hint">Monthly specials can only be picked up during their month. If you choose a pickup date outside it, they’re taken out of your box.</p>
           <div id="flavor-choices" class="flavor-list"></div>
           <div class="flavor-actions">
-            <button type="button" id="clear-box" class="inline-button">Clear flavor selections</button>
+            <button type="button" id="clear-box" class="button ghost small clear-box"><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg> Clear flavor selections</button>
           </div>
           <p id="flavor-error" class="error" role="alert"></p>
         </fieldset>
@@ -190,7 +197,7 @@
             </div>
             <div class="field">
               <label for="o-occasion">What’s the occasion? <span class="optional">(optional)</span></label>
-              <select id="o-occasion" name="occasion"><option>Just because</option><option>Birthday</option><option>Holiday</option><option>Baby shower</option><option>Bridal shower</option><option>Eid</option><option>Aqiqah</option><option>Graduation</option><option>Office treat</option></select>
+              <select id="o-occasion" name="occasion"><option>Just because</option><option>Birthday</option><option>Anniversary</option><option>Housewarming</option><option>New job</option><option>Wedding</option><option>Graduation</option><option>Baby shower</option><option>Bridal shower</option><option>Eid</option><option>Aqiqah</option><option>Holiday</option><option>Office treat</option><option>Thank you</option></select>
             </div>
           </div>
         </fieldset>
@@ -233,12 +240,21 @@
 
           <div class="allergy-note" id="allergy-info">
             <strong>Please read before ordering</strong>
-            <p>Pashabakess is not allergen-free. The cookies are not free of peanuts, tree nuts, gluten, dairy/eggs, soy, or food coloring, so they are not suitable for peanut, tree nut, gluten, dairy/egg, soy, or food coloring allergies. Everything is prepared in the same kitchen using shared equipment, trays, utensils, and packaging areas. Because cross-contact can happen, Pasha does not recommend ordering or sharing the cookies with anyone who has food allergies.</p>
+            <ul>
+              <li><strong>Not allergen-free.</strong> The cookies are not free of peanuts, tree nuts, gluten, dairy/eggs, soy, or food coloring, so they are not suitable for peanut, tree nut, gluten, dairy/egg, soy, or food coloring allergies.</li>
+              <li>Everything is prepared in <strong>the same kitchen</strong> using shared equipment, trays, utensils, and packaging areas.</li>
+              <li>Because cross-contact can happen, Pasha <strong>does not recommend</strong> ordering or sharing the cookies with anyone who has food allergies.</li>
+            </ul>
           </div>
           <div class="policy-note" id="refund-policy">
             <strong>Cancellations &amp; refunds</strong>
-            <p>Because every order is baked fresh, cookies can’t be returned or exchanged. To cancel or reschedule your pickup, email <a href="mailto:pashabakess@gmail.com?subject=Cancel%20or%20reschedule%20my%20order">pashabakess@gmail.com</a> at least <strong>two calendar days</strong> before your pickup date (for a Saturday pickup, by Thursday). With that notice you’ll receive a <strong>full refund</strong> to the Venmo or Cash App account you paid from, sent within <strong>3–5 business days</strong>. Cancellations with less notice can’t be refunded.</p>
-            <p><strong>Missed pickups:</strong> you have two days after your pickup date to collect your order. Orders not picked up by then can’t be refunded. If Pasha has to cancel your order (for example, if your pickup date becomes fully booked), you’ll receive a full refund.</p>
+            <ul>
+              <li>Because every order is baked fresh, cookies can’t be returned or exchanged.</li>
+              <li>To cancel or reschedule your pickup, email <a href="mailto:pashabakess@gmail.com?subject=Cancel%20or%20reschedule%20my%20order">pashabakess@gmail.com</a> at least <strong>two calendar days</strong> before your pickup date (for a Saturday pickup, by Thursday). With that notice you’ll receive a <strong>full refund</strong> to the Venmo or Cash App account you paid from, sent within <strong>3–5 business days</strong>.</li>
+              <li>Cancellations with less notice can’t be refunded.</li>
+              <li><strong>Missed pickups:</strong> you have two days after your pickup date to collect your order. Orders not picked up by then can’t be refunded.</li>
+              <li>If Pasha has to cancel your order (for example, if your pickup date becomes fully booked), you’ll receive a full refund.</li>
+            </ul>
           </div>
 
           <div class="field">
@@ -257,7 +273,7 @@
 
       <section class="order-success" id="order-success" tabindex="-1" hidden aria-labelledby="success-title">
         <span class="success-icon" aria-hidden="true"><svg class="icon"><use href="#i-check-circle"/></svg></span>
-        <p class="eyebrow">ORDER SAVED · PAYMENT NEEDED</p>
+        <p class="eyebrow">Order saved · Payment needed</p>
         <h2 id="success-title">Order <span id="success-code"></span> is saved.<br><em>Now send your payment.</em></h2>
 
         <div class="pay-box pay-now">
@@ -286,8 +302,8 @@
       </section>
 
       <aside class="order-summary" aria-labelledby="summary-title">
-        <p class="eyebrow">GOOD THINGS COME IN BOXES</p>
-        <h3 id="summary-title">Your happy box</h3>
+        <p class="eyebrow">Good things come in boxes</p>
+        <h2 id="summary-title">Your happy box</h2>
         <div id="summary-items"><p>Your favorites go here.<br>Pick a flavor to get started.</p></div>
         <p class="summary-warning" id="summary-warning" hidden></p>
         <div class="summary-total"><span id="summary-total-label">4-cookie box</span><strong id="summary-total">$14</strong></div>
@@ -315,19 +331,21 @@
       <span class="wordmark">Pashabakess</span>
     </a>
     <nav class="footer-nav" aria-label="Footer">
-      <a href="menu.html">Menu</a>
-      <a href="order.html" aria-current="page">Order</a>
-      <a href="about.html">About</a>
+      <a href="menu.html">The menu</a>
+      <a href="order.html" aria-current="page">Build your box</a>
+      <a href="about.html">Meet Pasha</a>
       <a href="celebrations.html">Celebrations</a>
       <a href="faq.html">FAQs</a>
       <a href="contact.html">Contact</a>
-      <a href="faq.html#faq-allergies" data-open-details>Allergy info</a>
-      <a href="privacy.html">Privacy</a>
     </nav>
   </div>
   <div class="footer-bottom">
     <p>© 2026 Pashabakess. Baked with love.</p>
-    <span aria-hidden="true">GOOD COOKIES. HAPPIER DAYS.</span>
+    <nav class="footer-utility" aria-label="Allergy and privacy">
+      <a href="faq.html#faq-allergies" data-open-details>Allergy info</a>
+      <a href="privacy.html">Privacy</a>
+    </nav>
+    <span aria-hidden="true">Good cookies. Happier days.</span>
   </div>
 </footer>
 

@@ -31,6 +31,10 @@ json_response([
     'ok' => true,
     'cookies' => $cookies,
     'prices' => $prices,
+    // "Other amount": any number of cookies in this range at this price each (0 = option off).
+    'cookiePrice' => cookie_price(),
+    'customMin' => PB_CUSTOM_MIN,
+    'customMax' => PB_MAX_COOKIES,
     'minDate' => earliest_pickup_date()->format('Y-m-d'),
     'maxDate' => latest_pickup_date()->format('Y-m-d'),
     'leadDays' => lead_days(),

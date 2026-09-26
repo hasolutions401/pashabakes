@@ -40,6 +40,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         $prices[(string) $size] = (int) round((float) $raw * 100);
     }
+    $each = trim((string) ($in['cookie_price'] ?? ''));
+    if ($each !== '' && !preg_match('/^\d{1,3}(\.\d{1,2})?$/', $each)) {
+        $errors['cookie_price'] = 'Enter a price like 3.50, or leave it empty to turn “Other amount” off.';
+    }
 
     $slots = text_lines((string) ($in['pickup_slots'] ?? ''));
     if (!$slots) {
@@ -98,6 +102,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'accepting_orders' => !empty($in['accepting_orders']) ? '1' : '0',
         'closed_message' => clean_text($in['closed_message'] ?? '', 400),
         'prices' => json_encode($prices),
+        'cookie_price' => (string) (int) round((float) ($each === '' ? 0 : $each) * 100),
         'lead_days' => (string) $lead,
         'max_days_ahead' => (string) $maxAhead,
         'max_cookies_per_day' => (string) (int) $dayMax,
@@ -133,6 +138,8 @@ foreach (PB_BOX_SIZES as $size) {
         ? (string) ($_POST['price_' . $size] ?? '')
         : (isset($savedPrices[(string) $size]) ? rtrim(rtrim(number_format($savedPrices[(string) $size] / 100, 2, '.', ''), '0'), '.') : '');
 }
+$eachValue = $_SERVER['REQUEST_METHOD'] === 'POST' ? (string) ($_POST['cookie_price'] ?? '')
+    : (cookie_price() > 0 ? number_format(cookie_price() / 100, 2, '.', '') : '');
 $sizeNames = [4 => '4 cookies', 6 => 'Half dozen', 12 => 'Dozen', 24 => '2 dozen', 36 => '3 dozen'];
 $err = fn(string $k) => isset($errors[$k]) ? '<span class="error">' . e($errors[$k]) . '</span>' : '';
 
@@ -161,6 +168,10 @@ admin_header('Settings', 'settings', $user);
         </label>
       <?php endforeach; ?>
     </div>
+    <label>Price per cookie for “Other amount” <small>(customers type any number from <?= PB_CUSTOM_MIN ?> to <?= PB_MAX_COOKIES ?>; leave empty to turn this option off)</small>
+      <span class="money-input"><span>$</span><input name="cookie_price" value="<?= e($eachValue) ?>" inputmode="decimal" placeholder="3.50"></span>
+      <?= $err('cookie_price') ?>
+    </label>
     <p class="muted">Remember to update prices written in the website text too (home page, menu, FAQs) if you change them —
       ask Hamza, so the search-engine information (Google, AI assistants) is updated at the same time.</p>
   </section>

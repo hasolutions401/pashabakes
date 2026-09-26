@@ -7,11 +7,18 @@ declare(strict_types=1);
  */
 
 const PB_BOX_SIZES = [4, 6, 12, 24, 36];
+/** Smallest "Other amount" (the largest is PB_MAX_COOKIES; bigger orders are enquiries). */
+const PB_CUSTOM_MIN = 4;
+/** Occasion choices before the Sept 2026 additions, to recognise a list nobody has edited yet. */
+const PB_OLD_OCCASIONS = ['Just because', 'Birthday', 'Holiday', 'Baby shower', 'Bridal shower', 'Eid', 'Aqiqah', 'Graduation', 'Office treat'];
+/** Occasions added in Sept 2026 (schema v13). */
+const PB_NEW_OCCASIONS = ['Anniversary', 'Housewarming', 'New job', 'Wedding', 'Thank you'];
 
 function default_settings(): array
 {
     return [
         'prices'            => json_encode(['4' => 1400, '6' => 2000, '12' => 3800, '24' => 7600, '36' => 11400]),
+        'cookie_price'      => '350',  // per cookie for an "Other amount" box ($3.50, Sept 2026); 0 = option off
         'lead_days'         => '7',
         'max_days_ahead'    => '90',
         'max_cookies_per_day' => '60',  // 5 dozen a day (Pasha); 0 = no daily limit
@@ -30,7 +37,7 @@ function default_settings(): array
         'cashapp_handle'    => 'Pashabakess',
         'accepting_orders'  => '1',
         'closed_message'    => 'Online ordering is paused for now. Please email pashabakess@gmail.com and Pasha will help you.',
-        'occasions'         => implode("\n", ['Just because', 'Birthday', 'Holiday', 'Baby shower', 'Bridal shower', 'Eid', 'Aqiqah', 'Graduation', 'Office treat']),
+        'occasions'         => implode("\n", default_occasions()),
     ];
 }
 
@@ -75,6 +82,32 @@ function box_prices(): array
         }
     }
     return $prices;
+}
+
+/** Price per cookie for an "Other amount" box, in cents (0 = option off). */
+function cookie_price(): int
+{
+    return max(0, (int) setting('cookie_price'));
+}
+
+/**
+ * What a box of this many cookies costs, in cents (0 = not offered).
+ * The set boxes keep their price; any other amount is charged per cookie.
+ */
+function box_price(int $count): int
+{
+    $prices = box_prices();
+    if (isset($prices[$count])) {
+        return $prices[$count];
+    }
+    $each = cookie_price();
+    return $each > 0 && $count >= PB_CUSTOM_MIN && $count <= PB_MAX_COOKIES ? $count * $each : 0;
+}
+
+function default_occasions(): array
+{
+    return ['Just because', 'Birthday', 'Anniversary', 'Housewarming', 'New job', 'Wedding', 'Graduation', 'Baby shower',
+        'Bridal shower', 'Eid', 'Aqiqah', 'Holiday', 'Office treat', 'Thank you'];
 }
 
 function pickup_slots(): array

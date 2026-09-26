@@ -39,6 +39,8 @@ Owner of the project: Hamza (developer). Client: Pasha (the baker). Customers ar
   pay right after ordering; an unpaid order holds its pickup day for 24 hours (`payment_hours`); max 60 cookies per pickup day; cancel/reschedule by email ≥ 2 calendar days before
   pickup → full refund within 3–5 business days; less notice → no refund; not picked up within 2 days → no
   refund; full refund if Pasha cancels.
+- Boxes of 4/6/12/24/36 plus "Other amount": any 4–36 cookies at the per-cookie price (`cookie_price`, $3.50,
+  Admin → Settings; empty = option off). One unpaid order per customer (same email or phone) at a time (Sept 2026).
 - Pasha's own photos: originals in `photos/`, web copies in `dist/images/`. Pumpkin Chocolate Chip and Maple
   Pecan still use sample photos from recipe sites (credited on the menu) until Pasha sends hers.
 - After editing `dist/app.js` or `dist/style.css`, bump their `?v=` number in every HTML page (browsers keep CSS/JS

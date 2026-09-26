@@ -26,13 +26,19 @@ const store = {
 
 let cookies = FALLBACK_COOKIES.slice();
 let pricesCents = {4:1400, 6:2000, 12:3800, 24:7600, 36:11400};
+// "Other amount": any number of cookies in this range, priced per cookie (0 = option off).
+let cookiePrice = 350, customMin = 4, customMax = 36;
 let settings = null;          // from api/menu.php; null = server not reachable (yet)
-let box = 4;
+let box = 4;                  // cookies in the box
+let customBox = false;        // true when the customer typed their own amount
 const qty = {};               // cookie id -> quantity
 let submitting = false;
 const clientToken = (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`).replace(/[^A-Za-z0-9-]/g, '') + 'x';
 
 const total = () => cookies.reduce((sum, c) => sum + (qty[c.id] || 0), 0);
+const customOk = n => cookiePrice > 0 && Number.isInteger(n) && n >= customMin && n <= customMax;
+// Same rule as box_price() on the server: set boxes keep their price, other amounts are per cookie.
+const priceFor = n => pricesCents[n] || (customOk(n) ? n * cookiePrice : 0);
 const cookieById = id => cookies.find(c => c.id === Number(id));
 const cardImg = c => c.imgMd || c.img || 'logo-192.jpg';
 // Photos stored on this site are Pasha's own; anything else is an illustrative sample.
@@ -185,6 +191,25 @@ function renderPrices() {
     const option = el.closest('.size-option');
     if (option) option.hidden = !cents;
   });
+  $$('[data-custom-only]').forEach(el => { el.hidden = !(cookiePrice > 0); });
+  $$('[data-cookie-price]').forEach(el => { el.textContent = money(cookiePrice); });
+  $$('[data-custom-min]').forEach(el => { el.textContent = customMin; });
+  $$('[data-custom-max]').forEach(el => { el.textContent = customMax; });
+  const cheaperBoxes = Object.entries(pricesCents).some(([n, c]) => c / Number(n) < cookiePrice);
+  $$('[data-custom-tip]').forEach(el => { el.hidden = !cheaperBoxes; });
+}
+
+// Shows the "How many cookies?" field only while "Other amount" is chosen.
+function syncCustomAmount() {
+  const input = $('#custom-amount');
+  if (!input) return;
+  $('#custom-amount-field').hidden = !customBox;
+  input.disabled = !customBox;
+  input.required = customBox;
+  input.min = customMin;
+  input.max = customMax;
+  if (customBox && !input.value) input.value = box;
+  if (!customBox) showFieldError(input, '');
 }
 
 /* ——— Box state ——— */
@@ -200,10 +225,10 @@ function update() {
   });
   if (!$('#order-form')) return;
 
-  store.set('pashabakess-box', {size: box, qty});
+  store.set('pashabakess-box', {size: box, qty, custom: customBox});
   const count = total();
   const full = count >= box;
-  const price = pricesCents[box] || 0;
+  const price = priceFor(box);
   const date = chosenDate();
 
   $('#selection-count').textContent = `${count} of ${box} cookies chosen`;
@@ -334,14 +359,32 @@ document.addEventListener('click', e => {
 });
 
 $$('input[name="box"]').forEach(r => r.addEventListener('change', () => {
-  box = Number(r.value);
+  customBox = r.value === 'custom';
+  if (customBox) {
+    const typed = Number($('#custom-amount').value);
+    if ($('#custom-amount').value && customOk(typed)) box = typed;
+  } else {
+    box = Number(r.value);
+  }
+  syncCustomAmount();
   update();
   // A bigger box may no longer fit the chosen day's limit (or a smaller one now does).
   const date = $('#pickup-date');
   if (date?.value) showFieldError(date, fieldMessage(date));
 }));
 
+$('#custom-amount')?.addEventListener('input', e => {
+  const n = Number(e.target.value);
+  if (!e.target.value || !customOk(n)) return;
+  box = n;
+  update();
+  const date = $('#pickup-date');
+  if (date?.value) showFieldError(date, fieldMessage(date));
+});
+
 $('#clear-box')?.addEventListener('click', () => {
+  const n = total();
+  if (n > 1 && !confirm(`Remove all ${n} cookies from your box? You’ll need to choose your flavors again.`)) return;
   Object.keys(qty).forEach(k => delete qty[k]);
   update();
   $('.size-option input:checked')?.focus();
@@ -470,6 +513,11 @@ function fieldMessage(el) {
   if (!value) return '';
   if (el.type === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(value)) return 'Please enter a valid email address, like name@example.com.';
   if (el.type === 'tel' && value.replace(/\D/g, '').length < 10) return 'Please enter a phone number with area code.';
+  if (el.id === 'custom-amount') {
+    const n = Number(value);
+    if (Number.isInteger(n) && n > customMax) return `For more than ${customMax} cookies, please ask about a large order (link at the top of this page).`;
+    if (!customOk(n)) return `Please enter a whole number of cookies from ${customMin} to ${customMax}.`;
+  }
   if (el.id === 'pickup-date') {
     if (value < minimumDate()) {
       const lead = settings?.leadDays ?? 7;
@@ -593,7 +641,7 @@ function setSubmitting(on) {
   const btn = $('#place-order');
   btn.disabled = on || (settings && !settings.accepting);
   btn.setAttribute('aria-busy', String(on));
-  $('#place-order-label').innerHTML = on ? 'Placing your order…' : `Place order · <span data-pay-amount>${money(pricesCents[box] || 0)}</span>`;
+  $('#place-order-label').innerHTML = on ? 'Placing your order…' : `Place order · <span data-pay-amount>${money(priceFor(box))}</span>`;
 }
 
 function showSuccess(order) {
@@ -661,11 +709,11 @@ $('#order-form')?.addEventListener('submit', async e => {
     items: cookies.filter(c => qty[c.id] > 0).map(c => ({id: c.id, qty: qty[c.id]})),
     pickup_date: d.get('date'), pickup_slot: d.get('time'),
     payment_method: d.get('payment'), payer_ref: d.get('payer_ref') || '', agree: !!d.get('agree'),
-    expected_total_cents: pricesCents[box],
+    expected_total_cents: priceFor(box),
     // Only when the visitor allowed ads measurement: lets the paid order be matched to the ad.
     ad_consent: adsAllowed(), fbp: adsAllowed() ? cookieValue('_fbp') : '', fbc: adsAllowed() ? cookieValue('_fbc') : ''
   };
-  const value = (pricesCents[box] || 0) / 100;
+  const value = priceFor(box) / 100;
   metaTrackOnce('InitiateCheckout', {currency: 'USD', value, num_items: box});
 
   setSubmitting(true);
@@ -688,7 +736,7 @@ $('#order-form')?.addEventListener('submit', async e => {
     const problems = [];
     if (data?.errors) {
       Object.entries(data.errors).forEach(([key, msg]) => {
-        let id = SERVER_FIELDS[key];
+        let id = key === 'box_size' && customBox ? 'custom-amount' : SERVER_FIELDS[key];
         if (key === 'items') { id = `step-plus-${cookies[0]?.id}`; $('#flavor-error').textContent = msg; }
         const el = id && document.getElementById(id);
         if (el && el.matches('input, select, textarea')) showFieldError(el, msg);
@@ -880,7 +928,15 @@ function applySettings(data) {
   }
   if (data.prices && Object.keys(data.prices).length) {
     pricesCents = Object.fromEntries(Object.entries(data.prices).map(([k, v]) => [k, Number(v)]));
-    if (!pricesCents[box]) box = Number(Object.keys(pricesCents)[0]);
+  }
+  if (typeof data.cookiePrice === 'number') {
+    cookiePrice = Math.max(0, data.cookiePrice);
+    customMin = Number(data.customMin) || customMin;
+    customMax = Number(data.customMax) || customMax;
+  }
+  if (customBox ? !customOk(box) : !pricesCents[box]) {
+    customBox = false;
+    box = Number(Object.keys(pricesCents)[0]);
   }
   $$('[data-pickup-area]').forEach(el => { el.textContent = data.pickupArea || 'Tyngsboro, MA'; });
   if (data.paymentHoldText) $$('[data-hold-text]').forEach(el => { el.textContent = data.paymentHoldText; });
@@ -926,8 +982,9 @@ function renderAll() {
   renderPrices();
   refreshDates();
   if ($('#order-form')) {
-    const radio = document.querySelector(`input[name="box"][value="${box}"]`);
+    const radio = document.querySelector(`input[name="box"][value="${customBox ? 'custom' : box}"]`);
     if (radio) radio.checked = true;
+    syncCustomAmount();
     updatePayment();
     enforceAvailability();
   }
@@ -950,14 +1007,20 @@ if ($('#order-form')) {
   form.addEventListener('change', saveDraft);
 
   const saved = store.get('pashabakess-box');
-  if (saved && pricesCents[saved.size] && saved.qty && typeof saved.qty === 'object') {
+  if (saved && priceFor(Number(saved.size)) && saved.qty && typeof saved.qty === 'object') {
     box = Number(saved.size);
+    customBox = !!saved.custom || !pricesCents[box];
     Object.entries(saved.qty).forEach(([id, q]) => { if (Number.isInteger(q) && q > 0 && q <= 36) qty[id] = q; });
     if (total() > box) Object.keys(qty).forEach(k => delete qty[k]);
   }
   const size = Number(params.get('box'));
-  if (pricesCents[size]) {
+  if (params.get('box') === 'custom' && cookiePrice > 0) {
+    customBox = true;
+    params.delete('box');
+    history.replaceState(null, '', location.pathname + (params.toString() ? '?' + params.toString() : '') + location.hash);
+  } else if (pricesCents[size]) {
     box = size;
+    customBox = false;
     params.delete('box');
     history.replaceState(null, '', location.pathname + (params.toString() ? '?' + params.toString() : '') + location.hash);
   }
@@ -991,10 +1054,12 @@ if ($('#order-form') && document.modelContext?.registerTool) {
         if (!pricesCents[input?.size] || entries.some(([id, v]) => !cookieById(id) || !Number.isInteger(v) || v < 0) || sum > input.size)
           throw new Error('Use an offered box size and flavor ids from the menu, within the box capacity.');
         box = input.size;
+        customBox = false;
         Object.keys(qty).forEach(k => delete qty[k]);
         entries.forEach(([id, v]) => { if (v > 0) qty[id] = v; });
         const radio = document.querySelector(`input[name="box"][value="${box}"]`);
         if (radio) radio.checked = true;
+        syncCustomAmount();
         update();
         return {size: box, quantities: {...qty}, price: money(pricesCents[box]), status: 'configured; not submitted'};
       }

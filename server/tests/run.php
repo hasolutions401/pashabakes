@@ -106,6 +106,23 @@ check('phone as a number accepted; line breaks in the name collapsed', $e === []
 check('lists and numbers in text fields give errors, not a crash', isset($e['name'], $e['email'], $e['pickup_date'], $e['payment_method'], $e['form']));
 [, $e] = order_validate($base(['box_size' => '6abc']));
 check('box size must be a whole number', isset($e['box_size']));
+
+// "Other amount": 4–36 cookies at the per-cookie price; the set boxes keep their (cheaper) price.
+check('other amount priced per cookie', cookie_price() === 350 && box_price(30) === 10500 && box_price(5) === 1750 && box_price(12) === 3800);
+check('other amount stays within 4–36', box_price(3) === 0 && box_price(37) === 0 && box_price(0) === 0);
+[$d, $e] = order_validate($base(['box_size' => 30, 'items' => [['id' => 1, 'qty' => 30]], 'expected_total_cents' => 10500]));
+check('other amount order passes with the per-cookie total', $e === [] && $d['total_cents'] === 10500 && $d['box_size'] === 30);
+[, $e] = order_validate($base(['box_size' => 37, 'items' => [['id' => 1, 'qty' => 36], ['id' => 2, 'qty' => 1]], 'expected_total_cents' => 12950]));
+check('more than 36 cookies rejected', isset($e['box_size']));
+[, $e] = order_validate($base(['box_size' => 30, 'items' => [['id' => 1, 'qty' => 30]], 'expected_total_cents' => 9000]));
+check('other amount: a wrong total is caught', isset($e['box_size']));
+settings_save(['cookie_price' => '0']);
+[, $e] = order_validate($base(['box_size' => 30, 'items' => [['id' => 1, 'qty' => 30]], 'expected_total_cents' => 10500]));
+check('other amount can be switched off in Settings', isset($e['box_size']) && box_price(12) === 3800);
+settings_save(['cookie_price' => '350']);
+check('new occasions offered', array_intersect(PB_NEW_OCCASIONS, occasions()) === PB_NEW_OCCASIONS);
+[$d, $e] = order_validate($base(['occasion' => 'Housewarming']));
+check('new occasion kept on the order', $e === [] && $d['occasion'] === 'Housewarming');
 [, $e] = order_validate($base(['items' => [['id' => 1, 'qty' => 2.9], ['id' => 6, 'qty' => 3.1]]]));
 check('flavor quantities must be whole numbers', isset($e['items']));
 [$d, $e] = order_validate($base(['items' => [['id' => 1, 'qty' => '2'], ['id' => 1, 'qty' => 1], ['id' => 6, 'qty' => 3]]]));
@@ -265,6 +282,19 @@ if ($driver === 'sqlite') {
             && (int) $v8->query("SELECT value FROM settings WHERE name = 'schema_version'")->fetchColumn() === PB_SCHEMA_VERSION);
         $v8 = null;
     }
+
+    // Version 12 → 13: new occasions. An untouched list gets the new default; Pasha's own list is kept and extended.
+    $old12 = implode("\n", PB_OLD_OCCASIONS);
+    foreach ([$old12 => default_occasions(), "Birthday\nCorporate" => ['Birthday', 'Corporate', ...PB_NEW_OCCASIONS]] as $was => $expect) {
+        $v12 = new PDO("sqlite:$tmp/v12-" . md5($was) . '.sqlite', null, null, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC]);
+        $v12->exec("CREATE TABLE settings (name TEXT PRIMARY KEY, value TEXT NOT NULL)");
+        $v12->prepare("INSERT INTO settings VALUES ('schema_version', '12'), ('occasions', ?)")->execute([$was]);
+        migrate($v12, 'sqlite');
+        check('v12 upgrade: occasions ' . ($was === $old12 ? 'updated' : 'kept and extended'),
+            text_lines((string) $v12->query("SELECT value FROM settings WHERE name = 'occasions'")->fetchColumn()) === $expect
+            && $v12->query("SELECT value FROM settings WHERE name = 'cookie_price'")->fetchColumn() === '350');
+        $v12 = null;
+    }
 }
 
 // Daily cookie limit
@@ -310,6 +340,12 @@ foreach ([1, 2, 3] as $i) {
 check('unpaid orders counted per email', unpaid_orders_for_email($mail) === 3);
 db_exec('UPDATE orders SET created_at = ? WHERE email = ? AND id = (SELECT MIN(id) FROM orders WHERE email = ?)', [$hoursAgo(30), $mail, $mail]);
 check('overdue orders no longer count toward the per-email cap', unpaid_orders_for_email($mail) === 2);
+$capPhone = (string) db_value('SELECT phone FROM orders WHERE email = ? LIMIT 1', [$mail]);
+check('unpaid orders also found by phone (any format, other email)', unpaid_orders_for_customer('new-address@example.com', '+1 ' . preg_replace('/\D/', '', $capPhone)) >= 2
+    && unpaid_orders_for_customer('new-address@example.com', '(111) 222-3333') === 0);
+$paidId = (int) db_value("SELECT id FROM orders WHERE email = ? AND status = 'pending' ORDER BY id DESC LIMIT 1", [$mail]);
+order_mark_paid($paidId);
+check('a paid order doesn’t block ordering again', unpaid_orders_for_email($mail) === 1);
 settings_save(['max_cookies_per_day' => '0']);
 
 // Deleting orders and restarting the numbers
