@@ -21,7 +21,7 @@
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <link rel="preload" href="fonts/playfair-display-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="fonts/dm-sans-latin.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="style.css?v=23">
+  <link rel="stylesheet" href="style.css?v=24">
   <script src="app.js?v=20" defer></script>
 </head>
 <body>
@@ -84,35 +84,35 @@
 
 <main id="main" tabindex="-1" data-page="menu">
 <section id="menu" class="section menu-section" aria-labelledby="menu-title">
-    <div class="section-heading">
+    <div class="section-heading section-heading-stack">
       <div>
         <p class="eyebrow">The <span data-season>seasonal</span> collection</p>
         <h1 id="menu-title">Meet your next<br><em>cookie crush.</em></h1>
       </div>
       <div class="heading-aside">
         <p>Four signature favorites. Two seasonal flavors that rotate every month and can be picked up during their month.<br>Mix, match, and make it your own.</p>
-        <a class="text-link" href="order.html">Build your box <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+        <a class="button" href="order.html">Build your box <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a>
       </div>
     </div>
     <nav class="price-line" aria-label="Box sizes and prices">
       <a href="order.html?box=4"><strong>4 cookies</strong> <span data-price-for="4">$14</span></a>
-      <a href="order.html?box=6"><strong>6 cookies</strong> <span data-price-for="6">$20</span></a>
-      <a href="order.html?box=12"><strong>12 cookies</strong> <span data-price-for="12">$38</span></a>
-      <a href="order.html?box=24"><strong>24 cookies</strong> <span data-price-for="24">$76</span></a>
-      <a href="order.html?box=36"><strong>36 cookies</strong> <span data-price-for="36">$114</span></a>
+      <a href="order.html?box=6"><strong>Half dozen</strong> <span data-price-for="6">$20</span></a>
+      <a href="order.html?box=12"><strong>Dozen</strong> <span data-price-for="12">$38</span></a>
+      <a href="order.html?box=24"><strong>2 dozen</strong> <span data-price-for="24">$76</span></a>
+      <a href="order.html?box=36"><strong>3 dozen</strong> <span data-price-for="36">$114</span></a>
       <a href="order.html?box=custom" data-custom-only><strong>Other amount</strong> <span data-cookie-price>$3.50</span> each</a>
       <span class="price-line-note">Minimum 4 · one week’s notice</span>
     </nav>
     <div class="filter-bar">
+      <h2 class="filter-title" id="flavors-title">Our flavors</h2>
       <div role="group" aria-label="Filter cookie menu" class="filters">
         <button type="button" class="filter active" data-filter="all" aria-pressed="true">All cookies <span class="filter-count">6</span></button>
         <button type="button" class="filter" data-filter="signature" aria-pressed="false">The signatures <span class="filter-count">4</span></button>
-        <button type="button" class="filter" data-filter="seasonal" aria-pressed="false"><span data-season>Seasonal</span> specials <span class="filter-count">2</span></button>
+        <button type="button" class="filter" data-filter="seasonal" aria-pressed="false"><span><span data-season>Seasonal</span> specials</span> <span class="filter-count">2</span></button>
       </div>
       <span class="filter-caption">Made with love. Always.</span>
     </div>
     <p class="sr-only" id="filter-status" role="status"></p>
-    <h2 class="sr-only">Our flavors</h2>
     <div id="cookie-grid" class="cookie-grid">
       <article class="cookie-card" data-type="signature">
         <div class="cookie-image">
@@ -189,20 +189,6 @@
     </div>
     <p class="photo-disclosure" data-photo-note>The Pumpkin Chocolate Chip and Maple Pecan photos are illustrative for now, not Pashabakess cookies (photos: <a class="text-underline" href="https://sallysbakingaddiction.com/2013/09/04/pumpkin-chocolate-chip-cookies/" target="_blank" rel="noreferrer">Sally’s Baking Addiction<span class="sr-only"> (opens in a new tab)</span></a>, <a class="text-underline" href="https://confessionsofabakingqueen.com/maple-pecan-cookies/" target="_blank" rel="noreferrer">Confessions of a Baking Queen<span class="sr-only"> (opens in a new tab)</span></a>). Pasha’s own photos are coming soon.</p>
     <p class="halal-note"><svg class="icon" aria-hidden="true"><use href="#i-check-circle"/></svg><span><strong>Made with halal ingredients.</strong> Every ingredient we use is halal, including items such as marshmallows.</span></p>
-
-    <div class="pricing-strip">
-      <div class="pricing-intro">
-        <p class="eyebrow">Your box. Your favorites.</p>
-        <h3>A sweet little mix &amp; match.</h3>
-        <p>Minimum order: 4 cookies · One week’s notice</p>
-      </div>
-      <a class="price" href="order.html?box=4"><strong>4 cookies</strong><span class="price-amount" data-price-for="4">$14</span><span class="price-cta">Choose <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></span></a>
-      <a class="price" href="order.html?box=6"><strong>Half dozen</strong><span class="price-amount" data-price-for="6">$20</span><span class="price-cta">Choose <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></span></a>
-      <a class="price" href="order.html?box=12"><strong>Dozen</strong><span class="price-amount" data-price-for="12">$38</span><span class="price-cta">Choose <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></span></a>
-      <a class="price" href="order.html?box=24"><strong>2 dozen</strong><span class="price-amount" data-price-for="24">$76</span><span class="price-cta">Choose <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></span></a>
-      <a class="price" href="order.html?box=36"><strong>3 dozen</strong><span class="price-amount" data-price-for="36">$114</span><span class="price-cta">Choose <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></span></a>
-      <a class="price" href="order.html?box=custom" data-custom-only><strong>Other amount</strong><span class="price-amount" data-cookie-price>$3.50</span><span class="price-each">per cookie</span><span class="price-cta">Choose <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></span></a>
-    </div>
   </section>
 <aside class="menu-qr" aria-label="Instagram and payment handles">
     <a class="qr-link" href="https://www.instagram.com/pashabakess/" target="_blank" rel="noreferrer">
