@@ -10,7 +10,7 @@ declare(strict_types=1);
 // 9: unpaid orders hold their pickup day for 24 hours. 10: archived_orders (kept when numbers restart).
 // 11: admin_users.session_version (changing the password logs out other devices).
 // 12: orders.ad_consent / fbp / fbc (Meta ads measurement, only with the customer's consent).
-const PB_SCHEMA_VERSION = 12;
+const PB_SCHEMA_VERSION = 13;
 
 function db(): PDO
 {
@@ -399,6 +399,18 @@ function migrate_steps(PDO $pdo, string $driver, int $version): void
     // Version 9: unpaid orders hold their pickup day for 24 hours (agreed Sept 2026), unless a deadline was already set.
     if ($version >= 1 && $version < 9) {
         $pdo->prepare("UPDATE settings SET value = '24' WHERE name = 'payment_hours' AND value IN ('', '0')")->execute();
+    }
+    // Version 13: more occasions (Sept 2026). An untouched list gets the new default order; an edited one keeps
+    // Pasha's edits and only gains the new occasions at the end. ("Other amount" pricing is seeded above.)
+    if ($version >= 1 && $version < 13) {
+        $st = $pdo->prepare("SELECT value FROM settings WHERE name = 'occasions'");
+        $st->execute();
+        $current = $st->fetchColumn();
+        if ($current !== false) {
+            $list = text_lines((string) $current);
+            $list = $list === PB_OLD_OCCASIONS ? default_occasions() : [...$list, ...array_diff(PB_NEW_OCCASIONS, $list)];
+            $pdo->prepare("UPDATE settings SET value = ? WHERE name = 'occasions'")->execute([implode("\n", $list)]);
+        }
     }
     if ($version < 3) {
         if ((int) $pdo->query("SELECT COUNT(*) FROM cookies WHERE name LIKE 'M&M%' OR name LIKE 'M & M%'")->fetchColumn() === 0) {
