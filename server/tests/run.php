@@ -373,6 +373,38 @@ order_set_status($firstId, 'cancelled');
 check('cancelled order deleted with its items and emails', order_delete($firstId) && order_find($firstId) === null
     && (int) db_value('SELECT COUNT(*) FROM order_items WHERE order_id = ?', [$firstId]) === 0
     && (int) db_value('SELECT COUNT(*) FROM email_log WHERE order_id = ?', [$firstId]) === 0);
+
+// "Confirm payment" from the order list: marks paid and emails the confirmation, once.
+$pendingId = (int) db_value("SELECT id FROM orders WHERE status = 'pending' AND email <> '' ORDER BY id LIMIT 1");
+$mailsBefore = (int) db_value("SELECT COUNT(*) FROM email_log WHERE order_id = ? AND kind = 'confirmation'", [$pendingId]);
+$msgs = order_confirm_payment($pendingId);
+check('confirm payment: marked paid, confirmation emailed', order_find($pendingId)['status'] === 'paid'
+    && (int) db_value("SELECT COUNT(*) FROM email_log WHERE order_id = ? AND kind = 'confirmation'", [$pendingId]) === $mailsBefore + 1
+    && end($msgs)[1] === 'success');
+$again = order_confirm_payment($pendingId);
+check('confirm payment twice: nothing happens the second time', $again[0][1] === 'warning'
+    && (int) db_value("SELECT COUNT(*) FROM email_log WHERE order_id = ? AND kind = 'confirmation'", [$pendingId]) === $mailsBefore + 1);
+
+// Bulk delete: only picked-up and cancelled orders, by date range or by id.
+$bulk = [];
+foreach (['completed', 'cancelled', 'paid', 'pending'] as $i => $st) {
+    [, $created] = order_create(['client_token' => bin2hex(random_bytes(12)), 'pickup_date' => '2026-01-1' . $i, 'email' => "bulk{$i}@example.com"] + $d4);
+    $bid = (int) db_value('SELECT MAX(id) FROM orders');
+    if ($st !== 'pending') {
+        order_set_status($bid, $st);
+    }
+    $bulk[$st] = $bid;
+}
+$inRange = array_column(finished_orders_between('2026-01-10', '2026-01-13'), 'id');
+check('date range finds only picked-up and cancelled orders', array_map('intval', $inRange) === [$bulk['completed'], $bulk['cancelled']]);
+check('date range outside the orders finds nothing', finished_orders_between('2025-01-01', '2025-01-31') === []);
+$deleted = orders_delete([...array_values($bulk), 'x', -5, 999999]);
+check('bulk delete removes finished orders with their items, never paid or unpaid ones', count($deleted) === 2
+    && order_find($bulk['completed']) === null && order_find($bulk['cancelled']) === null
+    && order_find($bulk['paid']) !== null && order_find($bulk['pending']) !== null
+    && (int) db_value('SELECT COUNT(*) FROM order_items WHERE order_id IN (?, ?)', [$bulk['completed'], $bulk['cancelled']]) === 0);
+check('bulk delete with nothing valid does nothing', orders_delete([]) === [] && orders_delete([$bulk['paid']]) === []);
+
 foreach (db_all("SELECT id FROM orders WHERE status IN ('pending', 'paid')") as $row) {
     order_set_status((int) $row['id'], 'completed');
 }

@@ -22,7 +22,7 @@ function admin_header(string $title, string $active = '', ?array $user = null): 
   <meta name="theme-color" content="#442c25">
   <title><?= e($title) ?> · Pashabakess Admin</title>
   <link rel="icon" type="image/png" href="../favicon-64.png">
-  <link rel="stylesheet" href="admin.css?v=5">
+  <link rel="stylesheet" href="admin.css?v=6">
 </head>
 <body>
 <header class="topbar">
@@ -52,7 +52,7 @@ function admin_footer(): void
 {
     ?>
 </main>
-<script src="admin.js?v=1" defer></script>
+<script src="admin.js?v=2" defer></script>
 </body>
 </html>
 <?php

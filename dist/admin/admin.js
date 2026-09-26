@@ -20,3 +20,16 @@ window.addEventListener('pageshow', () => {
     f.querySelectorAll('button[type="submit"]').forEach((b) => { b.disabled = false; });
   });
 });
+
+// Orders list: "Select all on this page" for the delete checkboxes.
+document.getElementById('select-all')?.addEventListener('change', (e) => {
+  document.querySelectorAll('.row-check').forEach((c) => { c.checked = e.target.checked; });
+});
+// "Delete selected" needs at least one ticked order.
+document.getElementById('bulk')?.addEventListener('submit', (e) => {
+  if (!document.querySelector('.row-check:checked')) {
+    e.preventDefault();
+    window.alert('Tick the orders you want to delete first.');
+    delete e.target.dataset.submitting;
+  }
+}, true);

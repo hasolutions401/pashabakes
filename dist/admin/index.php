@@ -9,6 +9,18 @@ if (!in_array($status, [...PB_STATUSES, 'all'], true)) {
 }
 $search = clean_text($_GET['q'] ?? '', 80);
 $page = max(1, (int) ($_GET['page'] ?? 1));
+$here = 'index.php?' . http_build_query(array_filter(['status' => $status, 'q' => $search, 'page' => $page > 1 ? $page : null], fn($v) => $v !== '' && $v !== null));
+
+// "Confirm payment" straight from the list (same as "Mark as Paid" on the order page).
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    csrf_check();
+    if (($_POST['action'] ?? '') === 'confirm_paid') {
+        foreach (order_confirm_payment((int) ($_POST['id'] ?? 0)) as [$message, $type]) {
+            flash($message, $type);
+        }
+    }
+    redirect($here);
+}
 
 $counts = order_counts();
 $list = order_list($status, $search, $page);
@@ -101,14 +113,26 @@ admin_header('Orders', 'orders', $user);
   </nav>
 
   <?php $archivedCount = (int) db_value('SELECT COUNT(*) FROM archived_orders'); ?>
-  <p class="list-links"><a href="export.php?what=orders">Download orders (CSV)</a><?php if ($archivedCount > 0): ?> · <a href="archive.php">Archived orders (<?= $archivedCount ?>)</a><?php endif; ?></p>
+  <p class="list-links"><a href="export.php?what=orders">Download orders (CSV)</a><?php if ($archivedCount > 0): ?> · <a href="archive.php">Archived orders (<?= $archivedCount ?>)</a><?php endif; ?> · <a href="cleanup.php">Delete old orders</a></p>
 
   <?php if (!$list['rows']): ?>
     <p class="empty"><?= $search !== '' ? 'No orders match “' . e($search) . '”.' : 'No orders here yet.' ?></p>
   <?php else: ?>
+    <?php $selectable = array_filter($list['rows'], fn($o) => in_array($o['status'], PB_DELETABLE_STATUSES, true)); ?>
+    <?php if ($selectable): ?>
+      <form id="bulk" method="post" action="cleanup.php" class="bulk-bar">
+        <?= csrf_field() ?>
+        <label class="check"><input type="checkbox" id="select-all"> Select all on this page</label>
+        <button class="btn btn-danger btn-small" type="submit">Delete selected…</button>
+        <span class="muted">Only picked-up and cancelled orders can be selected.</span>
+      </form>
+    <?php endif; ?>
     <ul class="order-list">
       <?php foreach ($list['rows'] as $o): ?>
-        <li>
+        <li class="order-item">
+          <?php if (in_array($o['status'], PB_DELETABLE_STATUSES, true)): ?>
+            <input class="row-check" type="checkbox" name="ids[]" value="<?= (int) $o['id'] ?>" form="bulk" aria-label="Select <?= e($o['code']) ?>">
+          <?php endif; ?>
           <a class="order-row" href="order.php?id=<?= (int) $o['id'] ?>">
             <div class="order-row-top">
               <strong class="code"><?= e($o['code']) ?></strong>
@@ -120,6 +144,14 @@ admin_header('Orders', 'orders', $user);
             <p class="items"><?= e($o['items_text']) ?></p>
             <p class="pay"><?= e(payment_label($o['payment_method'])) ?><?php if ($o['payer_ref'] !== ''): ?> from <strong><?= e($o['payer_ref']) ?></strong><?php endif; ?> · placed <?= e(pretty_datetime($o['created_at'])) ?></p>
           </a>
+          <?php if ($o['status'] === 'pending'): ?>
+            <form method="post" class="row-action">
+              <?= csrf_field() ?>
+              <input type="hidden" name="action" value="confirm_paid"><input type="hidden" name="id" value="<?= (int) $o['id'] ?>">
+              <button class="btn btn-primary btn-small" type="submit"
+                data-confirm="Mark <?= e($o['code']) ?> as paid (<?= e(money((int) $o['total_cents'])) ?>) and email the confirmation to <?= e($o['customer_name']) ?>?">✓ Confirm payment</button>
+            </form>
+          <?php endif; ?>
         </li>
       <?php endforeach; ?>
     </ul>

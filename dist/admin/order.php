@@ -21,22 +21,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     switch ($action) {
         case 'mark_paid':
-            // An overdue order stopped holding its day, so the day may have filled up meanwhile.
-            $overBy = payment_overdue($order) && max_cookies_per_day() > 0
-                ? booked_cookies($order['pickup_date']) + (int) $order['box_size'] - max_cookies_per_day() : 0;
-            if (!order_mark_paid($id)) {
-                flash('This order is no longer waiting for payment.', 'warning');
-                break;
+            foreach (order_confirm_payment($id) as [$message, $type]) {
+                flash($message, $type);
             }
-            if ($overBy > 0) {
-                flash('Heads up: ' . pretty_date($order['pickup_date']) . " is now {$overBy} cookies over your daily limit, because other orders took this unpaid order’s place.", 'warning');
-            }
-            [$ok] = send_customer_confirmation(order_find($id));
-            // The one reliable "purchase": Pasha has seen the money arrive (off unless ads measurement is on).
-            meta_send_order_event('Purchase', order_find($id), $order['code'] . '-paid');
-            $ok
-                ? flash("Marked as paid. Confirmation email sent to {$order['email']}.")
-                : flash('Marked as paid, but the confirmation email could not be sent. Use “Resend confirmation” below.', 'warning');
             break;
 
         case 'mark_completed':
