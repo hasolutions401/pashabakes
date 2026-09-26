@@ -121,6 +121,11 @@ settings_save(['cookie_price' => '0']);
 check('other amount can be switched off in Settings', isset($e['box_size']) && box_price(12) === 3800);
 settings_save(['cookie_price' => '350']);
 check('new occasions offered', array_intersect(PB_NEW_OCCASIONS, occasions()) === PB_NEW_OCCASIONS);
+$menu = occasion_menu();
+check('order form: "Just because" first, then the "Occasion" group with Birthday, Anniversary…', $menu[0] === 'Just because'
+    && $menu[1] === ['group' => 'Occasion', 'options' => PB_GROUPED_OCCASIONS] && in_array('Eid', $menu, true) && in_array('Birthday', occasions(), true));
+check('settings text: groups, stray "- " lines and empty groups', occasion_menu_from("- Loose\nParty:\nEmpty:\nGifts:\n- Thank you\nEid")
+    === ['Loose', ['group' => 'Gifts', 'options' => ['Thank you']], 'Eid']);
 [$d, $e] = order_validate($base(['occasion' => 'Housewarming']));
 check('new occasion kept on the order', $e === [] && $d['occasion'] === 'Housewarming');
 [, $e] = order_validate($base(['items' => [['id' => 1, 'qty' => 2.9], ['id' => 6, 'qty' => 3.1]]]));
@@ -284,16 +289,27 @@ if ($driver === 'sqlite') {
     }
 
     // Version 12 → 13: new occasions. An untouched list gets the new default; Pasha's own list is kept and extended.
+    // Version 13 → 14: life events go under "Occasion"; everything else (and Pasha's own choices) stays.
     $old12 = implode("\n", PB_OLD_OCCASIONS);
-    foreach ([$old12 => default_occasions(), "Birthday\nCorporate" => ['Birthday', 'Corporate', ...PB_NEW_OCCASIONS]] as $was => $expect) {
-        $v12 = new PDO("sqlite:$tmp/v12-" . md5($was) . '.sqlite', null, null, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC]);
-        $v12->exec("CREATE TABLE settings (name TEXT PRIMARY KEY, value TEXT NOT NULL)");
-        $v12->prepare("INSERT INTO settings VALUES ('schema_version', '12'), ('occasions', ?)")->execute([$was]);
-        migrate($v12, 'sqlite');
-        check('v12 upgrade: occasions ' . ($was === $old12 ? 'updated' : 'kept and extended'),
-            text_lines((string) $v12->query("SELECT value FROM settings WHERE name = 'occasions'")->fetchColumn()) === $expect
-            && $v12->query("SELECT value FROM settings WHERE name = 'cookie_price'")->fetchColumn() === '350');
-        $v12 = null;
+    $live13 = implode("\n", [...PB_OLD_OCCASIONS, 'Family gatherings', ...PB_NEW_OCCASIONS]);
+    $grouped = "Just because\nOccasion:\n- Birthday\nPickup party";
+    $cases = [
+        [12, $old12, default_occasions(), 'untouched list updated'],
+        [12, "Birthday\nCorporate", ['Birthday', 'Anniversary', 'Housewarming', 'New job', 'Wedding', 'Corporate', 'Thank you'], 'own list kept and extended'],
+        [13, $live13, ['Just because', ...PB_GROUPED_OCCASIONS, 'Holiday', 'Eid', 'Aqiqah', 'Office treat', 'Family gatherings', 'Thank you'], 'live list grouped, own choice kept'],
+        [13, $grouped, ['Just because', 'Birthday', 'Pickup party'], 'a list that already has groups is left alone'],
+    ];
+    foreach ($cases as $i => [$from, $was, $expect, $what]) {
+        $vx = new PDO("sqlite:$tmp/occ-$i.sqlite", null, null, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC]);
+        $vx->exec("CREATE TABLE settings (name TEXT PRIMARY KEY, value TEXT NOT NULL)");
+        $vx->prepare("INSERT INTO settings VALUES ('schema_version', ?), ('occasions', ?)")->execute([(string) $from, $was]);
+        migrate($vx, 'sqlite');
+        $text = (string) $vx->query("SELECT value FROM settings WHERE name = 'occasions'")->fetchColumn();
+        $groups = array_values(array_filter(occasion_menu_from($text), 'is_array'));
+        check("v$from upgrade: occasions $what", occasions_from($text) === $expect
+            && ($i === 3 ? $text === $grouped : count($groups) === 1 && $groups[0]['group'] === 'Occasion')
+            && $vx->query("SELECT value FROM settings WHERE name = 'cookie_price'")->fetchColumn() === '350');
+        $vx = null;
     }
 }
 
@@ -357,6 +373,38 @@ order_set_status($firstId, 'cancelled');
 check('cancelled order deleted with its items and emails', order_delete($firstId) && order_find($firstId) === null
     && (int) db_value('SELECT COUNT(*) FROM order_items WHERE order_id = ?', [$firstId]) === 0
     && (int) db_value('SELECT COUNT(*) FROM email_log WHERE order_id = ?', [$firstId]) === 0);
+
+// "Confirm payment" from the order list: marks paid and emails the confirmation, once.
+$pendingId = (int) db_value("SELECT id FROM orders WHERE status = 'pending' AND email <> '' ORDER BY id LIMIT 1");
+$mailsBefore = (int) db_value("SELECT COUNT(*) FROM email_log WHERE order_id = ? AND kind = 'confirmation'", [$pendingId]);
+$msgs = order_confirm_payment($pendingId);
+check('confirm payment: marked paid, confirmation emailed', order_find($pendingId)['status'] === 'paid'
+    && (int) db_value("SELECT COUNT(*) FROM email_log WHERE order_id = ? AND kind = 'confirmation'", [$pendingId]) === $mailsBefore + 1
+    && end($msgs)[1] === 'success');
+$again = order_confirm_payment($pendingId);
+check('confirm payment twice: nothing happens the second time', $again[0][1] === 'warning'
+    && (int) db_value("SELECT COUNT(*) FROM email_log WHERE order_id = ? AND kind = 'confirmation'", [$pendingId]) === $mailsBefore + 1);
+
+// Bulk delete: only picked-up and cancelled orders, by date range or by id.
+$bulk = [];
+foreach (['completed', 'cancelled', 'paid', 'pending'] as $i => $st) {
+    [, $created] = order_create(['client_token' => bin2hex(random_bytes(12)), 'pickup_date' => '2026-01-1' . $i, 'email' => "bulk{$i}@example.com"] + $d4);
+    $bid = (int) db_value('SELECT MAX(id) FROM orders');
+    if ($st !== 'pending') {
+        order_set_status($bid, $st);
+    }
+    $bulk[$st] = $bid;
+}
+$inRange = array_column(finished_orders_between('2026-01-10', '2026-01-13'), 'id');
+check('date range finds only picked-up and cancelled orders', array_map('intval', $inRange) === [$bulk['completed'], $bulk['cancelled']]);
+check('date range outside the orders finds nothing', finished_orders_between('2025-01-01', '2025-01-31') === []);
+$deleted = orders_delete([...array_values($bulk), 'x', -5, 999999]);
+check('bulk delete removes finished orders with their items, never paid or unpaid ones', count($deleted) === 2
+    && order_find($bulk['completed']) === null && order_find($bulk['cancelled']) === null
+    && order_find($bulk['paid']) !== null && order_find($bulk['pending']) !== null
+    && (int) db_value('SELECT COUNT(*) FROM order_items WHERE order_id IN (?, ?)', [$bulk['completed'], $bulk['cancelled']]) === 0);
+check('bulk delete with nothing valid does nothing', orders_delete([]) === [] && orders_delete([$bulk['paid']]) === []);
+
 foreach (db_all("SELECT id FROM orders WHERE status IN ('pending', 'paid')") as $row) {
     order_set_status((int) $row['id'], 'completed');
 }

@@ -211,3 +211,24 @@ a.stat:hover { border-color: var(--brown); }
 
 .email-meta { display: block; font-size: 13px; }
 .email-error { color: var(--red); font-size: 13px; }
+
+/* Orders list: tick boxes for deleting, "Confirm payment" beside unpaid orders */
+.order-list { grid-template-columns: minmax(0, 1fr); }
+.order-item { display: flex; align-items: stretch; gap: 10px; min-width: 0; }
+.order-item .order-row { flex: 1; min-width: 0; }
+.row-check { flex: 0 0 auto; width: 22px; height: 22px; margin: 16px 0 0; accent-color: var(--brown); }
+.row-action { display: flex; align-items: center; }
+.bulk-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin: 0 0 10px; padding: 10px 12px; border: 1px dashed var(--line); border-radius: 12px; }
+.bulk-bar .muted { font-size: 14px; }
+.range-form { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; }
+.range-form label { margin: 0; }
+@media (max-width: 640px) {
+  .order-item { flex-wrap: wrap; }
+  .row-action { flex: 1 0 100%; }
+  .row-action .btn { width: 100%; }
+}
+.check { display: flex; align-items: center; gap: 8px; font-weight: 600; margin: 0; }
+.check input { width: 20px; height: 20px; accent-color: var(--brown); }
+.cleanup-table { margin: 6px 0 16px; }
+.cleanup-table th { text-align: left; padding: 8px 8px 8px 0; font-size: 14px; color: var(--muted); border-bottom: 1px solid var(--line); }
+.cleanup-table td { padding-right: 8px; }

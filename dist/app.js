@@ -941,8 +941,12 @@ function applySettings(data) {
   $$('[data-pickup-area]').forEach(el => { el.textContent = data.pickupArea || 'Tyngsboro, MA'; });
   if (data.paymentHoldText) $$('[data-hold-text]').forEach(el => { el.textContent = data.paymentHoldText; });
   if (Array.isArray(data.slots)) renderSlots(data.slots);
-  if (Array.isArray(data.occasions) && data.occasions.length && $('#o-occasion')) {
-    $('#o-occasion').innerHTML = data.occasions.map(o => `<option>${esc(o)}</option>`).join('');
+  const occasionMenu = Array.isArray(data.occasionMenu) && data.occasionMenu.length ? data.occasionMenu : data.occasions;
+  if (Array.isArray(occasionMenu) && occasionMenu.length && $('#o-occasion')) {
+    // Plain choices, plus groups (e.g. "Occasion" → Birthday, Anniversary…) shown as headings in the list.
+    $('#o-occasion').innerHTML = occasionMenu.map(o => o && typeof o === 'object'
+      ? `<optgroup label="${esc(o.group)}">${(o.options || []).map(n => `<option>${esc(n)}</option>`).join('')}</optgroup>`
+      : `<option>${esc(o)}</option>`).join('');
     applyDraft(['occasion']);
   }
   const note = $('#order-unavailable');

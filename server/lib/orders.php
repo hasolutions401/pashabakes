@@ -357,6 +357,75 @@ function order_delete(int $id): bool
     return true;
 }
 
+/** Only finished orders (picked up or cancelled) can be deleted in bulk; paid and unpaid ones never. */
+const PB_DELETABLE_STATUSES = ['completed', 'cancelled'];
+
+/** Finished orders with a pickup date from $from to $to (inclusive, Y-m-d), oldest first. */
+function finished_orders_between(string $from, string $to): array
+{
+    $in = implode(', ', array_fill(0, count(PB_DELETABLE_STATUSES), '?'));
+    return db_all("SELECT * FROM orders WHERE status IN ({$in}) AND pickup_date BETWEEN ? AND ? ORDER BY pickup_date, id",
+        [...PB_DELETABLE_STATUSES, $from, $to]);
+}
+
+/** The finished orders among these ids (anything else is left out), oldest pickup first. */
+function finished_orders_by_id(array $ids): array
+{
+    $ids = array_values(array_unique(array_filter(array_map(fn($v) => whole_number($v) ?? 0, $ids), fn($id) => $id > 0)));
+    if (!$ids) {
+        return [];
+    }
+    $ids = array_slice($ids, 0, 1000);
+    $in = implode(', ', array_fill(0, count($ids), '?'));
+    $st = implode(', ', array_fill(0, count(PB_DELETABLE_STATUSES), '?'));
+    return db_all("SELECT * FROM orders WHERE id IN ({$in}) AND status IN ({$st}) ORDER BY pickup_date, id", [...$ids, ...PB_DELETABLE_STATUSES]);
+}
+
+/** Permanently deletes these orders (with their cookies and email log) if they are finished. Returns the codes deleted. */
+function orders_delete(array $ids): array
+{
+    $orders = finished_orders_by_id($ids);
+    db_transaction(function (PDO $pdo) use ($orders) {
+        $st = implode(', ', array_fill(0, count(PB_DELETABLE_STATUSES), '?'));
+        foreach ($orders as $o) {
+            $pdo->prepare('DELETE FROM order_items WHERE order_id = ?')->execute([$o['id']]);
+            $pdo->prepare('DELETE FROM email_log WHERE order_id = ?')->execute([$o['id']]);
+            // Status re-checked inside the transaction: an order reopened meanwhile is kept.
+            $pdo->prepare("DELETE FROM orders WHERE id = ? AND status IN ({$st})")->execute([$o['id'], ...PB_DELETABLE_STATUSES]);
+        }
+    });
+    return array_values(array_map(fn($o) => $o['code'], array_filter($orders, fn($o) => order_find((int) $o['id']) === null)));
+}
+
+/**
+ * Pasha has seen the money arrive: mark paid, email the confirmation (with the pickup address) and record the sale.
+ * Returns flash messages as [[message, type], …]. Used by the order page and the "Confirm payment" button in the list.
+ */
+function order_confirm_payment(int $id): array
+{
+    $order = order_find($id);
+    if (!$order) {
+        return [['That order could not be found.', 'error']];
+    }
+    // An overdue order stopped holding its day, so the day may have filled up meanwhile.
+    $overBy = payment_overdue($order) && max_cookies_per_day() > 0
+        ? booked_cookies($order['pickup_date']) + (int) $order['box_size'] - max_cookies_per_day() : 0;
+    if (!order_mark_paid($id)) {
+        return [["Order {$order['code']} is no longer waiting for payment.", 'warning']];
+    }
+    $messages = [];
+    if ($overBy > 0) {
+        $messages[] = ['Heads up: ' . pretty_date($order['pickup_date']) . " is now {$overBy} cookies over your daily limit, because other orders took this unpaid order’s place.", 'warning'];
+    }
+    [$ok] = send_customer_confirmation(order_find($id));
+    // The one reliable "purchase": Pasha has seen the money arrive (off unless ads measurement is on).
+    meta_send_order_event('Purchase', order_find($id), $order['code'] . '-paid');
+    $messages[] = $ok
+        ? ["{$order['code']} marked as paid. Confirmation email sent to {$order['email']}.", 'success']
+        : ["{$order['code']} marked as paid, but the confirmation email could not be sent. Open the order and use “Resend confirmation”.", 'warning'];
+    return $messages;
+}
+
 /** The number the next order will get, e.g. "PB1016". */
 function next_order_code(): string
 {
