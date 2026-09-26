@@ -1,60 +1,45 @@
 <?php
-/* Dashboard: stats, baking list and the order list. */
+/* Today: what needs doing now — payments to check, today's and tomorrow's pickups, the baking list. */
 require __DIR__ . '/_init.php';
 $user = require_admin();
 
-$status = (string) ($_GET['status'] ?? 'pending');
-if (!in_array($status, [...PB_STATUSES, 'all'], true)) {
-    $status = 'pending';
+// Old links (index.php?status=…) go to the section that now holds that list.
+if (isset($_GET['status'])) {
+    $status = (string) $_GET['status'];
+    $q = isset($_GET['q']) ? '&q=' . rawurlencode((string) $_GET['q']) : '';
+    redirect(in_array($status, ['completed', 'cancelled'], true) ? "past.php?status={$status}{$q}" : 'orders.php?status=' . rawurlencode($status) . $q);
 }
-$search = clean_text($_GET['q'] ?? '', 80);
-$page = max(1, (int) ($_GET['page'] ?? 1));
-$here = 'index.php?' . http_build_query(array_filter(['status' => $status, 'q' => $search, 'page' => $page > 1 ? $page : null], fn($v) => $v !== '' && $v !== null));
+admin_list_actions('index.php');
+// Backup for the hourly reminder task.
+maybe_send_pickup_reminders();
 
-// "Confirm payment" straight from the list (same as "Mark as Paid" on the order page).
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    csrf_check();
-    if (($_POST['action'] ?? '') === 'confirm_paid') {
-        foreach (order_confirm_payment((int) ($_POST['id'] ?? 0)) as [$message, $type]) {
-            flash($message, $type);
-        }
-    }
-    redirect($here);
-}
-
-$counts = order_counts();
-$list = order_list($status, $search, $page);
 $todayYmd = today()->format('Y-m-d');
-$weekYmd = today()->modify('+6 days')->format('Y-m-d');
-$todayPickups = (int) db_value("SELECT COUNT(*) FROM orders WHERE status = 'paid' AND pickup_date = ?", [$todayYmd]);
-$weekPickups = (int) db_value("SELECT COUNT(*) FROM orders WHERE status = 'paid' AND pickup_date BETWEEN ? AND ?", [$todayYmd, $weekYmd]);
+$tomorrowYmd = today()->modify('+1 day')->format('Y-m-d');
+$counts = order_counts();
+$pending = db_all("SELECT * FROM orders WHERE status = 'pending'");
+$withProof = count(array_filter($pending, fn($o) => $o['payment_proof'] !== ''));
+$overdue = count(array_filter($pending, fn($o) => payment_overdue($o)));
+$todayOrders = db_all("SELECT * FROM orders WHERE status IN ('paid', 'completed') AND pickup_date = ? ORDER BY status DESC, pickup_slot, id", [$todayYmd]);
+$todayLeft = count(array_filter($todayOrders, fn($o) => $o['status'] === 'paid'));
+$tomorrowOrders = db_all("SELECT * FROM orders WHERE status = 'paid' AND pickup_date = ? ORDER BY pickup_slot, id", [$tomorrowYmd]);
+$reminded = count(array_filter($tomorrowOrders, fn($o) => $o['reminder_sent_at'] !== null));
 $plan = baking_plan(14);
 $dayMax = max_cookies_per_day();
 
-$tabs = [
-    'pending' => 'Payment pending',
-    'paid' => 'Paid · to bake',
-    'completed' => 'Picked up',
-    'cancelled' => 'Cancelled',
-    'all' => 'All',
-];
-
-$qs = fn(array $extra) => '?' . http_build_query(array_filter(['status' => $status, 'q' => $search] + $extra, fn($v) => $v !== '' && $v !== null));
-
-admin_header('Orders', 'orders', $user);
+admin_header('Today', 'dashboard', $user);
 ?>
 <?php if (!accepting_orders()): ?>
   <div class="flash flash-warning">Online ordering is currently <strong>paused</strong>. Turn it back on in <a href="settings.php">Settings</a>.</div>
 <?php endif; ?>
 
-<?php $mailProblems = recent_email_problems(7); $kindLabel = ['admin_alert' => 'new-order alert to you', 'receipt' => 'receipt to customer', 'confirmation' => 'confirmation to customer', 'enquiry' => 'inquiry alert to you']; ?>
+<?php $mailProblems = recent_email_problems(7); $kindLabel = ['admin_alert' => 'new-order alert to you', 'receipt' => 'receipt to customer', 'confirmation' => 'confirmation to customer', 'enquiry' => 'inquiry alert to you', 'reminder' => 'pickup reminder to customer', 'admin_reminder' => 'tomorrow’s pickups list to you', 'proof_alert' => 'payment screenshot alert to you']; ?>
 <?php if ($mailProblems['failed']): ?>
   <div class="flash flash-error" role="alert">
     <strong><?= count($mailProblems['failed']) ?> email<?= count($mailProblems['failed']) === 1 ? '' : 's' ?> could not be sent in the last 7 days.</strong>
     Open each one to resend it, and check <a href="settings.php">Settings → Email sending</a>.
     <ul class="mail-problems">
       <?php foreach (array_slice($mailProblems['failed'], 0, 8) as $p): ?>
-        <li><?php if ($p['order_id']): ?><a href="order.php?id=<?= (int) $p['order_id'] ?>"><?= e($p['code']) ?></a><?php else: ?><a href="enquiries.php">Inquiry</a><?php endif; ?>
+        <li><?php if ($p['order_id']): ?><a href="order.php?id=<?= (int) $p['order_id'] ?>"><?= e($p['code']) ?></a><?php elseif ($p['kind'] === 'enquiry'): ?><a href="enquiries.php">Inquiry</a><?php else: ?>Email<?php endif; ?>
           · <?= e($kindLabel[$p['kind']] ?? $p['kind']) ?> · <?= e(pretty_datetime($p['created_at'])) ?></li>
       <?php endforeach; ?>
     </ul>
@@ -65,11 +50,39 @@ admin_header('Orders', 'orders', $user);
     Check <a href="settings.php">Settings → Email sending</a>.</div>
 <?php endif; ?>
 
-<section class="stats" aria-label="Summary">
-  <a class="stat stat-pending" href="?status=pending"><strong><?= $counts['pending'] ?></strong><span>Payment pending</span></a>
-  <a class="stat" href="?status=paid"><strong><?= $counts['paid'] ?></strong><span>Paid · to bake</span></a>
-  <div class="stat"><strong><?= $todayPickups ?></strong><span>Pickups today</span></div>
-  <div class="stat"><strong><?= $weekPickups ?></strong><span>Pickups next 7 days</span></div>
+<div class="today-head">
+  <h1>Today · <?= e(today()->format('l, F j')) ?></h1>
+  <p class="muted">What needs your attention, in order.</p>
+</div>
+
+<section class="stats" aria-label="What needs doing">
+  <a class="stat<?= $withProof ? ' stat-alert' : '' ?>" href="payments.php"><strong><?= $withProof ?></strong><span>Screenshots to check</span></a>
+  <a class="stat stat-pending" href="payments.php"><strong><?= $counts['pending'] ?></strong><span>Waiting for payment<?= $overdue ? " · {$overdue} overdue" : '' ?></span></a>
+  <a class="stat" href="#today"><strong><?= $todayLeft ?></strong><span>Pickups left today</span></a>
+  <a class="stat" href="#tomorrow"><strong><?= count($tomorrowOrders) ?></strong><span>Pickups tomorrow</span></a>
+  <a class="stat" href="orders.php?status=paid"><strong><?= $counts['paid'] ?></strong><span>Paid · to bake</span></a>
+</section>
+
+<section class="card" id="today">
+  <h2>Today’s pickups</h2>
+  <?php if (!$todayOrders): ?>
+    <p class="muted">No pickups today.</p>
+  <?php else: ?>
+    <p class="muted">Tap <strong>Picked up</strong> when a customer collects their box.</p>
+    <?php admin_order_rows($todayOrders, ['pickedUp' => true]); ?>
+  <?php endif; ?>
+</section>
+
+<section class="card" id="tomorrow">
+  <h2>Tomorrow’s pickups</h2>
+  <?php if (!$tomorrowOrders): ?>
+    <p class="muted">No paid orders for tomorrow yet.</p>
+  <?php else: ?>
+    <p class="muted"><?= $reminded === count($tomorrowOrders)
+        ? 'Every customer got their reminder email, and you got the list by email.'
+        : 'Reminder emails go to these customers (and the list to you) from ' . PB_REMINDER_HOUR . ' AM today.' ?></p>
+    <?php admin_order_rows($tomorrowOrders); ?>
+  <?php endif; ?>
 </section>
 
 <details class="card plan"<?= $plan ? ' open' : '' ?>>
@@ -92,77 +105,4 @@ admin_header('Orders', 'orders', $user);
     </div>
   <?php endif; ?>
 </details>
-
-<section class="card">
-  <div class="list-head">
-    <h1>Orders</h1>
-    <form class="search" method="get" role="search">
-      <input type="hidden" name="status" value="<?= e($status) ?>">
-      <input type="search" name="q" value="<?= e($search) ?>" placeholder="Search name, email, phone, order #, payer" aria-label="Search orders">
-      <button class="btn" type="submit">Search</button>
-      <?php if ($search !== ''): ?><a class="btn btn-ghost" href="?status=<?= e($status) ?>">Clear</a><?php endif; ?>
-    </form>
-  </div>
-
-  <nav class="status-tabs" aria-label="Order status">
-    <?php foreach ($tabs as $key => $label): ?>
-      <a href="?status=<?= e($key) ?><?= $search !== '' ? '&q=' . rawurlencode($search) : '' ?>"<?= $key === $status ? ' aria-current="page"' : '' ?>>
-        <?= e($label) ?> <span class="count"><?= $counts[$key] ?></span>
-      </a>
-    <?php endforeach; ?>
-  </nav>
-
-  <?php $archivedCount = (int) db_value('SELECT COUNT(*) FROM archived_orders'); ?>
-  <p class="list-links"><a href="export.php?what=orders">Download orders (CSV)</a><?php if ($archivedCount > 0): ?> · <a href="archive.php">Archived orders (<?= $archivedCount ?>)</a><?php endif; ?> · <a href="cleanup.php">Delete old orders</a></p>
-
-  <?php if (!$list['rows']): ?>
-    <p class="empty"><?= $search !== '' ? 'No orders match “' . e($search) . '”.' : 'No orders here yet.' ?></p>
-  <?php else: ?>
-    <?php $selectable = array_filter($list['rows'], fn($o) => in_array($o['status'], PB_DELETABLE_STATUSES, true)); ?>
-    <?php if ($selectable): ?>
-      <form id="bulk" method="post" action="cleanup.php" class="bulk-bar">
-        <?= csrf_field() ?>
-        <label class="check"><input type="checkbox" id="select-all"> Select all on this page</label>
-        <button class="btn btn-danger btn-small" type="submit">Delete selected…</button>
-        <span class="muted">Only picked-up and cancelled orders can be selected.</span>
-      </form>
-    <?php endif; ?>
-    <ul class="order-list">
-      <?php foreach ($list['rows'] as $o): ?>
-        <li class="order-item">
-          <?php if (in_array($o['status'], PB_DELETABLE_STATUSES, true)): ?>
-            <input class="row-check" type="checkbox" name="ids[]" value="<?= (int) $o['id'] ?>" form="bulk" aria-label="Select <?= e($o['code']) ?>">
-          <?php endif; ?>
-          <a class="order-row" href="order.php?id=<?= (int) $o['id'] ?>">
-            <div class="order-row-top">
-              <strong class="code"><?= e($o['code']) ?></strong>
-              <?= status_pill($o['status']) ?><?php if (payment_overdue($o)): ?> <span class="pill pill-cancelled">Overdue</span><?php endif; ?>
-              <span class="total"><?= money((int) $o['total_cents']) ?></span>
-            </div>
-            <p class="who"><?= e($o['customer_name']) ?></p>
-            <p class="pickup<?= $o['pickup_date'] === $todayYmd ? ' is-today' : '' ?>">Pickup <?= e(short_date($o['pickup_date'])) ?> · <?= e($o['pickup_slot']) ?></p>
-            <p class="items"><?= e($o['items_text']) ?></p>
-            <p class="pay"><?= e(payment_label($o['payment_method'])) ?><?php if ($o['payer_ref'] !== ''): ?> from <strong><?= e($o['payer_ref']) ?></strong><?php endif; ?> · placed <?= e(pretty_datetime($o['created_at'])) ?></p>
-          </a>
-          <?php if ($o['status'] === 'pending'): ?>
-            <form method="post" class="row-action">
-              <?= csrf_field() ?>
-              <input type="hidden" name="action" value="confirm_paid"><input type="hidden" name="id" value="<?= (int) $o['id'] ?>">
-              <button class="btn btn-primary btn-small" type="submit"
-                data-confirm="Mark <?= e($o['code']) ?> as paid (<?= e(money((int) $o['total_cents'])) ?>) and email the confirmation to <?= e($o['customer_name']) ?>?">✓ Confirm payment</button>
-            </form>
-          <?php endif; ?>
-        </li>
-      <?php endforeach; ?>
-    </ul>
-
-    <?php if ($list['pages'] > 1): ?>
-      <nav class="pager" aria-label="Pages">
-        <?php if ($list['page'] > 1): ?><a class="btn btn-ghost" href="<?= e($qs(['page' => $list['page'] - 1])) ?>">← Previous</a><?php endif; ?>
-        <span>Page <?= $list['page'] ?> of <?= $list['pages'] ?> · <?= $list['total'] ?> orders</span>
-        <?php if ($list['page'] < $list['pages']): ?><a class="btn btn-ghost" href="<?= e($qs(['page' => $list['page'] + 1])) ?>">Next →</a><?php endif; ?>
-      </nav>
-    <?php endif; ?>
-  <?php endif; ?>
-</section>
 <?php admin_footer();

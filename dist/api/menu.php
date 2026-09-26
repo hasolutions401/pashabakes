@@ -27,7 +27,7 @@ foreach (box_prices() as $size => $cents) {
     $prices[(string) $size] = $cents;
 }
 
-json_response([
+$response = [
     'ok' => true,
     'cookies' => $cookies,
     'prices' => $prices,
@@ -54,4 +54,15 @@ json_response([
     'cashapp' => ['handle' => setting('cashapp_handle'), 'url' => cashapp_url()],
     // Ads measurement: null = switched off (no cookie banner, no pixel). See META-ADS.md.
     'tracking' => meta_enabled() ? ['metaPixelId' => meta_pixel_id()] : null,
-]);
+];
+
+// Backup for the hourly reminder task: after the visitor has their answer, send any pickup reminders
+// that are due (checked at most every 30 minutes). Servers that can't answer early skip this.
+if (!can_finish_request_early()) {
+    json_response($response);
+}
+header('Content-Type: application/json; charset=utf-8');
+header('Cache-Control: no-store');
+echo json_encode($response, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+finish_request_early();
+maybe_send_pickup_reminders();

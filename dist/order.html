@@ -21,8 +21,8 @@
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <link rel="preload" href="fonts/playfair-display-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="fonts/dm-sans-latin.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="style.css?v=25">
-  <script src="app.js?v=22" defer></script>
+  <link rel="stylesheet" href="style.css?v=26">
+  <script src="app.js?v=23" defer></script>
 </head>
 <body>
 <!-- Icon sprite: one consistent stroke-icon set used across the site -->
@@ -272,28 +272,79 @@
       </form>
 
       <section class="order-success" id="order-success" tabindex="-1" hidden aria-labelledby="success-title">
-        <span class="success-icon" aria-hidden="true"><svg class="icon"><use href="#i-check-circle"/></svg></span>
-        <p class="eyebrow">Order saved · Payment needed</p>
-        <h2 id="success-title">Order <span id="success-code"></span> is saved.<br><em>Now send your payment.</em></h2>
+        <header class="receipt-head">
+          <span class="success-icon" aria-hidden="true"><svg class="icon"><use href="#i-check-circle"/></svg></span>
+          <p class="eyebrow" id="success-eyebrow">Order saved · Payment needed</p>
+          <h2 id="success-title">Order <span id="success-code"></span> is saved.<br><em id="success-subtitle">Now send your payment.</em></h2>
+        </header>
 
-        <div class="pay-box pay-now">
-          <img id="success-qr" src="data:," alt="" width="140" height="140">
-          <div>
-            <p class="pay-step"><strong>1.</strong> Send <strong id="success-amount"></strong> to <strong id="success-to"></strong> on <span data-success-app></span>.</p>
-            <p class="pay-step"><strong>2.</strong> Write <strong class="order-ref" data-order-code></strong> in the payment note.
+        <div class="pay-timer" id="pay-timer" role="timer" aria-live="off" hidden>
+          <p class="pay-timer-label" id="pay-timer-label">Time left to pay</p>
+          <p class="pay-timer-clock" id="pay-timer-clock" aria-describedby="pay-timer-note">--:--:--</p>
+          <div class="pay-timer-track" aria-hidden="true"><span id="pay-timer-fill"></span></div>
+          <p class="pay-timer-note" id="pay-timer-note">Your pickup date is held until <span id="pay-timer-until"></span>. The timer keeps running while you’re in the payment app.</p>
+        </div>
+        <p class="paid-banner" id="paid-banner" role="status" hidden></p>
+
+        <ol class="pay-steps" id="pay-steps">
+          <li class="pay-step-card">
+            <p class="pay-step-title"><span class="pay-step-num" aria-hidden="true">1</span> Send <strong id="success-amount"></strong> on <span data-success-app></span></p>
+            <p class="pay-step-text">To <strong id="success-to"></strong>. Put <strong class="order-ref" data-order-code></strong> in the payment note<span id="note-prefilled" hidden> (it’s filled in for you on Venmo)</span>.
               <button type="button" class="inline-button" id="copy-code">Copy order number</button></p>
             <p class="copy-status" id="copy-status" role="status"></p>
-            <a class="button small" id="success-open" href="#" target="_blank" rel="noopener"><span>Open <span data-success-app></span></span> <svg class="icon" aria-hidden="true"><use href="#i-external"/></svg><span class="sr-only">(opens in a new tab)</span></a>
-          </div>
-        </div>
+            <div class="pay-actions">
+              <a class="button pay-app-button" id="success-open" href="#" rel="noopener"><span>Pay with <span data-success-app></span></span> <svg class="icon" aria-hidden="true"><use href="#i-external"/></svg></a>
+              <img id="success-qr" src="data:," alt="" width="120" height="120">
+            </div>
+            <p class="auto-open" id="auto-open" role="status" hidden>
+              <span>Opening <span data-success-app></span> in <strong id="auto-open-count">5</strong>…</span>
+              <button type="button" class="inline-button" id="auto-open-cancel">Stay on this page</button>
+            </p>
+            <p class="field-help pay-app-help">Opens the <span data-success-app></span> app if it’s on this device, or the <span data-success-app></span> website if it isn’t. This page stays just as it is — come back here after paying.</p>
+          </li>
+          <li class="pay-step-card" id="proof-step">
+            <p class="pay-step-title"><span class="pay-step-num" aria-hidden="true">2</span> Upload a screenshot of your payment <span class="optional">(recommended)</span></p>
+            <p class="pay-step-text">It helps Pasha match your payment quickly.</p>
+            <form class="proof-form" id="proof-form" novalidate>
+              <label class="proof-drop" for="proof-file">
+                <input id="proof-file" type="file" name="proof" accept="image/*" aria-describedby="proof-status">
+                <span class="proof-drop-text" id="proof-drop-text"><strong>Choose a screenshot</strong> or photo</span>
+                <img class="proof-preview" id="proof-preview" alt="Your payment screenshot" hidden>
+              </label>
+              <button type="submit" class="button small" id="proof-upload" disabled>Upload screenshot</button>
+            </form>
+            <p class="proof-status" id="proof-status" role="status"></p>
+          </li>
+        </ol>
 
-        <p class="success-hold" id="success-hold"></p>
+        <article class="receipt" id="receipt" aria-labelledby="receipt-title">
+          <div class="receipt-top">
+            <div>
+              <p class="receipt-brand">Pashabakess</p>
+              <h3 id="receipt-title">Order receipt</h3>
+            </div>
+            <dl class="receipt-meta">
+              <div><dt>Order</dt><dd data-order-code></dd></div>
+              <div><dt>Placed</dt><dd id="receipt-placed"></dd></div>
+              <div><dt>Status</dt><dd id="receipt-status">Payment needed</dd></div>
+            </dl>
+          </div>
+          <div class="success-summary" id="success-summary"></div>
+          <dl class="receipt-facts">
+            <div><dt>Pickup</dt><dd id="receipt-pickup"></dd></div>
+            <div><dt>Where</dt><dd>Pickup in <span data-pickup-area>Tyngsboro, MA</span> — the address comes in your confirmation email.</dd></div>
+            <div><dt>Payment</dt><dd id="receipt-payment"></dd></div>
+            <div><dt>Email</dt><dd id="success-email"></dd></div>
+          </dl>
+          <button type="button" class="button ghost small receipt-print" id="print-receipt">Print or save receipt</button>
+        </article>
+
         <ol class="success-next">
-          <li>We’ve emailed your order details and these payment instructions to <strong id="success-email"></strong>.</li>
+          <li>We’ve emailed your order details and payment instructions to <strong data-success-email></strong>.</li>
           <li>Pasha checks for your payment, then emails your confirmation with the pickup address.</li>
+          <li>The day before pickup, you’ll get a reminder email.</li>
           <li>Don’t see our emails? Check your spam folder, or email <a href="mailto:pashabakess@gmail.com">pashabakess@gmail.com</a> with your order number.</li>
         </ol>
-        <div class="success-summary" id="success-summary"></div>
         <p class="field-help success-policy">Need to cancel or reschedule? Email Pasha at least two calendar days before pickup for a full refund. <a href="faq.html#faq-cancel" data-open-details>Cancellation and refund policy</a></p>
         <div class="dialog-actions">
           <a class="button ghost" href="index.html">Back to home</a>

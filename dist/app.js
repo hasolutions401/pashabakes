@@ -631,10 +631,28 @@ function applyDraft(names = DRAFT_FIELDS) {
 
 /* ——— Checkout: place the order, then show how to pay ——— */
 const LAST_ORDER_KEY = 'pashabakess-last-order';
+// The payment screen survives a reload, a trip to the payment app, and the phone closing the tab in the background.
+const lastOrder = {
+  get() {
+    let v = store.get(LAST_ORDER_KEY);
+    if (!v) { try { v = JSON.parse(localStorage.getItem(LAST_ORDER_KEY)); } catch { v = null; } }
+    return v?.order?.code && Date.now() - (v.savedAt || 0) < 48 * 3600e3 ? v : null;
+  },
+  set(v) {
+    store.set(LAST_ORDER_KEY, v);
+    try { localStorage.setItem(LAST_ORDER_KEY, JSON.stringify(v)); } catch {}
+  },
+  update(changes) { const v = this.get(); if (v) this.set({...v, ...changes}); },
+  remove() {
+    store.remove(LAST_ORDER_KEY);
+    try { localStorage.removeItem(LAST_ORDER_KEY); } catch {}
+  }
+};
 const SERVER_FIELDS = {
   box_size: 'box-sizes', name: 'o-name', email: 'o-email', phone: 'o-phone',
   pickup_date: 'pickup-date', pickup_slot: 'pickup-time', payment_method: 'pay-methods', payer_ref: 'o-payer', agree: 'o-allergy'
 };
+const onPhone = () => window.matchMedia?.('(pointer: coarse)').matches;
 
 function setSubmitting(on) {
   submitting = on;
@@ -644,24 +662,133 @@ function setSubmitting(on) {
   $('#place-order-label').innerHTML = on ? 'Placing your order…' : `Place order · <span data-pay-amount>${money(priceFor(box))}</span>`;
 }
 
-function showSuccess(order) {
+/* ——— Payment deadline: counts down to a fixed time from the server, so leaving the page never resets it ——— */
+let payState = null;
+let clockSkew = 0;            // server time minus this device's time
+let timerHandle = null;
+
+function renderPayState(state) {
+  if (!state) return;
+  payState = state;
+  if (state.serverNow) clockSkew = Date.parse(state.serverNow) - Date.now();
+  const done = state.paid || state.cancelled;
+  $('#pay-steps').hidden = done;
+  $('#auto-open').hidden = true;
+  const banner = $('#paid-banner');
+  banner.hidden = !done;
+  banner.className = `paid-banner${state.cancelled ? ' is-cancelled' : ''}`;
+  if (state.paid) {
+    banner.textContent = 'Payment received — thank you! Pasha has confirmed your order, and your confirmation email has the pickup address.';
+    $('#success-eyebrow').textContent = 'Order confirmed · Paid';
+    $('#success-subtitle').textContent = 'Payment received. See you at pickup!';
+    $('#receipt-status').textContent = 'Paid';
+  } else if (state.cancelled) {
+    banner.textContent = 'This order was cancelled. Questions? Email pashabakess@gmail.com with your order number.';
+    $('#success-eyebrow').textContent = 'Order cancelled';
+    $('#success-subtitle').textContent = 'This order is no longer active.';
+    $('#receipt-status').textContent = 'Cancelled';
+  } else {
+    $('#receipt-status').textContent = state.proofUploaded ? 'Payment needed · screenshot received' : 'Payment needed';
+  }
+  if (state.proofUploaded && !done) {
+    $('#proof-status').textContent = '✓ Screenshot received. Pasha will check it and confirm your order by email. You can upload a new one if needed.';
+    $('#proof-status').className = 'proof-status is-ok';
+  }
+  clearInterval(timerHandle);
+  $('#pay-timer').hidden = done || !state.payBy;
+  if (!done && state.payBy) {
+    tickTimer();
+    timerHandle = setInterval(tickTimer, 1000);
+  }
+}
+
+function tickTimer() {
+  const end = Date.parse(payState.payBy);
+  const left = Math.max(0, end - (Date.now() + clockSkew));
+  const hours = settings?.payWithinHours || 24;
+  const s = Math.floor(left / 1000);
+  const pad = n => String(n).padStart(2, '0');
+  $('#pay-timer-clock').textContent = `${Math.floor(s / 3600)}:${pad(Math.floor(s / 60) % 60)}:${pad(s % 60)}`;
+  $('#pay-timer-fill').style.width = `${Math.min(100, left / (hours * 36e3))}%`;
+  $('#pay-timer').classList.toggle('is-urgent', left > 0 && left < 3600e3);
+  $('#pay-timer').classList.toggle('is-over', left === 0);
+  $('#pay-timer-until').textContent = new Date(end).toLocaleString('en-US', {weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'America/New_York'}) + ' (Eastern)';
+  if (left === 0) {
+    clearInterval(timerHandle);
+    $('#pay-timer-label').textContent = 'Payment time is over';
+    $('#pay-timer-note').textContent = 'Your pickup date is no longer held for you. If you’ve already paid, upload your screenshot below. Otherwise please email pashabakess@gmail.com.';
+  }
+}
+
+// Checks the order again (paid? screenshot?) — when the page opens and when the customer comes back from the payment app.
+async function refreshOrderState() {
+  const saved = lastOrder.get();
+  if (!saved?.token || !$('#order-success') || $('#order-success').hidden) return;
+  try {
+    const res = await fetch('api/order-status.php', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({code: saved.order.code, token: saved.token})});
+    const data = await res.json();
+    if (res.ok && data.ok) {
+      renderPayState(data.state);
+      lastOrder.update({state: data.state});
+    }
+  } catch {}
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') refreshOrderState(); });
+window.addEventListener('pageshow', e => { if (e.persisted) refreshOrderState(); });
+setInterval(() => { if (document.visibilityState === 'visible' && payState && !payState.paid && !payState.cancelled) refreshOrderState(); }, 120e3);
+
+/* ——— Straight to the payment app (with a few seconds to stay on the page instead) ——— */
+let autoOpenHandle = null;
+function startAutoOpen(link) {
+  const box = $('#auto-open');
+  let n = 5;
+  box.hidden = false;
+  $('#auto-open-count').textContent = n;
+  autoOpenHandle = setInterval(() => {
+    n -= 1;
+    $('#auto-open-count').textContent = n;
+    if (n <= 0) {
+      clearInterval(autoOpenHandle);
+      box.hidden = true;
+      lastOrder.update({autoOpened: true});
+      window.location.href = link;
+    }
+  }, 1000);
+}
+$('#auto-open-cancel')?.addEventListener('click', () => {
+  clearInterval(autoOpenHandle);
+  $('#auto-open').hidden = true;
+  lastOrder.update({autoOpened: true});
+  $('#success-open').focus();
+});
+
+function showSuccess(order, {fresh = false} = {}) {
   const method = order.method === 'cashapp' ? 'cashapp' : 'venmo';
   const info = payInfo(method);
   const payTo = order.payTo || info.handle;
+  const app = order.payment || info.app;
+  const link = order.payLink || order.payUrl || info.url;
   $('#success-code').textContent = order.code;
   $$('[data-order-code]').forEach(el => { el.textContent = order.code; });
   $('#success-amount').textContent = order.total;
   $('#success-to').textContent = payTo;
-  $$('[data-success-app]').forEach(el => { el.textContent = order.payment || info.app; });
-  $('#success-open').href = order.payUrl || info.url;
+  $$('[data-success-app]').forEach(el => { el.textContent = app; });
+  $('#note-prefilled').hidden = !(order.payLink && method === 'venmo');
+  const open = $('#success-open');
+  open.href = link;
+  // Phones: the link opens the app. Computers: the payment website in a new tab, this page stays open.
+  if (onPhone()) open.removeAttribute('target'); else open.target = '_blank';
+  open.onclick = () => { clearInterval(autoOpenHandle); $('#auto-open').hidden = true; lastOrder.update({autoOpened: true}); };
   $('#success-qr').src = `api/qr.php?m=${method}`;
-  $('#success-qr').alt = `QR code for ${order.payment || info.app} ${payTo}`;
+  $('#success-qr').alt = `QR code for ${app} ${payTo}`;
   $('#success-email').textContent = order.email;
-  $('#success-hold').textContent = order.holdText || settings?.paymentHoldText || '';
+  $$('[data-success-email]').forEach(el => { el.textContent = order.email; });
+  $('#receipt-placed').textContent = order.placedAt || '';
+  $('#receipt-pickup').textContent = `${order.pickupDate}, ${order.pickupSlot} (Eastern)`;
+  $('#receipt-payment').textContent = `${app} to ${payTo} · ${order.total}`;
   const lines = order.items.map(i => `<li><span>${esc(i.name)}</span><strong>× ${i.qty}</strong></li>`).join('');
   $('#success-summary').innerHTML = `<ul>${lines}</ul>
-    <p class="success-total"><span>${order.boxSize} cookies</span><strong>${esc(order.total)}</strong></p>
-    <p class="success-pickup"><strong>Pickup:</strong> ${esc(order.pickupDate)}, ${esc(order.pickupSlot)} (Eastern)</p>`;
+    <p class="success-total"><span>${order.boxSize} cookies</span><strong>${esc(order.total)}</strong></p>`;
   $('#order-form').hidden = true;
   $('.order-summary').hidden = true;
   $('.order-intro').hidden = true;
@@ -676,9 +803,91 @@ function showSuccess(order) {
       $('#copy-status').textContent = `Copy unavailable — type ${order.code} in the payment note.`;
     }
   };
+  const saved = lastOrder.get();
+  renderPayState(saved?.state || order.state);
+  if (fresh && onPhone() && !saved?.autoOpened) startAutoOpen(link);
+  if (!fresh) refreshOrderState();
 }
 
-$('#new-order')?.addEventListener('click', () => { store.remove(LAST_ORDER_KEY); });
+/* ——— Payment screenshot ——— */
+// Phone screenshots can be large: shrink them before sending (the server re-saves them anyway).
+async function shrinkImage(file) {
+  try {
+    if (file.size < 1.5e6 || !window.createImageBitmap) return file;
+    const bmp = await createImageBitmap(file);
+    const scale = Math.min(1, 1800 / Math.max(bmp.width, bmp.height));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(bmp.width * scale);
+    canvas.height = Math.round(bmp.height * scale);
+    canvas.getContext('2d').drawImage(bmp, 0, 0, canvas.width, canvas.height);
+    const blob = await new Promise(r => canvas.toBlob(r, 'image/jpeg', 0.86));
+    return blob && blob.size < file.size ? new File([blob], 'screenshot.jpg', {type: 'image/jpeg'}) : file;
+  } catch {
+    return file;
+  }
+}
+let proofPreviewUrl = '';
+$('#proof-file')?.addEventListener('change', e => {
+  const file = e.target.files?.[0];
+  const status = $('#proof-status');
+  status.className = 'proof-status';
+  status.textContent = '';
+  if (proofPreviewUrl) URL.revokeObjectURL(proofPreviewUrl);
+  if (!file) { $('#proof-upload').disabled = true; $('#proof-preview').hidden = true; return; }
+  if (!file.type.startsWith('image/')) {
+    status.textContent = 'Please choose a screenshot or photo.';
+    status.className = 'proof-status is-error';
+    $('#proof-upload').disabled = true;
+    return;
+  }
+  proofPreviewUrl = URL.createObjectURL(file);
+  $('#proof-preview').src = proofPreviewUrl;
+  $('#proof-preview').hidden = false;
+  $('#proof-drop-text').innerHTML = `<strong>${esc(file.name || 'Screenshot')}</strong> · tap to change`;
+  $('#proof-upload').disabled = false;
+});
+$('#proof-form')?.addEventListener('submit', async e => {
+  e.preventDefault();
+  const saved = lastOrder.get();
+  const file = $('#proof-file').files?.[0];
+  const status = $('#proof-status');
+  const btn = $('#proof-upload');
+  if (!file || !saved?.token) {
+    status.textContent = saved?.token ? 'Please choose a screenshot first.' : 'Please email your screenshot to pashabakess@gmail.com with your order number.';
+    status.className = 'proof-status is-error';
+    return;
+  }
+  btn.disabled = true;
+  btn.textContent = 'Uploading…';
+  status.className = 'proof-status';
+  status.textContent = 'Uploading your screenshot…';
+  try {
+    const body = new FormData();
+    body.append('code', saved.order.code);
+    body.append('token', saved.token);
+    body.append('proof', await shrinkImage(file));
+    const res = await fetch('api/payment-proof.php', {method: 'POST', body});
+    let data = null;
+    try { data = await res.json(); } catch {}
+    if (res.ok && data?.ok) {
+      renderPayState(data.state);
+      lastOrder.update({state: data.state});
+      $('#proof-file').value = '';
+      $('#proof-drop-text').innerHTML = '<strong>Choose another screenshot</strong> to replace it';
+      btn.textContent = 'Upload screenshot';
+      return;
+    }
+    throw new Error(data?.message || (res.status === 413 ? 'That picture is too large. Please use a smaller screenshot.' : ''));
+  } catch (err) {
+    status.textContent = err.message || 'The upload didn’t work. Please check your connection and try again, or email the screenshot to pashabakess@gmail.com.';
+    status.className = 'proof-status is-error';
+    btn.disabled = false;
+    btn.textContent = 'Upload screenshot';
+  }
+});
+$('#print-receipt')?.addEventListener('click', () => window.print());
+
+$('#new-order')?.addEventListener('click', () => { lastOrder.remove(); });
 
 $('#order-form')?.addEventListener('submit', async e => {
   e.preventDefault();
@@ -725,10 +934,10 @@ $('#order-form')?.addEventListener('submit', async e => {
       // The order is saved: forget the draft, but keep the payment screen if the page reloads.
       store.remove(DRAFT_KEY);
       store.remove('pashabakess-box');
-      store.set(LAST_ORDER_KEY, {order: data.order, savedAt: Date.now()});
+      lastOrder.set({order: data.order, token: payload.client_token, state: data.order.state, savedAt: Date.now()});
       // Same event id as the server's Conversions API event, so Meta counts the order once.
       metaTrack('Lead', {currency: 'USD', value, content_category: 'cookie box'}, data.order.code);
-      showSuccess(data.order);
+      showSuccess(data.order, {fresh: true});
       window.scrollTo({top: $('#order-success').getBoundingClientRect().top + window.scrollY - 120, behavior: 'smooth'});
       $('#order-success').focus({preventScroll: true});
       return;
@@ -1001,9 +1210,9 @@ if ($('#order-form')) {
   addHoneypot(form);
   const params = new URLSearchParams(location.search);
   const chosen = Number(params.get('flavor'));
-  const last = store.get(LAST_ORDER_KEY);
-  if (chosen > 0 || params.get('box')) store.remove(LAST_ORDER_KEY);
-  else if (last?.order?.code && Date.now() - last.savedAt < 6 * 3600e3) showSuccess(last.order);
+  const last = lastOrder.get();
+  if (chosen > 0 || params.get('box')) lastOrder.remove();
+  else if (last) showSuccess(last.order);
 
   draft = store.get(DRAFT_KEY) || {};
   applyDraft();

@@ -182,13 +182,14 @@ function order_create(array $data): array
                 }
             }
             $pdo->prepare('INSERT INTO orders (client_token, status, customer_name, email, phone, occasion, notes, box_size, total_cents,
-                    pickup_date, pickup_slot, payment_method, payer_ref, admin_note, created_at, ad_consent, fbp, fbc)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+                    pickup_date, pickup_slot, payment_method, payer_ref, admin_note, created_at, ad_consent, fbp, fbc, customer_ref, ip_hash)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
                 ->execute([
                     $data['client_token'], 'pending', $data['customer_name'], $data['email'], $data['phone'], $data['occasion'],
                     $data['notes'], $data['box_size'], $data['total_cents'], $data['pickup_date'], $data['pickup_slot'],
                     $data['payment_method'], $data['payer_ref'], '', now_str(),
                     $data['ad_consent'] ?? 0, $data['fbp'] ?? '', $data['fbc'] ?? '',
+                    customer_ref((string) $data['email']), $data['ip_hash'] ?? '',
                 ]);
             $id = (int) $pdo->lastInsertId();
             $code = 'PB' . (1000 + $id);
@@ -299,10 +300,10 @@ function order_list(string $status, string $search, int $page, int $perPage = 25
         $params[] = $status;
     }
     if ($search !== '') {
-        $where[] = '(code LIKE ? OR customer_name LIKE ? OR email LIKE ? OR phone LIKE ? OR payer_ref LIKE ?)';
+        $where[] = '(code LIKE ? OR customer_name LIKE ? OR email LIKE ? OR phone LIKE ? OR payer_ref LIKE ? OR customer_ref LIKE ?)';
         // "_" still works as a wildcard here, which only ever widens a search slightly.
         $like = '%' . str_replace('%', '', $search) . '%';
-        array_push($params, $like, $like, $like, $like, $like);
+        array_push($params, $like, $like, $like, $like, $like, $like);
     }
     $sqlWhere = $where ? 'WHERE ' . implode(' AND ', $where) : '';
     // Orders still to bake are sorted by pickup date; everything else newest first.
@@ -316,6 +317,27 @@ function order_list(string $status, string $search, int $page, int $perPage = 25
     foreach ($rows as &$row) {
         $row['items_text'] = order_items_text((int) $row['id']);
     }
+    return ['rows' => $rows, 'total' => $total, 'page' => $page, 'pages' => $pages];
+}
+
+/** Customers (one per email address), most recent first: orders, amount paid, unpaid orders, last order. */
+function customer_list(string $search, int $page, int $perPage = 30): array
+{
+    $where = "email <> ''";
+    $params = [];
+    if ($search !== '') {
+        $where .= ' AND (customer_name LIKE ? OR email LIKE ? OR phone LIKE ? OR customer_ref LIKE ?)';
+        $like = '%' . str_replace('%', '', $search) . '%';
+        $params = [$like, $like, $like, $like];
+    }
+    $total = (int) db_value("SELECT COUNT(DISTINCT email) FROM orders WHERE {$where}", $params);
+    $pages = max(1, (int) ceil($total / $perPage));
+    $page = max(1, min($page, $pages));
+    $offset = ($page - 1) * $perPage;
+    $rows = db_all("SELECT email, MAX(customer_ref) AS ref, MAX(customer_name) AS name, MAX(phone) AS phone, COUNT(*) AS orders,
+            SUM(CASE WHEN status IN ('paid', 'completed') THEN total_cents ELSE 0 END) AS spent,
+            SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) AS unpaid, MAX(created_at) AS last_order
+        FROM orders WHERE {$where} GROUP BY email ORDER BY last_order DESC LIMIT {$perPage} OFFSET {$offset}", $params);
     return ['rows' => $rows, 'total' => $total, 'page' => $page, 'pages' => $pages];
 }
 
@@ -354,6 +376,7 @@ function order_delete(int $id): bool
         $pdo->prepare('DELETE FROM email_log WHERE order_id = ?')->execute([$id]);
         $pdo->prepare('DELETE FROM orders WHERE id = ?')->execute([$id]);
     });
+    payment_proof_remove_file((string) $order['payment_proof']);
     return true;
 }
 
@@ -394,7 +417,11 @@ function orders_delete(array $ids): array
             $pdo->prepare("DELETE FROM orders WHERE id = ? AND status IN ({$st})")->execute([$o['id'], ...PB_DELETABLE_STATUSES]);
         }
     });
-    return array_values(array_map(fn($o) => $o['code'], array_filter($orders, fn($o) => order_find((int) $o['id']) === null)));
+    $gone = array_values(array_filter($orders, fn($o) => order_find((int) $o['id']) === null));
+    foreach ($gone as $o) {
+        payment_proof_remove_file((string) $o['payment_proof']);
+    }
+    return array_map(fn($o) => $o['code'], $gone);
 }
 
 /**
@@ -469,7 +496,9 @@ function forget_customer(string $email): array
         $ids = array_map('intval', array_column(db_all("SELECT id FROM orders WHERE email = ? AND status IN ('completed', 'cancelled')", [$email]), 'id'));
         $skipped = (int) db_value("SELECT COUNT(*) FROM orders WHERE email = ? AND status IN ('pending', 'paid')", [$email]);
         foreach ($ids as $id) {
-            $pdo->prepare("UPDATE orders SET {$blank}, ad_consent = 0, fbp = '', fbc = '' WHERE id = ?")->execute([PB_FORGOTTEN_NAME, $id]);
+            payment_proof_remove_file((string) db_value('SELECT payment_proof FROM orders WHERE id = ?', [$id]));
+            $pdo->prepare("UPDATE orders SET {$blank}, ad_consent = 0, fbp = '', fbc = '', payment_proof = '', payment_proof_at = NULL,
+                ip_hash = '', customer_ref = '' WHERE id = ?")->execute([PB_FORGOTTEN_NAME, $id]);
             $pdo->prepare('DELETE FROM email_log WHERE order_id = ?')->execute([$id]);
         }
         $pdo->prepare('DELETE FROM email_log WHERE recipient = ? AND (order_id IS NULL OR order_id NOT IN (SELECT id FROM orders WHERE status IN (\'pending\', \'paid\')))')
@@ -509,6 +538,9 @@ function restart_order_numbers(): ?string
             $archive->execute([$o['code'], $o['status'], $o['customer_name'], $o['email'], $o['phone'], $o['occasion'], $o['notes'],
                 $o['box_size'], $o['total_cents'], $o['pickup_date'], $o['pickup_slot'], $o['payment_method'], $o['payer_ref'],
                 $o['admin_note'], order_items_text((int) $o['id']), $o['created_at'], $o['paid_at'], $o['completed_at'], $o['cancelled_at'], $now]);
+        }
+        foreach ($pdo->query("SELECT payment_proof FROM orders WHERE payment_proof <> ''")->fetchAll() as $p) {
+            payment_proof_remove_file((string) $p['payment_proof']);
         }
         $pdo->exec('DELETE FROM order_items');
         $pdo->exec('DELETE FROM email_log WHERE order_id IS NOT NULL');
