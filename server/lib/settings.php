@@ -13,6 +13,9 @@ const PB_CUSTOM_MIN = 4;
 const PB_OLD_OCCASIONS = ['Just because', 'Birthday', 'Holiday', 'Baby shower', 'Bridal shower', 'Eid', 'Aqiqah', 'Graduation', 'Office treat'];
 /** Occasions added in Sept 2026 (schema v13). */
 const PB_NEW_OCCASIONS = ['Anniversary', 'Housewarming', 'New job', 'Wedding', 'Thank you'];
+/** Heading of the occasion group in the order form, and what goes under it (schema v14). */
+const PB_OCCASION_GROUP = 'Occasion';
+const PB_GROUPED_OCCASIONS = ['Birthday', 'Anniversary', 'Housewarming', 'New job', 'Wedding', 'Graduation', 'Baby shower', 'Bridal shower'];
 
 function default_settings(): array
 {
@@ -37,7 +40,7 @@ function default_settings(): array
         'cashapp_handle'    => 'Pashabakess',
         'accepting_orders'  => '1',
         'closed_message'    => 'Online ordering is paused for now. Please email pashabakess@gmail.com and Pasha will help you.',
-        'occasions'         => implode("\n", default_occasions()),
+        'occasions'         => group_occasions(default_occasions()),
     ];
 }
 
@@ -115,9 +118,70 @@ function pickup_slots(): array
     return text_lines(setting('pickup_slots'));
 }
 
+/**
+ * The occasion menu as written in Settings: plain lines are choices; a line ending in ":" starts a group
+ * and the "- " lines after it are the choices inside it. Returns choices (strings) and groups
+ * (['group' => name, 'options' => [...]]) in order.
+ */
+function occasion_menu_from(string $text): array
+{
+    $menu = [];
+    $group = null;
+    foreach (text_lines($text) as $line) {
+        if (mb_strlen($line) > 1 && str_ends_with($line, ':')) {
+            $menu[] = ['group' => trim(mb_substr($line, 0, -1)), 'options' => []];
+            $group = array_key_last($menu);
+        } elseif (str_starts_with($line, '-')) {
+            $name = trim(ltrim($line, '-'));
+            if ($name !== '' && $group !== null) {
+                $menu[$group]['options'][] = $name;
+            } elseif ($name !== '') {
+                $menu[] = $name;
+            }
+        } else {
+            $group = null;
+            $menu[] = $line;
+        }
+    }
+    return array_values(array_filter($menu, fn($m) => !is_array($m) || $m['options']));
+}
+
+/** Every occasion a customer can pick (groups flattened). */
+function occasions_from(string $text): array
+{
+    $names = [];
+    foreach (occasion_menu_from($text) as $m) {
+        array_push($names, ...(is_array($m) ? $m['options'] : [$m]));
+    }
+    return $names;
+}
+
+/** Settings text for a plain list, with the life events gathered under "Occasion:" where the first one was. */
+function group_occasions(array $names): string
+{
+    $grouped = array_values(array_filter(PB_GROUPED_OCCASIONS, fn($n) => in_array($n, $names, true)));
+    $lines = [];
+    foreach ($names as $n) {
+        if (!in_array($n, PB_GROUPED_OCCASIONS, true)) {
+            $lines[] = $n;
+        } elseif ($n === $grouped[0]) {
+            $lines[] = PB_OCCASION_GROUP . ':';
+            foreach ($grouped as $g) {
+                $lines[] = '- ' . $g;
+            }
+        }
+    }
+    return implode("\n", $lines);
+}
+
+function occasion_menu(): array
+{
+    return occasion_menu_from(setting('occasions'));
+}
+
 function occasions(): array
 {
-    return text_lines(setting('occasions'));
+    return occasions_from(setting('occasions'));
 }
 
 function unavailable_dates(): array

@@ -45,6 +45,8 @@ json_response([
     'dayRemaining' => (object) days_remaining(),
     'slots' => pickup_slots(),
     'occasions' => occasions(),
+    // Same choices with their groups, as the order form shows them: strings and {group, options}.
+    'occasionMenu' => occasion_menu(),
     'accepting' => accepting_orders(),
     'closedMessage' => setting('closed_message'),
     'pickupArea' => setting('pickup_area'),

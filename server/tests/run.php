@@ -121,6 +121,11 @@ settings_save(['cookie_price' => '0']);
 check('other amount can be switched off in Settings', isset($e['box_size']) && box_price(12) === 3800);
 settings_save(['cookie_price' => '350']);
 check('new occasions offered', array_intersect(PB_NEW_OCCASIONS, occasions()) === PB_NEW_OCCASIONS);
+$menu = occasion_menu();
+check('order form: "Just because" first, then the "Occasion" group with Birthday, Anniversary…', $menu[0] === 'Just because'
+    && $menu[1] === ['group' => 'Occasion', 'options' => PB_GROUPED_OCCASIONS] && in_array('Eid', $menu, true) && in_array('Birthday', occasions(), true));
+check('settings text: groups, stray "- " lines and empty groups', occasion_menu_from("- Loose\nParty:\nEmpty:\nGifts:\n- Thank you\nEid")
+    === ['Loose', ['group' => 'Gifts', 'options' => ['Thank you']], 'Eid']);
 [$d, $e] = order_validate($base(['occasion' => 'Housewarming']));
 check('new occasion kept on the order', $e === [] && $d['occasion'] === 'Housewarming');
 [, $e] = order_validate($base(['items' => [['id' => 1, 'qty' => 2.9], ['id' => 6, 'qty' => 3.1]]]));
@@ -284,16 +289,27 @@ if ($driver === 'sqlite') {
     }
 
     // Version 12 → 13: new occasions. An untouched list gets the new default; Pasha's own list is kept and extended.
+    // Version 13 → 14: life events go under "Occasion"; everything else (and Pasha's own choices) stays.
     $old12 = implode("\n", PB_OLD_OCCASIONS);
-    foreach ([$old12 => default_occasions(), "Birthday\nCorporate" => ['Birthday', 'Corporate', ...PB_NEW_OCCASIONS]] as $was => $expect) {
-        $v12 = new PDO("sqlite:$tmp/v12-" . md5($was) . '.sqlite', null, null, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC]);
-        $v12->exec("CREATE TABLE settings (name TEXT PRIMARY KEY, value TEXT NOT NULL)");
-        $v12->prepare("INSERT INTO settings VALUES ('schema_version', '12'), ('occasions', ?)")->execute([$was]);
-        migrate($v12, 'sqlite');
-        check('v12 upgrade: occasions ' . ($was === $old12 ? 'updated' : 'kept and extended'),
-            text_lines((string) $v12->query("SELECT value FROM settings WHERE name = 'occasions'")->fetchColumn()) === $expect
-            && $v12->query("SELECT value FROM settings WHERE name = 'cookie_price'")->fetchColumn() === '350');
-        $v12 = null;
+    $live13 = implode("\n", [...PB_OLD_OCCASIONS, 'Family gatherings', ...PB_NEW_OCCASIONS]);
+    $grouped = "Just because\nOccasion:\n- Birthday\nPickup party";
+    $cases = [
+        [12, $old12, default_occasions(), 'untouched list updated'],
+        [12, "Birthday\nCorporate", ['Birthday', 'Anniversary', 'Housewarming', 'New job', 'Wedding', 'Corporate', 'Thank you'], 'own list kept and extended'],
+        [13, $live13, ['Just because', ...PB_GROUPED_OCCASIONS, 'Holiday', 'Eid', 'Aqiqah', 'Office treat', 'Family gatherings', 'Thank you'], 'live list grouped, own choice kept'],
+        [13, $grouped, ['Just because', 'Birthday', 'Pickup party'], 'a list that already has groups is left alone'],
+    ];
+    foreach ($cases as $i => [$from, $was, $expect, $what]) {
+        $vx = new PDO("sqlite:$tmp/occ-$i.sqlite", null, null, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC]);
+        $vx->exec("CREATE TABLE settings (name TEXT PRIMARY KEY, value TEXT NOT NULL)");
+        $vx->prepare("INSERT INTO settings VALUES ('schema_version', ?), ('occasions', ?)")->execute([(string) $from, $was]);
+        migrate($vx, 'sqlite');
+        $text = (string) $vx->query("SELECT value FROM settings WHERE name = 'occasions'")->fetchColumn();
+        $groups = array_values(array_filter(occasion_menu_from($text), 'is_array'));
+        check("v$from upgrade: occasions $what", occasions_from($text) === $expect
+            && ($i === 3 ? $text === $grouped : count($groups) === 1 && $groups[0]['group'] === 'Occasion')
+            && $vx->query("SELECT value FROM settings WHERE name = 'cookie_price'")->fetchColumn() === '350');
+        $vx = null;
     }
 }
 

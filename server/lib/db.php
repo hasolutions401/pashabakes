@@ -10,7 +10,7 @@ declare(strict_types=1);
 // 9: unpaid orders hold their pickup day for 24 hours. 10: archived_orders (kept when numbers restart).
 // 11: admin_users.session_version (changing the password logs out other devices).
 // 12: orders.ad_consent / fbp / fbc (Meta ads measurement, only with the customer's consent).
-const PB_SCHEMA_VERSION = 13;
+const PB_SCHEMA_VERSION = 14;
 
 function db(): PDO
 {
@@ -402,14 +402,23 @@ function migrate_steps(PDO $pdo, string $driver, int $version): void
     }
     // Version 13: more occasions (Sept 2026). An untouched list gets the new default order; an edited one keeps
     // Pasha's edits and only gains the new occasions at the end. ("Other amount" pricing is seeded above.)
-    if ($version >= 1 && $version < 13) {
+    // Version 14: the life events (Birthday, Anniversary, …) go under an "Occasion" heading in the order form;
+    // every other choice stays as it is. Skipped if the list already has a group.
+    if ($version >= 1 && $version < 14) {
         $st = $pdo->prepare("SELECT value FROM settings WHERE name = 'occasions'");
         $st->execute();
         $current = $st->fetchColumn();
         if ($current !== false) {
-            $list = text_lines((string) $current);
-            $list = $list === PB_OLD_OCCASIONS ? default_occasions() : [...$list, ...array_diff(PB_NEW_OCCASIONS, $list)];
-            $pdo->prepare("UPDATE settings SET value = ? WHERE name = 'occasions'")->execute([implode("\n", $list)]);
+            $text = (string) $current;
+            if ($version < 13) {
+                $list = occasions_from($text);
+                $list = $list === PB_OLD_OCCASIONS ? default_occasions() : [...$list, ...array_diff(PB_NEW_OCCASIONS, $list)];
+                $text = implode("\n", $list);
+            }
+            if (!array_filter(occasion_menu_from($text), 'is_array')) {
+                $text = group_occasions(occasions_from($text));
+            }
+            $pdo->prepare("UPDATE settings SET value = ? WHERE name = 'occasions'")->execute([$text]);
         }
     }
     if ($version < 3) {

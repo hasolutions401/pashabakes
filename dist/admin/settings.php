@@ -210,8 +210,9 @@ admin_header('Settings', 'settings', $user);
 
   <section class="card">
     <h2>Occasions</h2>
-    <label>Occasion choices in the order form <small>(one per line)</small>
-      <textarea name="occasions" rows="6"><?= e($form['occasions'] ?? '') ?></textarea>
+    <label>Occasion choices in the order form <small>(one per line. A line ending in “:” starts a group, like
+      “Occasion:”, and the lines under it starting with “- ” go inside that group, like “- Birthday”)</small>
+      <textarea name="occasions" rows="14"><?= e($form['occasions'] ?? '') ?></textarea>
     </label>
   </section>
 
