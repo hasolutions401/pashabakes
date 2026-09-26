@@ -55,6 +55,8 @@ if (!order_token_exists($data['client_token'])) {
     }
 }
 
+// Who placed it: a hashed network address (never the address itself), to spot repeated fake orders.
+$data['ip_hash'] = order_ip_hash();
 try {
     [$order, $created] = order_create($data);
 } catch (DayFullException $e) {
@@ -78,6 +80,10 @@ $response = [
         // Where to send the money — shown with the order number on the next screen.
         'payTo' => payment_handle($order['payment_method']),
         'payUrl' => payment_url($order['payment_method']),
+        // Opens the app (or its website) with the amount — and on Venmo the order number — filled in.
+        'payLink' => payment_link($order['payment_method'], (int) $order['total_cents'], (string) $order['code']),
+        'placedAt' => pretty_datetime($order['created_at']),
+        'state' => order_public_state($order),
         'holdText' => payment_hold_text(),
         'email' => $order['email'],
     ],

@@ -10,7 +10,7 @@ declare(strict_types=1);
 // 9: unpaid orders hold their pickup day for 24 hours. 10: archived_orders (kept when numbers restart).
 // 11: admin_users.session_version (changing the password logs out other devices).
 // 12: orders.ad_consent / fbp / fbc (Meta ads measurement, only with the customer's consent).
-const PB_SCHEMA_VERSION = 14;
+const PB_SCHEMA_VERSION = 15;
 
 function db(): PDO
 {
@@ -251,7 +251,12 @@ function migrate_steps(PDO $pdo, string $driver, int $version): void
             cancelled_at {$str(19)} NULL,
             ad_consent INTEGER NOT NULL DEFAULT 0,
             fbp {$str(255)} NOT NULL DEFAULT '',
-            fbc {$str(255)} NOT NULL DEFAULT ''
+            fbc {$str(255)} NOT NULL DEFAULT '',
+            payment_proof {$str(120)} NOT NULL DEFAULT '',
+            payment_proof_at {$str(19)} NULL,
+            ip_hash {$str(64)} NOT NULL DEFAULT '',
+            customer_ref {$str(20)} NOT NULL DEFAULT '',
+            reminder_sent_at {$str(19)} NULL
         ){$engine}",
         "CREATE TABLE IF NOT EXISTS order_items (
             id {$id},
@@ -336,6 +341,25 @@ function migrate_steps(PDO $pdo, string $driver, int $version): void
         } catch (PDOException) {
             // column already exists
         }
+    }
+    // Version 15: payment screenshot, hashed network address + customer reference, pickup reminder sent.
+    foreach (["payment_proof {$str(120)} NOT NULL DEFAULT ''", "payment_proof_at {$str(19)} NULL", "ip_hash {$str(64)} NOT NULL DEFAULT ''",
+        "customer_ref {$str(20)} NOT NULL DEFAULT ''", "reminder_sent_at {$str(19)} NULL"] as $col) {
+        try {
+            $pdo->exec("ALTER TABLE orders ADD COLUMN {$col}");
+        } catch (PDOException) {
+            // column already exists
+        }
+    }
+    if ($version >= 1 && $version < 15) {
+        // Earlier orders get their customer reference too (same email = same reference).
+        $set = $pdo->prepare('UPDATE orders SET customer_ref = ? WHERE id = ?');
+        foreach ($pdo->query("SELECT id, email FROM orders WHERE email <> '' AND customer_ref = ''")->fetchAll(PDO::FETCH_ASSOC) as $o) {
+            $set->execute([customer_ref($o['email']), $o['id']]);
+        }
+        // Orders for today or earlier never need a reminder (tomorrow's still get one).
+        $pdo->prepare("UPDATE orders SET reminder_sent_at = ? WHERE reminder_sent_at IS NULL AND pickup_date <= ?")
+            ->execute([now_str(), today()->format('Y-m-d')]);
     }
     // Version 11: a password change logs out the admin's other devices.
     try {

@@ -107,6 +107,20 @@ If you change the SSH password on alwaysdata, update that environment secret too
 tasks, "Pashabakess: install/update from GitHub") reset the folder to the retired `checkout-backend` branch every
 10 minutes, silently undoing every deploy from `main`. It must stay paused or deleted.
 
+## Pickup reminder emails (scheduled task)
+
+The day before pickup, every customer with a paid order gets a reminder email, and Pasha gets the list of
+tomorrow's pickups at the same time (from 9 AM Eastern). One scheduled task sends them — it only **runs a
+script**, it never updates the code:
+
+- alwaysdata → **Advanced → Scheduled tasks → Add**
+- Type: **Execute the command**, command: `php ~/pashabakess/server/tools/send-reminders.php`
+- Frequency: **every hour**, name: `Pashabakess: pickup reminders`
+
+Each reminder goes out once, however often the task runs. Without the task, reminders still go out when someone
+visits the website or Pasha opens the admin (checked at most every 30 minutes), just less punctually.
+Test by hand: `php ~/pashabakess/server/tools/send-reminders.php --now`.
+
 The database upgrades itself on the first visit after an update (a copy of the database is saved first in
 `server/data/backups/`, newest five kept) —
 for example, the September 2026 update added enquiries and gave the existing monthly specials the pickup

@@ -7,6 +7,8 @@ Owner of the project: Hamza (developer). Client: Pasha (the baker). Customers ar
 - Live now: **alwaysdata** (`https://pashabakess.alwaysdata.net`, files in `~/pashabakess`, site root `~/pashabakess/dist`, PHP 8.4).
   The only thing allowed to update `~/pashabakess` is the GitHub deploy. The old alwaysdata scheduled task
   "Pashabakess: install/update from GitHub" (reset to `checkout-backend` every 10 min) must stay paused/deleted.
+  The only allowed scheduled task is "Pashabakess: pickup reminders" (`php ~/pashabakess/server/tools/send-reminders.php`,
+  hourly) — it runs a script and never touches the code (see DEPLOY-ALWAYSDATA.md).
 - **Planned move to Hostinger.** Everything is prepared; the steps are in `HOSTINGER.md`.
 - **Never delete** deployment or hosting files (`.github/workflows/deploy.yml`, `DEPLOY-ALWAYSDATA.md`,
   `HOSTINGER.md`, `server/tools/`, any `.htaccess`) without asking Hamza first.
@@ -39,6 +41,11 @@ Owner of the project: Hamza (developer). Client: Pasha (the baker). Customers ar
   pay right after ordering; an unpaid order holds its pickup day for 24 hours (`payment_hours`); max 60 cookies per pickup day; cancel/reschedule by email ≥ 2 calendar days before
   pickup → full refund within 3–5 business days; less notice → no refund; not picked up within 2 days → no
   refund; full refund if Pasha cancels.
+- After ordering: payment screen with a countdown to the payment deadline (created_at + payment_hours), pay links that
+  open Venmo / Cash App with the amount filled in (`payment_link()`), optional payment screenshot upload (stored in
+  `server/data/payment-proofs/`, re-encoded, admin-only via `admin/proof.php`), receipt. Orders store a customer
+  reference (per email) and a hashed IP — never the raw IP (privacy.html says so).
+- Admin sections: Today (index.php), Payments, Orders (active), Past orders, Customers, Inquiries, Menu, Settings.
 - Boxes of 4/6/12/24/36 plus "Other amount": any 4–36 cookies at the per-cookie price (`cookie_price`, $3.50,
   Admin → Settings; empty = option off). One unpaid order per customer (same email or phone) at a time (Sept 2026).
 - Pasha's own photos: originals in `photos/`, web copies in `dist/images/`. Pumpkin Chocolate Chip and Maple

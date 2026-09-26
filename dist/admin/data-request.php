@@ -27,7 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'forge
 }
 
 $records = filter_var($email, FILTER_VALIDATE_EMAIL) ? customer_records($email) : null;
-admin_header('Customer data requests', 'settings', $user);
+admin_header('Customer data requests', 'customers', $user);
 ?>
 <a class="back" href="settings.php">← Settings</a>
 <section class="card narrow-wide">

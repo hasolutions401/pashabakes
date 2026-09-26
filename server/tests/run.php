@@ -364,6 +364,84 @@ order_mark_paid($paidId);
 check('a paid order doesn’t block ordering again', unpaid_orders_for_email($mail) === 1);
 settings_save(['max_cookies_per_day' => '0']);
 
+// Who placed an order: customer reference (per email) and a hashed network address (never the raw IP).
+$_SERVER['REMOTE_ADDR'] = '198.51.100.7';
+[$w1] = order_create(['client_token' => bin2hex(random_bytes(12)), 'email' => 'net@example.com', 'ip_hash' => order_ip_hash()] + $d4);
+[$w2] = order_create(['client_token' => bin2hex(random_bytes(12)), 'email' => 'net@example.com', 'ip_hash' => order_ip_hash()] + $d4);
+check('customer reference: same email = same reference, like C-3F9A21', $w1['customer_ref'] === customer_ref('Net@Example.com')
+    && preg_match('/^C-[0-9A-F]{6}$/', $w1['customer_ref']) && $w1['customer_ref'] !== customer_ref('other@example.com'));
+check('network address stored only as a hash', $w1['ip_hash'] !== '' && !str_contains($w1['ip_hash'], '198.51')
+    && array_column(orders_from_same_network($w2), 'code') === [$w1['code']]);
+unset($_SERVER['REMOTE_ADDR']);
+check('order search finds a customer reference', in_array($w1['code'], array_column(order_list('all', $w1['customer_ref'], 1)['rows'], 'code'), true));
+$cust = customer_list('net@example.com', 1);
+check('customers list: one row per email with order count', $cust['total'] === 1 && (int) $cust['rows'][0]['orders'] === 2 && $cust['rows'][0]['ref'] === $w1['customer_ref']);
+
+// Pay-now links open the app (or website) with the amount filled in.
+check('Venmo link: amount and order number filled in', payment_link('venmo', 4550, 'PB1043')
+    === 'https://venmo.com/Palosha-Rashid?txn=pay&audience=private&amount=45.50&note=Pashabakess%20order%20PB1043');
+check('Cash App link: amount filled in', payment_link('cashapp', 1400, 'PB1') === 'https://cash.app/$Pashabakess/14'
+    && payment_link('cashapp', 4550, 'PB1') === 'https://cash.app/$Pashabakess/45.5');
+
+// The payment screen: only the browser that placed the order can see or change it.
+check('order status needs the private token', order_for_customer($w1['code'], $w1['client_token'])['id'] === $w1['id']
+    && order_for_customer($w1['code'], 'x' . substr($w1['client_token'], 1)) === null && order_for_customer($w1['code'], '') === null
+    && order_for_customer('', $w1['client_token']) === null);
+$st = order_public_state($w1);
+check('countdown ends at a fixed time (placed + payment hours), not when the page opens', $st['payBy'] !== null
+    && abs(strtotime($st['payBy']) - strtotime($w1['created_at'] . ' ' . PB_TZ) - payment_hours() * 3600) < 2 && !$st['paid'] && !$st['proofUploaded']);
+
+// Payment screenshots: re-saved as a new JPEG outside the website folder; bad files refused.
+if (function_exists('imagecreatetruecolor')) {
+    $img = imagecreatetruecolor(300, 600);
+    imagepng($img, "$tmp/shot.png");
+    payment_proof_store($w1, ['error' => UPLOAD_ERR_OK, 'size' => filesize("$tmp/shot.png"), 'tmp_name' => "$tmp/shot.png"]);
+    $w1 = order_find((int) $w1['id']);
+    $proof = payment_proof_path($w1);
+    check('screenshot saved as JPEG in the data folder', $proof !== null && str_starts_with($proof, data_dir('payment-proofs'))
+        && getimagesize($proof)[2] === IMAGETYPE_JPEG && order_public_state($w1)['proofUploaded']);
+    file_put_contents("$tmp/fake.png", '<?php echo 1; ?>');
+    try {
+        payment_proof_store($w1, ['error' => UPLOAD_ERR_OK, 'size' => 20, 'tmp_name' => "$tmp/fake.png"]);
+        $refused = false;
+    } catch (RuntimeException) {
+        $refused = true;
+    }
+    check('non-image upload refused, earlier screenshot kept', $refused && payment_proof_path(order_find((int) $w1['id'])) === $proof);
+    payment_proof_store($w1, ['error' => UPLOAD_ERR_OK, 'size' => filesize("$tmp/shot.png"), 'tmp_name' => "$tmp/shot.png"]);
+    check('a new screenshot replaces the old file', !is_file($proof) && payment_proof_path(order_find((int) $w1['id'])) !== null);
+    $proof = payment_proof_path(order_find((int) $w1['id']));
+    order_set_status((int) $w1['id'], 'cancelled');
+    order_delete((int) $w1['id']);
+    check('deleting the order deletes its screenshot', !is_file($proof));
+}
+
+// Pickup reminders: the day before, once per order, plus one list to Pasha.
+$tomorrow = today()->modify('+1 day')->format('Y-m-d');
+settings_save(['max_cookies_per_day' => '0', 'reminder_admin_date' => '']);
+$remIds = [];
+foreach (['paid', 'paid', 'pending'] as $i => $st) {
+    [$r] = order_create(['client_token' => bin2hex(random_bytes(12)), 'email' => "rem{$i}@example.com", 'pickup_date' => $tomorrow] + $d4);
+    if ($st === 'paid') {
+        order_mark_paid((int) $r['id']);
+    }
+    $remIds[] = (int) $r['id'];
+}
+$sentBefore = (int) db_value("SELECT COUNT(*) FROM email_log WHERE kind = 'reminder'");
+$r1 = send_pickup_reminders(true);
+$r2 = send_pickup_reminders(true);
+check('reminders: each paid order for tomorrow reminded once, unpaid ones not', $r1['sent'] === 2 && $r2['sent'] === 0
+    && (int) db_value("SELECT COUNT(*) FROM email_log WHERE kind = 'reminder'") === $sentBefore + 2
+    && order_find($remIds[0])['reminder_sent_at'] !== null && order_find($remIds[2])['reminder_sent_at'] === null);
+check('reminders: Pasha gets tomorrow’s list once, at the same time', $r1['admin'] && !$r2['admin']
+    && (int) db_value("SELECT COUNT(*) FROM email_log WHERE kind = 'admin_reminder'") === 1);
+settings_save(['reminders_checked_at' => (string) time()]);
+maybe_send_pickup_reminders();
+check('backup trigger waits 30 minutes between checks', (int) setting('reminders_checked_at') <= time());
+foreach ($remIds as $id) {
+    order_set_status($id, 'completed');
+}
+
 // Deleting orders and restarting the numbers
 $someId = (int) db_value("SELECT id FROM orders WHERE status <> 'cancelled' LIMIT 1");
 check('only cancelled orders can be deleted', !order_delete($someId) && order_find($someId) !== null);

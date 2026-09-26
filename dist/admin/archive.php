@@ -8,9 +8,9 @@ $page = max(1, (int) ($_GET['page'] ?? 1));
 $list = archived_order_list($search, $page);
 $qs = fn(array $extra) => '?' . http_build_query(array_filter(['q' => $search] + $extra, fn($v) => $v !== '' && $v !== null));
 
-admin_header('Archived orders', 'orders', $user);
+admin_header('Archived orders', 'past', $user);
 ?>
-<a class="back" href="index.php">← Orders</a>
+<a class="back" href="past.php">← Past orders</a>
 <section class="card">
   <div class="list-head">
     <div>

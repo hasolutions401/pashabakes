@@ -20,14 +20,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $codes
                 ? flash(count($codes) . ' order' . (count($codes) === 1 ? '' : 's') . ' deleted permanently: ' . implode(', ', $codes) . '.')
                 : flash('Nothing was deleted. Only picked-up and cancelled orders can be deleted.', 'warning');
-            redirect('index.php?status=completed');
+            redirect('past.php');
         }
     }
     // Orders ticked in the list (or a failed confirmation): show them for review.
     $orders = finished_orders_by_id($ids);
     if (!$orders) {
         flash('None of the ticked orders can be deleted. Only picked-up and cancelled orders can be deleted.', 'warning');
-        redirect('index.php?status=completed');
+        redirect('past.php');
     }
 } elseif ($from !== '' || $to !== '') {
     $f = parse_date($from);
@@ -41,9 +41,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-admin_header('Delete old orders', 'orders', $user);
+admin_header('Delete old orders', 'past', $user);
 ?>
-<p><a href="index.php?status=completed">← Orders</a></p>
+<p><a class="back" href="past.php">← Past orders</a></p>
 
 <section class="card">
   <h1>Delete old orders</h1>
@@ -57,8 +57,8 @@ admin_header('Delete old orders', 'orders', $user);
     <button class="btn" type="submit">Find orders</button>
   </form>
   <?php if ($error !== ''): ?><p class="flash flash-error" role="alert"><?= e($error) ?></p><?php endif; ?>
-  <p class="muted">Or tick orders in the <a href="index.php?status=completed">Picked up</a> or
-    <a href="index.php?status=cancelled">Cancelled</a> list and choose “Delete selected”.</p>
+  <p class="muted">Or tick orders in the <a href="past.php?status=completed">Picked up</a> or
+    <a href="past.php?status=cancelled">Cancelled</a> list and choose “Delete selected”.</p>
 </section>
 
 <?php if ($orders !== null): ?>

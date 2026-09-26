@@ -66,7 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         case 'delete_order':
             if (order_delete($id)) {
                 flash("Order {$order['code']} was deleted permanently.");
-                redirect('index.php?status=cancelled');
+                redirect('past.php?status=cancelled');
             }
             flash('Only cancelled orders can be deleted. Cancel the order first.', 'warning');
             break;
@@ -88,15 +88,19 @@ $emailLabels = [
     'admin_alert' => 'New-order alert to you',
     'receipt' => 'Receipt to customer',
     'confirmation' => 'Payment confirmation to customer',
+    'reminder' => 'Pickup reminder to customer (day before)',
 ];
+$sameNetwork = orders_from_same_network($order);
+$section = ['pending' => ['payments.php', 'Payments', 'payments'], 'paid' => ['orders.php', 'Orders', 'orders']][$order['status']]
+    ?? ['past.php?status=' . $order['status'], 'Past orders', 'past'];
 
 $action = fn(string $name, string $label, string $class = 'btn', string $confirm = '') =>
     '<form method="post">' . csrf_field() . '<input type="hidden" name="action" value="' . e($name) . '">'
     . '<button type="submit" class="' . e($class) . '"' . ($confirm !== '' ? ' data-confirm="' . e($confirm) . '"' : '') . '>' . e($label) . '</button></form>';
 
-admin_header('Order ' . $order['code'], 'orders', $user);
+admin_header('Order ' . $order['code'], $section[2], $user);
 ?>
-<a class="back" href="index.php?status=<?= e($order['status']) ?>">← All orders</a>
+<a class="back" href="<?= e($section[0]) ?>">← <?= e($section[1]) ?></a>
 
 <section class="card order-head">
   <div>
@@ -118,6 +122,13 @@ admin_header('Order ' . $order['code'], 'orders', $user);
       <p>Look for <strong><?= money((int) $order['total_cents']) ?></strong> with <strong><?= e($order['code']) ?></strong> in the payment note<?= $order['payer_ref'] !== '' ? ' (the customer said they’ll pay from <strong>' . e($order['payer_ref']) . '</strong>)' : '' ?>. When you see it, mark the order as paid — the customer gets their confirmation email with the pickup address automatically.</p>
       <p class="verify-hint">Can’t fill this order (for example, the date is fully booked)? Email the customer before cancelling. If they already paid, refund them in full.</p>
     </div>
+    <?php if (payment_proof_path($order)): ?>
+      <div class="proof-box">
+        <a href="proof.php?id=<?= (int) $order['id'] ?>" target="_blank" rel="noopener"><img src="proof.php?id=<?= (int) $order['id'] ?>" alt="Payment screenshot the customer uploaded" width="180" height="240"></a>
+        <p><strong>The customer uploaded a payment screenshot</strong> (<?= e(pretty_datetime($order['payment_proof_at'])) ?>).
+          Tap it to see it full size, and check the money really arrived in <?= e(payment_label($order['payment_method'])) ?> before confirming.</p>
+      </div>
+    <?php endif; ?>
     <div class="action-row">
       <?= $action('mark_paid', '✓ Mark as Paid', 'btn btn-primary btn-lg', 'Mark ' . $order['code'] . ' as paid? The customer will get the confirmation email now.') ?>
       <?= $action('mark_cancelled', 'Cancel order', 'btn btn-danger', 'Cancel order ' . $order['code'] . '?') ?>
@@ -171,6 +182,14 @@ admin_header('Order ' . $order['code'], 'orders', $user);
     <?php else: ?>
       <p><a href="mailto:<?= e($order['email']) ?>"><?= e($order['email']) ?></a></p>
       <p><a href="tel:<?= e(preg_replace('/[^\d+]/', '', $order['phone'])) ?>"><?= e($order['phone']) ?></a></p>
+      <?php if ($order['customer_ref'] !== ''): ?>
+        <p>Customer <a href="orders.php?status=all&amp;q=<?= e(rawurlencode($order['customer_ref'])) ?>"><strong><?= e($order['customer_ref']) ?></strong> · see all their orders</a></p>
+      <?php endif; ?>
+    <?php endif; ?>
+    <?php if ($sameNetwork): ?>
+      <p class="muted network-note">Placed from the same internet connection as:
+        <?php foreach ($sameNetwork as $i => $n): ?><?= $i ? ', ' : '' ?><a href="order.php?id=<?= (int) $n['id'] ?>"><?= e($n['code']) ?></a> (<?= e($n['customer_name']) ?>, <?= e(status_label($n['status'])) ?>)<?php endforeach; ?>.
+        Families and neighbours can share one; lots of unpaid orders from one connection can mean fake orders.</p>
     <?php endif; ?>
     <?php if ($order['notes'] !== ''): ?>
       <p class="note-box"><strong>Customer notes</strong><br><?= nl2br(e($order['notes'])) ?></p>
@@ -183,6 +202,9 @@ admin_header('Order ' . $order['code'], 'orders', $user);
     <p>Payment note: <strong><?= e($order['code']) ?></strong></p>
     <?php if ($order['payer_ref'] !== ''): ?><p>Paying from: <strong><?= e($order['payer_ref']) ?></strong></p><?php endif; ?>
     <p>Amount due: <strong><?= money((int) $order['total_cents']) ?></strong></p>
+    <?php if (payment_proof_path($order)): ?>
+      <p><a href="proof.php?id=<?= (int) $order['id'] ?>" target="_blank" rel="noopener">📎 Payment screenshot</a> <span class="muted">(uploaded <?= e(pretty_datetime($order['payment_proof_at'])) ?>)</span></p>
+    <?php endif; ?>
   </section>
 
   <section class="card">
