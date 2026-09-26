@@ -21,8 +21,8 @@
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <link rel="preload" href="fonts/playfair-display-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="fonts/dm-sans-latin.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="style.css?v=24">
-  <script src="app.js?v=20" defer></script>
+  <link rel="stylesheet" href="style.css?v=25">
+  <script src="app.js?v=21" defer></script>
 </head>
 <body>
 <!-- Icon sprite: one consistent stroke-icon set used across the site -->
@@ -170,7 +170,7 @@
           <p class="field-hint flavor-dates-hint">Monthly specials can only be picked up during their month. If you choose a pickup date outside it, they’re taken out of your box.</p>
           <div id="flavor-choices" class="flavor-list"></div>
           <div class="flavor-actions">
-            <button type="button" id="clear-box" class="inline-button">Clear flavor selections</button>
+            <button type="button" id="clear-box" class="button ghost small clear-box"><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg> Clear flavor selections</button>
           </div>
           <p id="flavor-error" class="error" role="alert"></p>
         </fieldset>
@@ -240,12 +240,21 @@
 
           <div class="allergy-note" id="allergy-info">
             <strong>Please read before ordering</strong>
-            <p>Pashabakess is not allergen-free. The cookies are not free of peanuts, tree nuts, gluten, dairy/eggs, soy, or food coloring, so they are not suitable for peanut, tree nut, gluten, dairy/egg, soy, or food coloring allergies. Everything is prepared in the same kitchen using shared equipment, trays, utensils, and packaging areas. Because cross-contact can happen, Pasha does not recommend ordering or sharing the cookies with anyone who has food allergies.</p>
+            <ul>
+              <li><strong>Not allergen-free.</strong> The cookies are not free of peanuts, tree nuts, gluten, dairy/eggs, soy, or food coloring, so they are not suitable for peanut, tree nut, gluten, dairy/egg, soy, or food coloring allergies.</li>
+              <li>Everything is prepared in <strong>the same kitchen</strong> using shared equipment, trays, utensils, and packaging areas.</li>
+              <li>Because cross-contact can happen, Pasha <strong>does not recommend</strong> ordering or sharing the cookies with anyone who has food allergies.</li>
+            </ul>
           </div>
           <div class="policy-note" id="refund-policy">
             <strong>Cancellations &amp; refunds</strong>
-            <p>Because every order is baked fresh, cookies can’t be returned or exchanged. To cancel or reschedule your pickup, email <a href="mailto:pashabakess@gmail.com?subject=Cancel%20or%20reschedule%20my%20order">pashabakess@gmail.com</a> at least <strong>two calendar days</strong> before your pickup date (for a Saturday pickup, by Thursday). With that notice you’ll receive a <strong>full refund</strong> to the Venmo or Cash App account you paid from, sent within <strong>3–5 business days</strong>. Cancellations with less notice can’t be refunded.</p>
-            <p><strong>Missed pickups:</strong> you have two days after your pickup date to collect your order. Orders not picked up by then can’t be refunded. If Pasha has to cancel your order (for example, if your pickup date becomes fully booked), you’ll receive a full refund.</p>
+            <ul>
+              <li>Because every order is baked fresh, cookies can’t be returned or exchanged.</li>
+              <li>To cancel or reschedule your pickup, email <a href="mailto:pashabakess@gmail.com?subject=Cancel%20or%20reschedule%20my%20order">pashabakess@gmail.com</a> at least <strong>two calendar days</strong> before your pickup date (for a Saturday pickup, by Thursday). With that notice you’ll receive a <strong>full refund</strong> to the Venmo or Cash App account you paid from, sent within <strong>3–5 business days</strong>.</li>
+              <li>Cancellations with less notice can’t be refunded.</li>
+              <li><strong>Missed pickups:</strong> you have two days after your pickup date to collect your order. Orders not picked up by then can’t be refunded.</li>
+              <li>If Pasha has to cancel your order (for example, if your pickup date becomes fully booked), you’ll receive a full refund.</li>
+            </ul>
           </div>
 
           <div class="field">
@@ -294,7 +303,7 @@
 
       <aside class="order-summary" aria-labelledby="summary-title">
         <p class="eyebrow">Good things come in boxes</p>
-        <h3 id="summary-title">Your happy box</h3>
+        <h2 id="summary-title">Your happy box</h2>
         <div id="summary-items"><p>Your favorites go here.<br>Pick a flavor to get started.</p></div>
         <p class="summary-warning" id="summary-warning" hidden></p>
         <div class="summary-total"><span id="summary-total-label">4-cookie box</span><strong id="summary-total">$14</strong></div>
@@ -322,18 +331,20 @@
       <span class="wordmark">Pashabakess</span>
     </a>
     <nav class="footer-nav" aria-label="Footer">
-      <a href="menu.html">Menu</a>
-      <a href="order.html" aria-current="page">Order</a>
-      <a href="about.html">About</a>
+      <a href="menu.html">The menu</a>
+      <a href="order.html" aria-current="page">Build your box</a>
+      <a href="about.html">Meet Pasha</a>
       <a href="celebrations.html">Celebrations</a>
       <a href="faq.html">FAQs</a>
       <a href="contact.html">Contact</a>
-      <a href="faq.html#faq-allergies" data-open-details>Allergy info</a>
-      <a href="privacy.html">Privacy</a>
     </nav>
   </div>
   <div class="footer-bottom">
     <p>© 2026 Pashabakess. Baked with love.</p>
+    <nav class="footer-utility" aria-label="Allergy and privacy">
+      <a href="faq.html#faq-allergies" data-open-details>Allergy info</a>
+      <a href="privacy.html">Privacy</a>
+    </nav>
     <span aria-hidden="true">Good cookies. Happier days.</span>
   </div>
 </footer>

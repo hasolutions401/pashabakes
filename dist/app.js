@@ -383,6 +383,8 @@ $('#custom-amount')?.addEventListener('input', e => {
 });
 
 $('#clear-box')?.addEventListener('click', () => {
+  const n = total();
+  if (n > 1 && !confirm(`Remove all ${n} cookies from your box? You’ll need to choose your flavors again.`)) return;
   Object.keys(qty).forEach(k => delete qty[k]);
   update();
   $('.size-option input:checked')?.focus();
